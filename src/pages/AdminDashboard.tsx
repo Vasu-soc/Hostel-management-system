@@ -1,0 +1,614 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Bell, Building2, ArrowLeft, User, IndianRupee, Save, UserCheck } from "lucide-react";
+import { getAdminSession, clearAdminSession } from "@/lib/session";
+import DashboardHeader from "@/components/DashboardHeader";
+import CollegeHeader from "@/components/CollegeHeader";
+import WardenApproval from "@/components/admin/WardenApproval";
+
+interface Admin {
+  id: string;
+  name: string;
+  username: string;
+}
+
+interface Student {
+  id: string;
+  student_name: string;
+  roll_number: string;
+  branch: string;
+  year: string;
+  hostel_room_number: string | null;
+  room_allotted: boolean;
+  total_fee: number | null;
+  paid_fee: number | null;
+  pending_fee: number | null;
+  gender: string;
+  photo_url: string | null;
+}
+
+interface Room {
+  id: string;
+  room_number: string;
+  floor_number: string;
+  ac_type: string;
+  total_beds: number;
+  occupied_beds: number;
+  pending_beds: number;
+}
+
+interface RoomStats {
+  room_number: string;
+  floor_number: string;
+  ac_type: string;
+  total_beds: number;
+  actualOccupied: number;
+  actualPending: number;
+}
+
+const branches = ["CSE", "MECH", "CIVIL", "AIML", "AIDS", "ECE", "EEE", "DS", "IT"];
+const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
+
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [admin, setAdmin] = useState<Admin | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [students, setStudents] = useState<Student[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [showStudents, setShowStudents] = useState(false);
+  const [showPendingRooms, setShowPendingRooms] = useState(false);
+  const [showWardenCredentials, setShowWardenCredentials] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Fee update dialog
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [feeDialogOpen, setFeeDialogOpen] = useState(false);
+  const [feeData, setFeeData] = useState({
+    total_fee: 0,
+    paid_fee: 0,
+  });
+
+  useEffect(() => {
+    const session = getAdminSession();
+    if (!session) {
+      navigate("/admin-login");
+      return;
+    }
+    setAdmin(session);
+    fetchRooms();
+    fetchAllStudents();
+
+    // Real-time subscriptions
+    const channel = supabase
+      .channel("admin-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, fetchRooms)
+      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => {
+        fetchAllStudents();
+        if (selectedBranch && selectedYear) {
+          fetchStudentsData(selectedBranch, selectedYear);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, selectedBranch, selectedYear]);
+
+  const fetchAllStudents = async () => {
+    const { data, error } = await supabase.from("students").select("*");
+    if (!error && data) {
+      setAllStudents(data as Student[]);
+    }
+  };
+
+  // Calculate actual occupied counts from students
+  const getActualOccupied = (roomNumber: string) => {
+    return allStudents.filter(s => s.hostel_room_number === roomNumber && s.room_allotted).length;
+  };
+
+  const fetchRooms = async () => {
+    const { data, error } = await supabase.from("rooms").select("*").order("room_number");
+    if (error) {
+      console.error("Error fetching rooms:", error);
+      return;
+    }
+    setRooms((data || []) as Room[]);
+  };
+
+  const fetchStudentsData = async (branch: string, year: string) => {
+    // Map display year to stored year format
+    const yearMapping: Record<string, string> = {
+      "1st Year": "1st Year",
+      "2nd Year": "2nd Year",
+      "3rd Year": "3rd Year", 
+      "4th Year": "4th Year",
+    };
+    const dbYear = yearMapping[year] || year;
+    
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .ilike("branch", branch)
+      .eq("year", dbYear);
+
+    if (error) {
+      console.error("Error fetching students:", error);
+      return;
+    }
+    setStudents((data || []) as Student[]);
+  };
+
+  const fetchStudents = async () => {
+    if (!selectedBranch || !selectedYear) return;
+
+    setIsLoading(true);
+    await fetchStudentsData(selectedBranch, selectedYear);
+    setShowStudents(true);
+    setShowPendingRooms(false);
+    setIsLoading(false);
+  };
+
+  const handleUpdateFee = async () => {
+    if (!selectedStudent) return;
+
+    const pending_fee = feeData.total_fee - feeData.paid_fee;
+
+    const { error } = await supabase
+      .from("students")
+      .update({
+        total_fee: feeData.total_fee,
+        paid_fee: feeData.paid_fee,
+        pending_fee: pending_fee,
+      })
+      .eq("id", selectedStudent.id);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to update fee", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Success", description: "Fee details updated successfully" });
+    setFeeDialogOpen(false);
+    setSelectedStudent(null);
+    if (selectedBranch && selectedYear) {
+      fetchStudentsData(selectedBranch, selectedYear);
+    }
+  };
+
+  const openFeeDialog = (student: Student) => {
+    setSelectedStudent(student);
+    setFeeData({
+      total_fee: student.total_fee || 84000,
+      paid_fee: student.paid_fee || 0,
+    });
+    setFeeDialogOpen(true);
+  };
+
+  const handleLogout = () => {
+    clearAdminSession();
+    navigate("/admin-login");
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out",
+    });
+  };
+
+  const acRooms = rooms.filter((r) => r.ac_type === "ac");
+  const normalRooms = rooms.filter((r) => r.ac_type === "normal");
+
+  if (!admin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* College Header */}
+      <CollegeHeader />
+
+      {/* Enhanced Top Bar */}
+      <DashboardHeader
+        title="Admin Home Page"
+        titleColor="text-primary"
+        userName={admin.name}
+        userSubtitle="Administrator"
+        onLogout={handleLogout}
+        showPhoto={false}
+      />
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {!showStudents && !showPendingRooms && !showWardenCredentials && (
+          <div className="max-w-4xl mx-auto">
+            <Card className="border-2 border-border">
+              <CardHeader>
+                <CardTitle className="text-xl">Admin Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Choose Branch</label>
+                    <Select
+                      value={selectedBranch}
+                      onValueChange={setSelectedBranch}
+                    >
+                      <SelectTrigger className="h-12 bg-background">
+                        <SelectValue placeholder="Select Branch..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-2 border-border z-50">
+                        {branches.map((branch) => (
+                          <SelectItem key={branch} value={branch}>
+                            {branch}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Choose Year</label>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                      <SelectTrigger className="h-12 bg-background">
+                        <SelectValue placeholder="Select Year..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-2 border-border z-50">
+                        {years.map((year) => (
+                          <SelectItem key={year} value={year}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    onClick={fetchStudents}
+                    disabled={!selectedBranch || !selectedYear || isLoading}
+                    className="h-12"
+                  >
+                    View Students
+                  </Button>
+                </div>
+
+                <div className="border-t border-border pt-6 flex flex-wrap gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowPendingRooms(true);
+                      setShowStudents(false);
+                      setShowWardenCredentials(false);
+                    }}
+                    className="h-12"
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Pending Rooms (AC / Normal)
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowWardenCredentials(true);
+                      setShowStudents(false);
+                      setShowPendingRooms(false);
+                    }}
+                    className="h-12"
+                  >
+                    <UserCheck className="w-4 h-4 mr-2" />
+                    Warden Approvals
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Students View */}
+        {showStudents && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowStudents(false)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <h2 className="text-2xl font-bold text-foreground">
+                {selectedBranch} STUDENTS – {selectedYear} YEAR
+              </h2>
+            </div>
+
+            {students.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  No students found for {selectedBranch} - {selectedYear}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {students.map((student) => (
+                  <Card key={student.id} className="border-2 border-border hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-3">
+                        {student.photo_url ? (
+                          <img 
+                            src={student.photo_url} 
+                            alt={student.student_name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-primary"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="w-6 h-6 text-primary" />
+                          </div>
+                        )}
+                        <div>
+                          <CardTitle className="text-base">{student.student_name}</CardTitle>
+                          <p className="text-xs text-muted-foreground">{student.roll_number}</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">Branch</p>
+                          <p className="font-medium">{student.branch?.toUpperCase()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Year</p>
+                          <p className="font-medium">{student.year}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Gender</p>
+                          <p className="font-medium capitalize">{student.gender}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Room</p>
+                          <p className={`font-medium ${student.room_allotted ? "text-success" : "text-muted-foreground"}`}>
+                            {student.hostel_room_number || "Not Assigned"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="text-muted-foreground">Fee Status</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 text-xs"
+                            onClick={() => openFeeDialog(student)}
+                          >
+                            <IndianRupee className="w-3 h-3 mr-1" />
+                            Update
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="p-2 bg-muted/50 rounded">
+                            <p className="text-xs text-muted-foreground">Total</p>
+                            <p className="font-medium text-sm">₹{(student.total_fee || 84000).toLocaleString()}</p>
+                          </div>
+                          <div className="p-2 bg-success/10 rounded">
+                            <p className="text-xs text-success">Paid</p>
+                            <p className="font-medium text-sm text-success">₹{(student.paid_fee || 0).toLocaleString()}</p>
+                          </div>
+                          <div className="p-2 bg-destructive/10 rounded">
+                            <p className="text-xs text-destructive">Pending</p>
+                            <p className="font-medium text-sm text-destructive">₹{(student.pending_fee || 84000).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pending Rooms View */}
+        {showPendingRooms && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowPendingRooms(false)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <h2 className="text-2xl font-bold text-foreground">
+                Pending Room Details
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* AC Block */}
+              <Card className="border-2 border-border">
+                <CardHeader className="bg-primary/10 border-b border-border">
+                  <CardTitle className="text-lg">AC Block</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Floor</TableHead>
+                        <TableHead>Room No</TableHead>
+                        <TableHead>Total Beds</TableHead>
+                        <TableHead>Total Occupied</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {acRooms.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No AC rooms available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        acRooms.map((room) => (
+                          <TableRow key={room.id}>
+                            <TableCell>{room.floor_number}</TableCell>
+                            <TableCell>{room.room_number}</TableCell>
+                            <TableCell>{room.total_beds}</TableCell>
+                            <TableCell>{getActualOccupied(room.room_number)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* Normal Block */}
+              <Card className="border-2 border-border">
+                <CardHeader className="bg-secondary/10 border-b border-border">
+                  <CardTitle className="text-lg">Normal Block</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Floor</TableHead>
+                        <TableHead>Room No</TableHead>
+                        <TableHead>Total Beds</TableHead>
+                        <TableHead>Total Occupied</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {normalRooms.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No Normal rooms available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        normalRooms.map((room) => (
+                          <TableRow key={room.id}>
+                            <TableCell>{room.floor_number}</TableCell>
+                            <TableCell>{room.room_number}</TableCell>
+                            <TableCell>{room.total_beds}</TableCell>
+                            <TableCell>{getActualOccupied(room.room_number)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Warden Approvals View */}
+        {showWardenCredentials && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowWardenCredentials(false)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <h2 className="text-2xl font-bold text-foreground">
+                Warden Registration Approvals
+              </h2>
+            </div>
+
+            <WardenApproval />
+          </div>
+        )}
+      </main>
+
+      {/* Fee Update Dialog */}
+      <Dialog open={feeDialogOpen} onOpenChange={setFeeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <IndianRupee className="w-5 h-5" />
+              Update Fee Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedStudent && (
+            <div className="space-y-4 pt-4">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">{selectedStudent.student_name}</p>
+                <p className="text-sm text-muted-foreground">{selectedStudent.roll_number}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="totalFee">Total Fee (₹)</Label>
+                <Input
+                  id="totalFee"
+                  type="number"
+                  value={feeData.total_fee}
+                  onChange={(e) => setFeeData({ ...feeData, total_fee: Number(e.target.value) })}
+                  className="h-12"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paidFee">Paid Fee (₹)</Label>
+                <Input
+                  id="paidFee"
+                  type="number"
+                  value={feeData.paid_fee}
+                  onChange={(e) => setFeeData({ ...feeData, paid_fee: Number(e.target.value) })}
+                  className="h-12"
+                />
+              </div>
+
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Pending Fee</p>
+                <p className="text-xl font-bold text-destructive">
+                  ₹{(feeData.total_fee - feeData.paid_fee).toLocaleString()}
+                </p>
+              </div>
+
+              <Button onClick={handleUpdateFee} className="w-full">
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminDashboard;

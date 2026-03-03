@@ -1,0 +1,163 @@
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
+import gisteduLogo from "@/assets/gistedu-logo.png";
+
+const loginOptions = [
+  {
+    label: "Register (Boys)",
+    path: "/student-login?gender=boys&mode=register",
+    icon: UserPlus,
+    color: "text-accent"
+  },
+  {
+    label: "Register (Girls)",
+    path: "/student-login?gender=girls&mode=register",
+    icon: UserPlus,
+    color: "text-primary"
+  },
+  {
+    label: "New Parent",
+    path: "/parent-login?mode=register",
+    icon: ShieldCheck,
+    color: "text-success"
+  },
+];
+
+
+const CollegeHeader = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
+
+  return (
+    <header className="sticky top-0 z-50 w-full header-dynamic-bg shadow-xl border-b border-primary/20 transition-all duration-500">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-5">
+        <div className="flex items-center justify-between gap-3 sm:gap-4 md:gap-6">
+          {/* Logo with Sanskrit Text below */}
+          <div className="flex flex-col items-center flex-shrink-0 group">
+            <div className="relative float-animation">
+              <img
+                src={gisteduLogo}
+                alt="GIST Logo"
+                className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto object-contain transition-transform duration-500 group-hover:scale-110 active:rotate-3"
+                loading="eager"
+              />
+              <div className="absolute -inset-4 bg-primary/20 rounded-full blur-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            </div>
+            <p className="text-[7px] sm:text-[9px] md:text-[11px] text-primary mt-2 text-center whitespace-nowrap font-bold tracking-[0.2em] uppercase opacity-80 italic">
+              हृदाकाशे चिदादित्य स्सदाभासति भासति
+            </p>
+          </div>
+
+          {/* Text Content - Elegant and Dynamic */}
+          <div className="flex flex-col min-w-0 flex-1 items-center text-center px-2">
+            <h1 className="text-xs sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-animated-gradient tracking-tight sm:tracking-normal leading-tight drop-shadow-md select-none" style={{ fontFamily: "'Playfair Display', serif" }}>
+              GEETHANJALI INSTITUTE OF SCIENCE & TECHNOLOGY
+            </h1>
+            <div className="flex items-center gap-4 mt-1.5 group">
+              <div className="h-[1.5px] w-6 sm:w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent hidden sm:block transition-all duration-500 group-hover:w-16"></div>
+              <p className="text-[9px] sm:text-sm md:text-base lg:text-lg xl:text-xl font-extrabold text-primary italic tracking-widest drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]">
+                (AUTONOMOUS INSTITUTION)
+              </p>
+              <div className="h-[1.5px] w-6 sm:w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent hidden sm:block transition-all duration-500 group-hover:w-16"></div>
+            </div>
+            <p className="text-[7px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1.5 leading-relaxed max-w-[85%] font-semibold tracking-wide border-t border-primary/10 pt-1">
+              3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt. Andhra Pradesh, India - 524137.
+            </p>
+          </div>
+
+          {/* Menu Button + Theme Toggle - Only on home page */}
+          {isHomePage && (
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              {/* Theme Toggle Button Style */}
+              <div className="bg-muted/50 p-1 rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner">
+                <ThemeToggle />
+              </div>
+
+              {/* Unique Styled Menu Button */}
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/25 border-b-4 border-primary-foreground/20"
+                    aria-label="Open menu"
+                  >
+                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[85vw] sm:w-[400px] border-l-2 border-primary/20 bg-card/95 backdrop-blur-xl p-0 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+
+                  <SheetHeader className="p-6 border-b border-primary/10 bg-muted/30 relative">
+                    <SheetTitle className="flex items-center gap-3 text-2xl font-black italic text-primary">
+                      <div className="p-2 bg-primary rounded-xl text-primary-foreground">
+                        <UserPlus className="w-6 h-6" />
+                      </div>
+                      JOIN HOSTEL
+                    </SheetTitle>
+                  </SheetHeader>
+
+                  <div className="p-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-3">
+                        {loginOptions.map((option) => (
+                          <Link
+                            key={option.path}
+                            to={option.path}
+                            onClick={() => setMenuOpen(false)}
+                            className="group"
+                          >
+                            <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-card hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                              <div className={`p-3 rounded-xl bg-card shadow-sm group-hover:bg-primary group-hover:scale-110 transition-all duration-300`}>
+                                <option.icon className={`w-6 h-6 ${option.color} group-hover:text-primary-foreground`} />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-lg group-hover:text-primary transition-colors">{option.label}</span>
+                                <span className="text-xs text-muted-foreground font-medium">Create your new account</span>
+                              </div>
+                              <div className="ml-auto opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                                <UserPlus className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform duration-500 group-hover:scale-150" />
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Footer Toggle */}
+                  <div className="absolute bottom-0 left-0 right-0 p-8 border-t border-primary/10 bg-muted/50">
+                    <div className="flex items-center justify-between p-4 bg-card rounded-2xl border border-primary/10 shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-primary italic">Visual Mode</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Customize Experience</span>
+                      </div>
+                      <div className="scale-110">
+                        <ThemeToggle />
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default CollegeHeader;

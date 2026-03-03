@@ -1,0 +1,422 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 35 30% 97%;
+    --foreground: 220 30% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 15%;
+
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 70% 25%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 35 20% 92%;
+    --muted-foreground: 220 15% 45%;
+
+    --accent: 200 85% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 24 95% 53%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(38, 92%, 50%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(220, 70%, 25%) 0%, hsl(200, 85%, 45%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(35, 30%, 97%) 0%, hsl(35, 25%, 93%) 100%);
+    --gradient-carousel: linear-gradient(135deg,
+        hsl(var(--primary) / 0.06) 0%,
+        hsl(var(--accent) / 0.06) 50%,
+        hsl(var(--success) / 0.06) 100%);
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 30% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 30% 15% / 0.1), 0 2px 4px -2px hsl(220 30% 15% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(220 30% 15% / 0.1), 0 4px 6px -4px hsl(220 30% 15% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(220 30% 15% / 0.1), 0 8px 10px -6px hsl(220 30% 15% / 0.1);
+    --shadow-glow: 0 0 30px hsl(24 95% 53% / 0.3);
+  }
+
+  .dark {
+    --background: 220 30% 8%;
+    --foreground: 35 30% 95%;
+
+    --card: 220 30% 12%;
+    --card-foreground: 35 30% 95%;
+
+    --popover: 220 30% 12%;
+    --popover-foreground: 35 30% 95%;
+
+    --primary: 24 95% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 70% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 25% 18%;
+    --muted-foreground: 220 15% 65%;
+
+    --accent: 200 85% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 25% 22%;
+    --input: 220 25% 22%;
+    --ring: 24 95% 55%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+@layer components {
+
+  /* Grid Motion Background */
+  .grid-motion-bg {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .grid-motion-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: grid-move 20s linear infinite;
+    opacity: 0.5;
+  }
+
+  .grid-motion-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: transparent;
+  }
+
+  /* Glare Hover Effect */
+  .glare-hover {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glare-hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        hsl(0 0% 100% / 0.3) 50%,
+        transparent 100%);
+    transition: left 0.5s ease;
+  }
+
+  .glare-hover:hover::before {
+    left: 100%;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Floating animation */
+  .float-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Pulse dot for notifications */
+  .pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .pulse-dot-red {
+    animation: pulse-dot-red 1s ease-in-out infinite;
+  }
+
+  /* Status badges */
+  .status-pending {
+    @apply bg-warning/20 text-warning border border-warning/30;
+  }
+
+  .status-approved {
+    @apply bg-success/20 text-success border border-success/30;
+  }
+
+  .status-rejected {
+    @apply bg-destructive/20 text-destructive border border-destructive/30;
+  }
+}
+
+@layer utilities {
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-carousel {
+    background: var(--gradient-carousel);
+  }
+
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-animated-gradient {
+    background: linear-gradient(to right,
+        hsl(24, 95%, 53%),
+        hsl(38, 92%, 50%),
+        hsl(200, 85%, 45%),
+        hsl(24, 95%, 53%));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: text-gradient-flow 4s linear infinite;
+  }
+
+  .header-dynamic-bg {
+    background: linear-gradient(135deg,
+        hsl(var(--background) / 0.8),
+        hsl(var(--primary) / 0.05),
+        hsl(var(--accent) / 0.05),
+        hsl(var(--background) / 0.8));
+    background-size: 400% 400%;
+    animation: header-bg-pulse 15s ease infinite;
+    backdrop-filter: blur(12px);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+@keyframes text-gradient-flow {
+  0% {
+    background-position: 0% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes header-bg-pulse {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes grid-move {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes pulse-dot-red {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 hsl(0 84% 60% / 0.7);
+  }
+
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 8px hsl(0 84% 60% / 0);
+  }
+}
+
+@keyframes loop-scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes carousel-scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.carousel-track {
+  display: flex;
+  gap: 3rem;
+  animation: carousel-scroll 90s linear infinite;
+  width: max-content;
+}
+
+/* Removed hover-to-pause - carousel scrolls continuously */
+
+.carousel-item {
+  flex-shrink: 0;
+  width: 320px;
+  height: 208px;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.carousel-item:hover {
+  transform: scale(1.05);
+}
+
+/* Slower scroll on mobile for smooth experience */
+@media (max-width: 768px) {
+  .carousel-track {
+    animation: carousel-scroll 60s linear infinite;
+    gap: 2rem;
+  }
+
+  .carousel-item {
+    width: 260px;
+    height: 170px;
+  }
+}
+
+.animate-scroll-slow {
+  animation: loop-scroll 90s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .animate-scroll-slow {
+    animation: none;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
