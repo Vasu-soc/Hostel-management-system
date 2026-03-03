@@ -55,3 +55,4 @@ A comprehensive hostel management system for Geethanjali Institute of Science & 
 ---
 
 Built with ❤️ for Geethanjali Institute of Science & Technology
+"# hostel-management" 
