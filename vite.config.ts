@@ -20,7 +20,7 @@ const localApiPlugin = () => ({
             if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
             // Extract base64
-            const base64Data = fileData.replace(/^data:([A-Za-z-+/]+);base64,/, '');
+            const base64Data = fileData.replace(/^data:.*?;base64,/, '');
             const safeName = Date.now() + '-' + fileName.replace(/[^a-zA-Z0-9.]/g, '');
             const filePath = path.join(uploadsDir, safeName);
 

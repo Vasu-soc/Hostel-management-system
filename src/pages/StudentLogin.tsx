@@ -128,6 +128,14 @@ const StudentLogin = () => {
   });
 
   // Fetch rooms and accurately calculate occupancy on mount
+  const getRoomFee = (room: Room) => {
+    if (room.ac_type === 'ac') {
+      return room.total_beds <= 2 ? 100000 : 90000;
+    } else {
+      return room.total_beds <= 2 ? 84000 : 75000;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: roomsData, error: roomsError } = await supabase
@@ -446,6 +454,8 @@ const StudentLogin = () => {
         }
         setIsUploadingPhoto(false);
       }
+      const selectedRoomData = availableRooms.find(r => r.room_number === registerData.roomNumber);
+      const fee = selectedRoomData ? getRoomFee(selectedRoomData) : 84000;
 
       const { error } = await supabase.from("students").insert({
         roll_number: registerData.rollNumber.toUpperCase(),
@@ -459,6 +469,9 @@ const StudentLogin = () => {
         room_allotted: false,
         hostel_room_number: registerData.roomNumber || null,
         floor_number: registerData.floorNumber || null,
+        total_fee: fee,
+        pending_fee: fee,
+        paid_fee: 0,
         password: registerData.password,
         photo_url: photoUrl,
       });
@@ -660,10 +673,10 @@ const StudentLogin = () => {
 
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="rollNumber">Roll Number (Username)</Label>
+                      <Label htmlFor="rollNumber">Roll Number / Mobile Number (Username)</Label>
                       <Input
                         id="rollNumber"
-                        placeholder="Enter your Roll Number"
+                        placeholder="Enter Roll No. or Mobile No."
                         value={loginData.rollNumber}
                         onChange={(e) => setLoginData({ ...loginData, rollNumber: e.target.value.toUpperCase() })}
                         className="h-12"
@@ -770,10 +783,10 @@ const StudentLogin = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="regRollNumber">Roll Number *</Label>
+                        <Label htmlFor="regRollNumber">Roll Number / Mobile Number *</Label>
                         <Input
                           id="regRollNumber"
-                          placeholder="e.g. 21GK1A0501"
+                          placeholder="e.g. 21GK1A0501 or Mobile No."
                           value={registerData.rollNumber}
                           onChange={(e) => setRegisterData({ ...registerData, rollNumber: e.target.value.toUpperCase() })}
                           className="h-12"
@@ -853,7 +866,7 @@ const StudentLogin = () => {
                           <SelectContent className="bg-popover border-2 border-border z-[100]">
                             {availableRooms.map(r => (
                               <SelectItem key={r.room_number} value={r.room_number}>
-                                Room {r.room_number} ({r.total_beds - (r.occupied_beds || 0) - (r.closed_beds || 0)} free)
+                                Room {r.room_number} ({r.total_beds - (r.occupied_beds || 0) - (r.closed_beds || 0)} free) - ₹{getRoomFee(r).toLocaleString()}
                               </SelectItem>
                             ))}
                           </SelectContent>

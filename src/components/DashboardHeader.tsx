@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Camera } from "lucide-react";
+import { LogOut, User, Camera, Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
@@ -13,6 +13,7 @@ interface DashboardHeaderProps {
   onLogout: () => void;
   showPhoto?: boolean;
   onPhotoUpload?: () => void; // optional: student profile photo upload trigger
+  onSettingsClick?: () => void;
 }
 
 const DashboardHeader = ({
@@ -24,6 +25,7 @@ const DashboardHeader = ({
   onLogout,
   showPhoto = true,
   onPhotoUpload,
+  onSettingsClick,
 }: DashboardHeaderProps) => {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
 
@@ -78,6 +80,11 @@ const DashboardHeader = ({
           </h1>
 
           <div className="flex items-center gap-2">
+            {onSettingsClick && (
+              <Button variant="ghost" size="icon" onClick={onSettingsClick} className="text-muted-foreground hover:text-primary transition-colors">
+                <Settings className="w-5 h-5" />
+              </Button>
+            )}
             <ThemeToggle />
             <Button variant="outline" onClick={onLogout} className="h-11 px-4 text-base font-medium">
               <LogOut className="w-5 h-5 mr-2" />

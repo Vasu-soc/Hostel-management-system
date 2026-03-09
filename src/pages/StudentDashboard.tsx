@@ -67,6 +67,7 @@ const StudentDashboard = () => {
 
   const [student, setStudent] = useState<StudentSession | null>(null);
   const [gatePasses, setGatePasses] = useState<Record<string, unknown>[]>([]);
+  const [feeTransactions, setFeeTransactions] = useState<Record<string, unknown>[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<Record<string, unknown>[]>([]);
   const [electricalDialogOpen, setElectricalDialogOpen] = useState(false);
   const [foodDialogOpen, setFoodDialogOpen] = useState(false);
@@ -79,6 +80,8 @@ const StudentDashboard = () => {
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [resourcesDialogOpen, setResourcesDialogOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -131,10 +134,47 @@ const StudentDashboard = () => {
       return;
     }
     setStudent(session);
+    setSettingsForm({ rollNumber: session.roll_number, password: session.password || "" });
     refreshStudentData(session.id);
+    fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
     loadStudyMaterials(session.branch, session.year);
   }, [gender, navigate]);
+
+  const fetchFeeTransactions = async (studentId: string) => {
+    const { data } = await supabase
+      .from("fee_transactions")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("payment_date", { ascending: false });
+    if (data) setFeeTransactions(data);
+  };
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!student) return;
+
+    if (!settingsForm.rollNumber || !settingsForm.password) {
+      toast({ title: "Validation Error", description: "Roll Number and Password are required.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await supabase
+      .from("students")
+      .update({ roll_number: settingsForm.rollNumber.toUpperCase(), password: settingsForm.password })
+      .eq("id", student.id);
+
+    setIsLoading(false);
+    if (error) {
+      toast({ title: "Error", description: error.message || "Failed to update settings", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Settings Updated", description: "Your Roll Number / Password has been updated successfully!" });
+    setSettingsDialogOpen(false);
+    refreshStudentData(student.id);
+  };
 
   // Real-time subscription for student data (fees, room info)
   useEffect(() => {
@@ -479,6 +519,7 @@ const StudentDashboard = () => {
         userPhotoUrl={student.photo_url || undefined}
         onLogout={handleLogout}
         onPhotoUpload={() => photoInputRef.current?.click()}
+        onSettingsClick={() => setSettingsDialogOpen(true)}
       />
 
       <main className="container mx-auto px-4 py-6">
@@ -545,6 +586,18 @@ const StudentDashboard = () => {
                       <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.youtube.com/', '_blank')}>
                         <ExternalLink className="w-4 h-4 mr-3 text-primary" />
                         YouTube
+                      </Button>
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.udemy.com/career/full-stack-web-developer/', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        Full Stack Web Developer (Udemy)
+                      </Button>
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.udemy.com/career/data-scientist/', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        Data Scientist (Udemy)
+                      </Button>
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.udemy.com/course/n8n-production-mastery-from-zero-to-agency-ready-in-30-days/', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        n8n Production Mastery (Udemy)
                       </Button>
                     </div>
                   </div>
@@ -680,6 +733,27 @@ const StudentDashboard = () => {
               </Dialog>
             </div>
 
+            {feeTransactions.length > 0 && (
+              <Card className="border-2 border-border shadow-sm">
+                <CardHeader className="pb-3 border-b border-border">
+                  <CardTitle className="text-lg">Fee Payment History</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 max-h-[300px] overflow-y-auto space-y-3">
+                  {feeTransactions.map((tx: any) => (
+                    <div key={tx.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-semibold text-foreground">₹{tx.amount.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()} {new Date(tx.payment_date).toLocaleTimeString()}</p>
+                      </div>
+                      {tx.remarks && (
+                        <p className="text-xs text-muted-foreground max-w-[120px] text-right truncate" title={tx.remarks}>{tx.remarks}</p>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {studyMaterials.length > 0 && (
               <Card className="border-2 border-border">
                 <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
@@ -689,9 +763,9 @@ const StudentDashboard = () => {
                       <span className="text-sm font-medium">{mat.subject_name as string}</span>
                       <div className="flex gap-2 items-center">
                         {mat.file_url && (
-                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" download className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
+                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
                             <FileText className="w-3 h-3" />
-                            Download File
+                            Open File
                           </a>
                         )}
                         {mat.drive_link && (
@@ -932,10 +1006,10 @@ const StudentDashboard = () => {
             </Button>
           </div>
         </div>
-      </main>
+      </main >
 
       {/* Hostel Rules Dialog */}
-      <Dialog open={rulesDialogOpen} onOpenChange={setRulesDialogOpen}>
+      < Dialog open={rulesDialogOpen} onOpenChange={setRulesDialogOpen} >
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -954,10 +1028,10 @@ const StudentDashboard = () => {
             ))}
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* Photo Zoom Dialog */}
-      <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
+      < Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen} >
         <DialogContent className="max-w-md p-2 bg-card">
           {student?.photo_url && (
             <img
@@ -967,8 +1041,40 @@ const StudentDashboard = () => {
             />
           )}
         </DialogContent>
-      </Dialog>
-    </div>
+      </Dialog >
+
+      {/* Settings Dialog */}
+      < Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen} >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Profile Settings</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSettingsSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="settingsRollNumber">Roll Number (Username)</Label>
+              <Input
+                id="settingsRollNumber"
+                value={settingsForm.rollNumber}
+                onChange={(e) => setSettingsForm({ ...settingsForm, rollNumber: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">If you registered with a mobile number, you can update it to your Roll Number here.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="settingsPassword">Password</Label>
+              <Input
+                id="settingsPassword"
+                type="password"
+                value={settingsForm.password}
+                onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
+              {isLoading ? "Saving..." : "Save Settings"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog >
+    </div >
   );
 };
 

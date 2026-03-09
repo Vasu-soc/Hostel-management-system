@@ -61,6 +61,14 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
       return;
     }
 
+    if (file) {
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      if (!['pdf', 'doc', 'docx'].includes(fileExt || '')) {
+        toast({ title: "Invalid format", description: "Only PDF and Word (.doc/.docx) files are allowed.", variant: "destructive" });
+        return;
+      }
+    }
+
     setIsUploading(true);
     let file_url = null;
 
@@ -206,6 +214,7 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
               <Input
                 id="fileUpload"
                 type="file"
+                accept=".pdf,.doc,.docx"
                 onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                 className="cursor-pointer h-auto py-3 file:mr-4 file:py-2 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               />

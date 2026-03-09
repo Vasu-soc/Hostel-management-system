@@ -222,6 +222,10 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     const total = parseFloat(totalAmount) || 84000;
     const pending = total - paid;
 
+    // Calculate the difference indicating new amount paid
+    const oldPaid = selectedStudent.paid_fee || 0;
+    const newAddition = paid - oldPaid;
+
     const { error } = await supabase
       .from("students")
       .update({
@@ -234,6 +238,14 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     if (error) {
       toast({ title: "Error", description: "Failed to update fee details", variant: "destructive" });
       return;
+    }
+
+    if (newAddition > 0) {
+      await supabase.from("fee_transactions").insert({
+        student_id: selectedStudent.id,
+        amount: newAddition,
+        remarks: `Fee payment added by warden`,
+      });
     }
 
     toast({ title: "Success", description: "Fee details updated successfully" });

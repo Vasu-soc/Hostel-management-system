@@ -120,6 +120,38 @@ export type Database = {
           },
         ]
       }
+      fee_transactions: {
+        Row: {
+          amount: number
+          id: string
+          payment_date: string
+          remarks: string | null
+          student_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          payment_date?: string
+          remarks?: string | null
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          payment_date?: string
+          remarks?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gate_passes: {
         Row: {
           branch: string

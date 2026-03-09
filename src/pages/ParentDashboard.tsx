@@ -40,6 +40,7 @@ const ParentDashboard = () => {
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
+  const [feeTransactions, setFeeTransactions] = useState<any[]>([]);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -62,6 +63,7 @@ const ParentDashboard = () => {
     if (!error && data) {
       setStudent(data);
       fetchMedicalAlerts(rollNumber);
+      fetchFeeTransactions(data.id);
     }
     setLoading(false);
   };
@@ -78,6 +80,18 @@ const ParentDashboard = () => {
       setMedicalAlerts([]);
     } else {
       setMedicalAlerts(data || []);
+    }
+  };
+
+  const fetchFeeTransactions = async (studentId: string) => {
+    const { data, error } = await supabase
+      .from("fee_transactions")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("payment_date", { ascending: false });
+
+    if (!error && data) {
+      setFeeTransactions(data);
     }
   };
 
@@ -110,6 +124,18 @@ const ParentDashboard = () => {
         () => {
           // Refresh medical alerts whenever they're added or updated
           fetchMedicalAlerts(parent.student_roll_number);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "fee_transactions",
+          filter: `student_id=eq.${student?.id}`,
+        },
+        () => {
+          if (student?.id) fetchFeeTransactions(student.id);
         }
       )
       .subscribe();
@@ -162,35 +188,60 @@ const ParentDashboard = () => {
 
       <main className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Fee Details - Left Panel */}
-          <Card className="border-2 border-border">
-            <CardHeader className="border-b border-border">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <IndianRupee className="w-5 h-5 text-primary" />
-                Fee Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
-                <p className="text-2xl font-bold text-foreground">
-                  ₹{Number(student.total_fee || 84000).toLocaleString()}
-                </p>
-              </div>
-              <div className="p-4 bg-success/10 rounded-lg border border-success/20">
-                <p className="text-sm text-muted-foreground mb-1">Paid Amount</p>
-                <p className="text-2xl font-bold text-success">
-                  ₹{Number(student.paid_fee || 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                <p className="text-sm text-muted-foreground mb-1">Pending Amount</p>
-                <p className="text-2xl font-bold text-destructive">
-                  ₹{Number(student.pending_fee || 84000).toLocaleString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Left Column wrapper */}
+          <div className="space-y-6">
+            {/* Fee Details - Left Panel */}
+            <Card className="border-2 border-border">
+              <CardHeader className="border-b border-border">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <IndianRupee className="w-5 h-5 text-primary" />
+                  Fee Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    ₹{Number(student.total_fee || 84000).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 bg-success/10 rounded-lg border border-success/20">
+                  <p className="text-sm text-muted-foreground mb-1">Paid Amount</p>
+                  <p className="text-2xl font-bold text-success">
+                    ₹{Number(student.paid_fee || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <p className="text-sm text-muted-foreground mb-1">Pending Amount</p>
+                  <p className="text-2xl font-bold text-destructive">
+                    ₹{Number(student.pending_fee || 84000).toLocaleString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Fee Transactions - Under Fee Details */}
+            {feeTransactions.length > 0 && (
+              <Card className="border-2 border-border mt-6">
+                <CardHeader className="pb-3 border-b border-border">
+                  <CardTitle className="text-lg">Fee Payment History</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 max-h-[300px] overflow-y-auto space-y-3">
+                  {feeTransactions.map((tx: any) => (
+                    <div key={tx.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-semibold text-foreground">₹{tx.amount.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()} {new Date(tx.payment_date).toLocaleTimeString()}</p>
+                      </div>
+                      {tx.remarks && (
+                        <p className="text-xs text-muted-foreground max-w-[120px] text-right truncate" title={tx.remarks}>{tx.remarks}</p>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
           {/* Remarks - Right Panel */}
           <Card className="border-2 border-border">

@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "student_id": "8f13d2cd-5fd0-478d-887d-26f4e1560a68",
+    "student_name": "IMMARAJU VASU",
+    "roll_number": "222U1A3701",
+    "food_item": "Veg Meals",
+    "id": "1773037772196",
+    "created_at": "2026-03-09T06:29:32.196Z"
+  },
+  {
+    "student_id": "8f13d2cd-5fd0-478d-887d-26f4e1560a68",
+    "student_name": "IMMARAJU VASU",
+    "roll_number": "222U1A3701",
+    "food_item": "Veg Meals",
+    "id": "1773037757754",
+    "created_at": "2026-03-09T06:29:17.754Z"
+  }
+]
