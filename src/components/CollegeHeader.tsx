@@ -42,37 +42,40 @@ const CollegeHeader = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full header-dynamic-bg shadow-xl border-b border-primary/20 transition-all duration-500">
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-5">
-        <div className="flex items-center justify-between gap-3 sm:gap-4 md:gap-6">
+      <div className="container mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-5">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 md:gap-6">
           {/* Logo with Sanskrit Text below */}
           <div className="flex flex-col items-center flex-shrink-0 group">
             <div className="relative float-animation">
               <img
                 src={gisteduLogo}
                 alt="GIST Logo"
-                className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto object-contain transition-transform duration-500 group-hover:scale-110 active:rotate-3"
+                className="h-10 sm:h-20 md:h-24 lg:h-28 w-auto object-contain transition-transform duration-500 group-hover:scale-110 active:rotate-3"
                 loading="eager"
               />
               <div className="absolute -inset-4 bg-primary/20 rounded-full blur-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             </div>
-            <p className="text-[7px] sm:text-[9px] md:text-[11px] text-primary mt-2 text-center whitespace-nowrap font-bold tracking-[0.2em] uppercase opacity-80 italic">
+            <p className="hidden sm:block text-[9px] md:text-[11px] text-primary mt-2 text-center whitespace-nowrap font-bold tracking-[0.2em] uppercase opacity-80 italic">
               हृदाकाशे चिदादित्य स्सदाभासति भासति
             </p>
           </div>
 
           {/* Text Content - Elegant and Dynamic */}
-          <div className="flex flex-col min-w-0 flex-1 items-center text-center px-2">
-            <h1 className="text-xs sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-animated-gradient tracking-tight sm:tracking-normal leading-tight drop-shadow-md select-none" style={{ fontFamily: "'Playfair Display', serif" }}>
-              GEETHANJALI INSTITUTE OF SCIENCE & TECHNOLOGY
+          <div className="flex flex-col min-w-0 flex-1 items-center text-center px-1 sm:px-2">
+            <h1
+              className="text-[11px] leading-tight sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-animated-gradient tracking-tight sm:tracking-normal drop-shadow-md select-none"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              GEETHANJALI INSTITUTE OF SCIENCE &amp; TECHNOLOGY
             </h1>
-            <div className="flex items-center gap-4 mt-1.5 group">
+            <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-1.5 group">
               <div className="h-[1.5px] w-6 sm:w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent hidden sm:block transition-all duration-500 group-hover:w-16"></div>
               <p className="text-[9px] sm:text-sm md:text-base lg:text-lg xl:text-xl font-extrabold text-primary italic tracking-widest drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]">
                 (AUTONOMOUS INSTITUTION)
               </p>
               <div className="h-[1.5px] w-6 sm:w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent hidden sm:block transition-all duration-500 group-hover:w-16"></div>
             </div>
-            <p className="text-[7px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1.5 leading-relaxed max-w-[85%] font-semibold tracking-wide border-t border-primary/10 pt-1">
+            <p className="text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed max-w-[95%] sm:max-w-[85%] font-semibold tracking-wide border-t border-primary/10 pt-1">
               3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt. Andhra Pradesh, India - 524137.
             </p>
           </div>
