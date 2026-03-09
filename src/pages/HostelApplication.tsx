@@ -133,10 +133,10 @@ const HostelApplication = () => {
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 3 * 1024 * 1024) {
         toast({
           title: "File Too Large",
-          description: "Please select an image strictly under 5MB.",
+          description: "Please select an image strictly under 3MB.",
           variant: "destructive",
         });
         e.target.value = "";
@@ -314,7 +314,7 @@ const HostelApplication = () => {
                         </Button>
                       </label>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                        Max file size: 5MB (JPEG/PNG)
+                        Max file size: 3MB (JPEG/PNG)
                       </p>
                     </div>
                   </div>

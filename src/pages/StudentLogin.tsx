@@ -96,10 +96,10 @@ const StudentLogin = () => {
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > 3 * 1024 * 1024) {
         toast({
           title: "File Too Large",
-          description: "Please select an image strictly under 2MB.",
+          description: "Please select an image strictly under 3MB.",
           variant: "destructive",
         });
         e.target.value = "";
@@ -889,7 +889,7 @@ const StudentLogin = () => {
                           </Label>
                           <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
                           <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                            Max file size: 2MB (JPEG/PNG)
+                            Max file size: 3MB (JPEG/PNG)
                           </p>
                         </div>
                       </div>
