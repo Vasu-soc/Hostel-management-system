@@ -352,10 +352,26 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
             <div className="space-y-4 pt-4">
               <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div><p className="text-muted-foreground">Student Name</p><p className="font-medium">{selectedStudent?.student_name}</p></div>
-                <div><p className="text-muted-foreground">Year</p><p className="font-medium">{selectedStudent?.year}</p></div>
+                <div><p className="text-muted-foreground">Roll Number</p><p className="font-medium">{selectedStudent?.roll_number}</p></div>
               </div>
-              <div className="space-y-2"><Label htmlFor="paidAmount">Paid Amount (₹)</Label><Input id="paidAmount" type="number" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Enter paid amount" /></div>
-              <div className="space-y-2"><Label htmlFor="pendingAmount">Pending Amount (₹)</Label><Input id="pendingAmount" type="number" value={pendingAmount} onChange={(e) => setPendingAmount(e.target.value)} placeholder="Enter pending amount" /></div>
+              <div className="space-y-2">
+                <Label htmlFor="totalFee">Total Fee (₹)</Label>
+                <Input id="totalFee" type="number" value={totalFeeAmount} onChange={(e) => setTotalFeeAmount(e.target.value)} placeholder="Total Fee Amount" />
+              </div>
+              <div className="space-y-2">
+                <Label>Previously Paid (₹)</Label>
+                <p className="text-lg font-bold">₹{(selectedStudent?.paid_fee || 0).toLocaleString()}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paidAmount">New Paid Amount (₹)</Label>
+                <Input id="paidAmount" type="number" value={newPaymentAmount} onChange={(e) => setNewPaymentAmount(e.target.value)} placeholder="Enter new payment added" />
+              </div>
+              <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                <p className="text-sm text-muted-foreground">Calculated Pending Balance</p>
+                <p className="text-2xl font-bold text-destructive">
+                  ₹{((parseFloat(totalFeeAmount) || selectedStudent?.total_fee || 0) - (selectedStudent?.paid_fee || 0) - (parseFloat(newPaymentAmount) || 0)).toLocaleString()}
+                </p>
+              </div>
               <Button onClick={handleFeeUpdate} className="w-full">Update Fee Details</Button>
             </div>
           </DialogContent>
