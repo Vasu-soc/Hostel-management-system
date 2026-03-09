@@ -212,11 +212,13 @@ const WardenDashboard = () => {
 
   const fetchMaterials = async () => {
     try {
-      const res = await fetch('/api/local-materials');
-      if (res.ok) {
-        const data = await res.json();
-        setMaterials(data);
-      }
+      const { data, error } = await supabase
+        .from('study_materials')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMaterials(data || []);
     } catch (e) {
       console.error("Local study materials fetch failed", e);
       setMaterials([]);

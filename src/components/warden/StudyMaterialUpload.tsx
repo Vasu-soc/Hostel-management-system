@@ -102,23 +102,16 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
         });
       }
 
-      const response = await fetch('/api/local-materials', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          branch: selectedBranch,
-          year: selectedYear,
-          subject_name: subjectName,
-          drive_link: driveLink || null,
-          file_url: file_url,
-          warden_id: wardenId,
-        }),
+      const { error: insertError } = await supabase.from('study_materials').insert({
+        branch: selectedBranch,
+        year: selectedYear,
+        subject_name: subjectName,
+        drive_link: driveLink || null,
+        file_url: file_url,
+        warden_id: wardenId,
       });
 
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || "Failed to save material locally");
+      if (insertError) throw insertError;
 
       toast({ title: "Success", description: "Study material processed successfully!" });
       setSelectedBranch("");
@@ -140,9 +133,9 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
     if (!confirm("Are you sure you want to delete this material?")) return;
 
     try {
-      const res = await fetch(`/api/local-materials/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        throw new Error("Failed to delete material locally");
+      const { error: deleteError } = await supabase.from('study_materials').delete().eq('id', id);
+      if (deleteError) {
+        throw deleteError;
       }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to delete material", variant: "destructive" });

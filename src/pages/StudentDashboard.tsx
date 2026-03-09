@@ -298,15 +298,17 @@ const StudentDashboard = () => {
 
   const loadStudyMaterials = async (branch: string, year: string) => {
     try {
-      const res = await fetch('/api/local-materials');
-      if (res.ok) {
-        const data = await res.json();
-        // Since it's stored locally, we filter by JS directly
-        const filtered = data.filter((item: any) => item.branch === branch && item.year === year);
-        setStudyMaterials(filtered as Record<string, unknown>[]);
-      }
+      const { data, error } = await supabase
+        .from('study_materials')
+        .select('*')
+        .eq('branch', branch)
+        .eq('year', year)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setStudyMaterials(data || []);
     } catch (e) {
-      console.error("Failed to load local materials", e);
+      console.error("Failed to load study materials", e);
       setStudyMaterials([]);
     }
   };
