@@ -63,6 +63,7 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
   const [newPaymentAmount, setNewPaymentAmount] = useState("");
   const [totalFeeAmount, setTotalFeeAmount] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [feeTransactions, setFeeTransactions] = useState<any[]>([]);
 
   // Bed control state
   const [bedStatuses, setBedStatuses] = useState<boolean[]>([]);
@@ -265,11 +266,20 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
     toast({ title: "Success", description: `Bed ${index + 1} ${newStatuses[index] ? "opened" : "closed"}` });
   };
 
-  const openFeeDialog = (student: Student) => {
+  const openFeeDialog = async (student: Student) => {
     setSelectedStudent(student);
     setTotalFeeAmount(student.total_fee?.toString() || "");
     setNewPaymentAmount("");
     setShowFeeDialog(true);
+
+    // Fetch fee history
+    const { data } = await supabase
+      .from("fee_transactions")
+      .select("*")
+      .eq("student_id", student.id)
+      .order("payment_date", { ascending: false });
+
+    if (data) setFeeTransactions(data);
   };
 
   const openRemarksDialog = (student: Student) => {
@@ -372,6 +382,25 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
                   ₹{((parseFloat(totalFeeAmount) || selectedStudent?.total_fee || 0) - (selectedStudent?.paid_fee || 0) - (parseFloat(newPaymentAmount) || 0)).toLocaleString()}
                 </p>
               </div>
+
+              {/* Fee History for Warden */}
+              {feeTransactions.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Payment History</Label>
+                  <div className="max-h-[200px] overflow-y-auto space-y-2 border rounded-lg p-2 bg-muted/30">
+                    {feeTransactions.map((tx) => (
+                      <div key={tx.id} className="flex justify-between items-center p-2 bg-card rounded border text-xs">
+                        <div>
+                          <p className="font-bold text-success">₹{tx.amount.toLocaleString()}</p>
+                          <p className="text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()}</p>
+                        </div>
+                        <p className="italic text-muted-foreground truncate max-w-[100px]">{tx.remarks}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Button onClick={handleFeeUpdate} className="w-full">Update Fee Details</Button>
             </div>
           </DialogContent>
@@ -660,6 +689,25 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
                 ₹{((parseFloat(totalFeeAmount) || selectedStudent?.total_fee || 0) - (selectedStudent?.paid_fee || 0) - (parseFloat(newPaymentAmount) || 0)).toLocaleString()}
               </p>
             </div>
+
+            {/* Fee History for Warden */}
+            {feeTransactions.length > 0 && (
+              <div className="space-y-2">
+                <Label>Payment History</Label>
+                <div className="max-h-[200px] overflow-y-auto space-y-2 border rounded-lg p-2 bg-muted/30">
+                  {feeTransactions.map((tx) => (
+                    <div key={tx.id} className="flex justify-between items-center p-2 bg-card rounded border text-xs">
+                      <div>
+                        <p className="font-bold text-success">₹{tx.amount.toLocaleString()}</p>
+                        <p className="text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()}</p>
+                      </div>
+                      <p className="italic text-muted-foreground truncate max-w-[100px]">{tx.remarks}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Button onClick={handleFeeUpdate} className="w-full">Update Fee Details</Button>
           </div>
         </DialogContent>
