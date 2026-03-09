@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search, Check, Home, Users, IndianRupee, MessageSquare, User, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { localApi } from "@/lib/localStudentApi";
 
 interface Room {
   id: string;
@@ -151,6 +152,69 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     onRefresh();
   };
 
+  const handleDeleteStudent = async (student: Student) => {
+    if (!confirm(`Are you sure you want to permanently delete ${student.student_name}? This cannot be undone.`)) return;
+
+    try {
+      // First try the local file API (no database, no RLS, always works)
+      const localResult = await localApi.deleteStudent(student.id);
+
+      if (localResult.success) {
+        toast({ title: "Deleted", description: `${student.student_name} permanently removed.` });
+        onRefresh();
+        return;
+      }
+
+      // If not in local storage, fall back to Supabase
+      // Delete related records first
+      const rollNumber = student.roll_number.toUpperCase().trim();
+      await Promise.all([
+        supabase.from("gate_passes").delete().eq("roll_number", rollNumber),
+        supabase.from("gate_passes").delete().eq("student_id", student.id),
+        supabase.from("electrical_issues").delete().eq("roll_number", rollNumber),
+        supabase.from("electrical_issues").delete().eq("student_id", student.id),
+        supabase.from("food_issues").delete().eq("roll_number", rollNumber),
+        supabase.from("food_issues").delete().eq("student_id", student.id),
+        supabase.from("medical_alerts").delete().eq("roll_number", rollNumber),
+        supabase.from("medical_alerts").delete().eq("student_id", student.id),
+        supabase.from("parents").delete().eq("student_roll_number", rollNumber),
+        supabase.from("password_reset_tokens").delete().eq("user_identifier", rollNumber),
+      ]);
+
+      const { data: deletedData, error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", student.id)
+        .select();
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      if (!deletedData || deletedData.length === 0) {
+        toast({
+          title: "Blocked by Database",
+          description: "Supabase RLS is blocking this delete. Go to Supabase → Authentication → Policies → students table → Add DELETE policy with USING (true).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Sync room count
+      if (student.hostel_room_number) {
+        const { data: inRoom } = await supabase.from("students").select("id").eq("hostel_room_number", student.hostel_room_number).eq("room_allotted", true);
+        const { data: room } = await supabase.from("rooms").select("id").eq("room_number", student.hostel_room_number).maybeSingle();
+        if (room) await supabase.from("rooms").update({ occupied_beds: inRoom?.length || 0 }).eq("id", room.id);
+      }
+
+      toast({ title: "Deleted", description: `${student.student_name} permanently removed.` });
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Error", description: "Unexpected error during deletion", variant: "destructive" });
+    }
+  };
+
   const handleFeeUpdate = async () => {
     if (!selectedStudent) return;
 
@@ -275,8 +339,11 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                     }`}
                   onClick={() => setSelectedRoom(room)}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
+                  <CardHeader className="pb-2 relative">
+                    {pendingStudents.some(s => !s.room_allotted && s.hostel_room_number === room.room_number) && (
+                      <span className="absolute top-4 right-4 w-3 h-3 rounded-full bg-destructive shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
+                    )}
+                    <div className="flex items-center justify-between pr-4">
                       <CardTitle className="text-lg">Room {room.room_number}</CardTitle>
                       <Badge variant={room.ac_type === "ac" ? "default" : "secondary"}>
                         {room.ac_type === "ac" ? "AC" : "Non-AC"}
@@ -314,12 +381,15 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
           </h3>
 
           {!selectedRoom ? (
-            <Card className="border-2 border-dashed border-border">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Select a room to assign students</p>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card className="border-2 border-dashed border-border">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Select a room from the left to assign students</p>
+                </CardContent>
+              </Card>
+
+            </div>
           ) : (
             <div className="space-y-4">
               {/* Allotted Students */}
@@ -352,6 +422,14 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                               <p className="text-xs text-muted-foreground">{student.year}</p>
                             </div>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10 -mt-1"
+                            onClick={() => handleDeleteStudent(student)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -401,14 +479,24 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                                 {student.roll_number} • {student.year} • {student.branch.toUpperCase()}
                               </p>
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApproveStudent(student, selectedRoom)}
-                              disabled={getAvailableBeds(selectedRoom) <= 0}
-                            >
-                              <Check className="w-4 h-4 mr-1" />
-                              Approve
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveStudent(student, selectedRoom)}
+                                disabled={getAvailableBeds(selectedRoom) <= 0}
+                              >
+                                <Check className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteStudent(student)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

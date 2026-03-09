@@ -47,6 +47,7 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
   const [selectedYear, setSelectedYear] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [driveLink, setDriveLink] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleUpload = async () => {
@@ -55,43 +56,88 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
       return;
     }
 
-    if (!driveLink) {
-      toast({ title: "Error", description: "Please provide a drive link", variant: "destructive" });
+    if (!driveLink && !file) {
+      toast({ title: "Error", description: "Please provide either a drive link or upload a file", variant: "destructive" });
       return;
     }
 
     setIsUploading(true);
+    let file_url = null;
 
-    const { error } = await supabase.from("study_materials").insert({
-      branch: selectedBranch,
-      year: selectedYear,
-      subject_name: subjectName,
-      drive_link: driveLink,
-      warden_id: wardenId,
-    });
+    try {
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const safeFileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    setIsUploading(false);
+        await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = async () => {
+            try {
+              const res = await fetch('/api/local-upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileName: safeFileName, fileData: reader.result })
+              });
+              const result = await res.json();
+              if (result.success) {
+                file_url = result.url;
+                resolve(true);
+              } else {
+                reject(new Error(result.error || "Failed to save file locally"));
+              }
+            } catch (err) {
+              reject(err);
+            }
+          };
+          reader.onerror = (err) => reject(err);
+        });
+      }
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to upload material", variant: "destructive" });
-      return;
+      const response = await fetch('/api/local-materials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          branch: selectedBranch,
+          year: selectedYear,
+          subject_name: subjectName,
+          drive_link: driveLink || null,
+          file_url: file_url,
+          warden_id: wardenId,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Failed to save material locally");
+
+      toast({ title: "Success", description: "Study material processed successfully!" });
+      setSelectedBranch("");
+      setSelectedYear("");
+      setSubjectName("");
+      setDriveLink("");
+      setFile(null);
+      const fileInput = document.getElementById('fileUpload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      onRefresh();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to organize material", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
     }
-
-    toast({ title: "Success", description: "Study material uploaded successfully" });
-    setSelectedBranch("");
-    setSelectedYear("");
-    setSubjectName("");
-    setDriveLink("");
-    onRefresh();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this material?")) return;
 
-    const { error } = await supabase.from("study_materials").delete().eq("id", id);
-
-    if (error) {
-      toast({ title: "Error", description: "Failed to delete material", variant: "destructive" });
+    try {
+      const res = await fetch(`/api/local-materials/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error("Failed to delete material locally");
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to delete material", variant: "destructive" });
       return;
     }
 
@@ -152,14 +198,30 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="driveLink">Google Drive Link</Label>
-            <Input
-              id="driveLink"
-              value={driveLink}
-              onChange={(e) => setDriveLink(e.target.value)}
-              placeholder="https://drive.google.com/..."
-            />
+          <div className="space-y-4 pt-2 border-t border-border">
+            <Label className="text-sm font-semibold text-primary">Provide Study Material via:</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="fileUpload">1. Upload from Device</Label>
+              <Input
+                id="fileUpload"
+                type="file"
+                onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                className="cursor-pointer h-auto py-3 file:mr-4 file:py-2 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              />
+            </div>
+
+            <div className="text-center text-sm text-muted-foreground font-medium">OR</div>
+
+            <div className="space-y-2">
+              <Label htmlFor="driveLink">2. Google Drive Link</Label>
+              <Input
+                id="driveLink"
+                value={driveLink}
+                onChange={(e) => setDriveLink(e.target.value)}
+                placeholder="https://drive.google.com/..."
+              />
+            </div>
           </div>
 
           <Button onClick={handleUpload} disabled={isUploading} className="w-full">
@@ -194,6 +256,18 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
                         <p className="text-sm text-muted-foreground">
                           {material.branch.toUpperCase()} • {material.year}
                         </p>
+                        {material.file_url && (
+                          <a
+                            href={material.file_url as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="text-sm text-success hover:underline flex items-center gap-1 mt-1"
+                          >
+                            <FileText className="w-3 h-3" />
+                            Open Uploaded File
+                          </a>
+                        )}
                         {material.drive_link && (
                           <a
                             href={material.drive_link}

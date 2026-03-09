@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,9 @@ import {
   AlertCircle,
   BookOpen,
   Pill,
+  Utensils,
+  Library,
+  Camera,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,10 +73,15 @@ const StudentDashboard = () => {
   const [medicalDialogOpen, setMedicalDialogOpen] = useState(false);
   const [issueDescription, setIssueDescription] = useState("");
   const [medicalIssueType, setMedicalIssueType] = useState("");
+  const [foodSelectionDialogOpen, setFoodSelectionDialogOpen] = useState(false);
+  const [selectedFoodItem, setSelectedFoodItem] = useState("");
   const [wardenSignature, setWardenSignature] = useState<string | null>(null);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
+  const [resourcesDialogOpen, setResourcesDialogOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [gatePassForm, setGatePassForm] = useState({
     email: "",
@@ -159,6 +167,68 @@ const StudentDashboard = () => {
     };
   }, [student?.id]);
 
+  // Real-time: gate passes (so approved status + warden signature load instantly)
+  useEffect(() => {
+    if (!student?.roll_number) return;
+    const channel = supabase
+      .channel(`gatepass-updates-${student.roll_number}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "gate_passes",
+        filter: `roll_number=eq.${student.roll_number}`,
+      }, () => {
+        loadGatePasses(student.roll_number);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [student?.roll_number]);
+
+  // --- Profile Photo Upload ---
+  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!student || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Photo must be under 2MB", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    const ext = file.name.split(".").pop();
+    const fileName = `${student.id}/profile_${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("student-photos")
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Upload Failed", description: uploadError.message, variant: "destructive" });
+      setIsUploadingPhoto(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("student-photos").getPublicUrl(fileName);
+    const photoUrl = urlData.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from("students")
+      .update({ photo_url: photoUrl })
+      .eq("id", student.id);
+
+    if (updateError) {
+      toast({ title: "Update Failed", description: updateError.message, variant: "destructive" });
+    } else {
+      const updated = { ...student, photo_url: photoUrl };
+      setStudent(updated as StudentSession);
+      sessionStorage.setItem("currentStudent", JSON.stringify(updated));
+      toast({ title: "Photo Updated!", description: "Your profile photo has been updated successfully." });
+    }
+    setIsUploadingPhoto(false);
+    // Reset input so same file can be re-selected
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
   const loadGatePasses = async (rollNumber: string) => {
     const { data } = await supabase
       .from("gate_passes")
@@ -187,13 +257,18 @@ const StudentDashboard = () => {
   };
 
   const loadStudyMaterials = async (branch: string, year: string) => {
-    const { data } = await supabase
-      .from("study_materials")
-      .select("*")
-      .eq("branch", branch)
-      .eq("year", year)
-      .order("created_at", { ascending: false });
-    if (data) setStudyMaterials(data as Record<string, unknown>[]);
+    try {
+      const res = await fetch('/api/local-materials');
+      if (res.ok) {
+        const data = await res.json();
+        // Since it's stored locally, we filter by JS directly
+        const filtered = data.filter((item: any) => item.branch === branch && item.year === year);
+        setStudyMaterials(filtered as Record<string, unknown>[]);
+      }
+    } catch (e) {
+      console.error("Failed to load local materials", e);
+      setStudyMaterials([]);
+    }
   };
 
   const handleLogout = () => {
@@ -298,12 +373,14 @@ const StudentDashboard = () => {
   const handleMedicalAlertSubmit = async () => {
     if (!student || !medicalIssueType) return;
 
+    // Save directly to Supabase — same pattern as electrical/food issues
     const { error } = await supabase.from("medical_alerts").insert({
       student_id: student.id,
       student_name: student.student_name,
       roll_number: student.roll_number,
       room_number: student.hostel_room_number || "N/A",
       issue_type: medicalIssueType,
+      status: "pending",
     });
 
     if (error) {
@@ -311,7 +388,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    // Send notification to warden email
+    // Send notification to warden email (fire and forget)
     supabase.functions.invoke("send-request-notification", {
       body: {
         type: "medical_alert",
@@ -330,6 +407,41 @@ const StudentDashboard = () => {
     setMedicalDialogOpen(false);
   };
 
+  const handleFoodSelectionSubmit = async () => {
+    if (!student || !selectedFoodItem) return;
+
+    try {
+      const response = await fetch('/api/local-food-selection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          student_id: student.id,
+          student_name: student.student_name,
+          roll_number: student.roll_number,
+          food_item: selectedFoodItem,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to save food selection");
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({
+      title: "Food Selection Sent",
+      description: "Your selection has been forwarded to the warden."
+    });
+    setSelectedFoodItem("");
+    setFoodSelectionDialogOpen(false);
+  };
+
   const latestGatePass = gatePasses[0] as Record<string, unknown> | undefined;
 
   const getStatusBadge = (status: string) => {
@@ -346,6 +458,15 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Hidden file input for profile photo upload */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        className="hidden"
+        onChange={handleProfilePhotoUpload}
+      />
+
       {/* College Header */}
       <CollegeHeader />
 
@@ -354,9 +475,10 @@ const StudentDashboard = () => {
         title={`${genderLabel} Student Page`}
         titleColor={gender === "boys" ? "text-accent" : "text-primary"}
         userName={student.student_name}
-        userSubtitle={student.roll_number}
+        userSubtitle={isUploadingPhoto ? "Uploading photo..." : student.roll_number}
         userPhotoUrl={student.photo_url || undefined}
         onLogout={handleLogout}
+        onPhotoUpload={() => photoInputRef.current?.click()}
       />
 
       <main className="container mx-auto px-4 py-6">
@@ -395,6 +517,40 @@ const StudentDashboard = () => {
             <PaymentPortal />
 
             <div className="space-y-3">
+              <Dialog open={resourcesDialogOpen} onOpenChange={setResourcesDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start h-14 glare-hover border-primary/30 hover:bg-primary/10">
+                    <Library className="w-5 h-5 mr-3 text-primary" />
+                    Resources
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Library className="w-5 h-5 text-primary" />
+                      Learning Resources
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 pt-4">
+                    <p className="text-sm text-muted-foreground">Useful links for your learning and development:</p>
+                    <div className="grid grid-cols-1 gap-3">
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.w3schools.com/python/', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        Python Tutorial (W3Schools)
+                      </Button>
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.geeksforgeeks.org/java/java/', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        Java Tutorial (GeeksforGeeks)
+                      </Button>
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.youtube.com/', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        YouTube
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={electricalDialogOpen} onOpenChange={setElectricalDialogOpen}>
                 <DialogTrigger asChild><Button variant="outline" className="w-full justify-start h-14 glare-hover"><Zap className="w-5 h-5 mr-3 text-warning" />Room Electrical Problem</Button></DialogTrigger>
                 <DialogContent>
@@ -411,6 +567,54 @@ const StudentDashboard = () => {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <Dialog open={foodSelectionDialogOpen} onOpenChange={setFoodSelectionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start h-14 glare-hover border-primary/30 hover:bg-primary/10">
+                    <Utensils className="w-5 h-5 mr-3 text-primary" />
+                    Food Selection
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Utensils className="w-5 h-5 text-primary" />
+                      Food Selection
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <p className="text-sm text-muted-foreground">Select your current meal choice, which helps the warden in planning.</p>
+                    <div className="grid grid-cols-1 gap-3">
+                      {["Chicken Biryani", "Veg Meals", "Chapati", "Dosa", "Other"].map((type) => (
+                        <Button
+                          key={type}
+                          variant={selectedFoodItem === type ? "hero" : "outline"}
+                          className="justify-start h-12"
+                          onClick={() => setSelectedFoodItem(type)}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
+                    {selectedFoodItem === "Other" && (
+                      <Input
+                        placeholder="Please specify your food selection..."
+                        className="mt-2"
+                        onChange={(e) => setSelectedFoodItem(e.target.value)}
+                      />
+                    )}
+                    <Button
+                      onClick={handleFoodSelectionSubmit}
+                      className="w-full mt-4"
+                      variant="hero"
+                      disabled={!selectedFoodItem}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={foodDialogOpen} onOpenChange={setFoodDialogOpen}>
                 <DialogTrigger asChild><Button variant="outline" className="w-full justify-start h-14 glare-hover"><UtensilsCrossed className="w-5 h-5 mr-3 text-primary" />Food Issue Reporting</Button></DialogTrigger>
                 <DialogContent>
@@ -483,7 +687,20 @@ const StudentDashboard = () => {
                   {studyMaterials.map((mat) => (
                     <div key={mat.id as string} className="p-2 bg-muted rounded-lg flex items-center justify-between">
                       <span className="text-sm font-medium">{mat.subject_name as string}</span>
-                      {mat.drive_link && <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4 text-primary" /></a>}
+                      <div className="flex gap-2 items-center">
+                        {mat.file_url && (
+                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" download className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
+                            <FileText className="w-3 h-3" />
+                            Download File
+                          </a>
+                        )}
+                        {mat.drive_link && (
+                          <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded">
+                            <ExternalLink className="w-3 h-3" />
+                            Drive Link
+                          </a>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </CardContent>

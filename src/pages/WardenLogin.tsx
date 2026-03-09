@@ -180,8 +180,19 @@ const WardenLogin = () => {
       // Use secure session management (no password stored)
       setWardenSession(warden as Record<string, unknown>);
       navigate("/warden-dashboard");
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Login failed";
+    } catch (error: any) {
+      console.error("Login Error Object:", error);
+      let errorMessage = "Login failed";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && error.message) {
+        errorMessage = String(error.message);
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else {
+        errorMessage = JSON.stringify(error) || "Login failed";
+      }
+
       toast({
         title: "Error",
         description: errorMessage,

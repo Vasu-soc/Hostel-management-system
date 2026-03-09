@@ -133,6 +133,15 @@ const HostelApplication = () => {
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image strictly under 5MB.",
+          variant: "destructive",
+        });
+        e.target.value = "";
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result as string);
@@ -144,6 +153,15 @@ const HostelApplication = () => {
   const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image strictly under 2MB.",
+          variant: "destructive",
+        });
+        e.target.value = "";
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setSignaturePreview(reader.result as string);
@@ -295,6 +313,9 @@ const HostelApplication = () => {
                           </span>
                         </Button>
                       </label>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
+                        Max file size: 5MB (JPEG/PNG)
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -326,6 +347,9 @@ const HostelApplication = () => {
                           </span>
                         </Button>
                       </label>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
+                        Max file size: 2MB (JPEG/PNG)
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -449,8 +473,8 @@ const HostelApplication = () => {
                       type="button"
                       onClick={() => handleRoomTypeSelect(room.id)}
                       className={`p-4 rounded-lg border-2 transition-all duration-300 text-left relative ${selectedRoomType === room.id
-                          ? "border-primary bg-primary/10 shadow-md"
-                          : "border-border bg-card hover:border-primary/50"
+                        ? "border-primary bg-primary/10 shadow-md"
+                        : "border-border bg-card hover:border-primary/50"
                         }`}
                     >
                       <div className="aspect-video rounded-md overflow-hidden mb-2">
@@ -485,8 +509,8 @@ const HostelApplication = () => {
                       type="button"
                       onClick={() => handleInputChange("acType", "ac")}
                       className={`p-6 rounded-lg border-2 transition-all duration-300 ${formData.acType === "ac"
-                          ? "border-primary bg-primary/10"
-                          : "border-border bg-card hover:border-primary/50"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-primary/50"
                         }`}
                     >
                       <p className="font-semibold text-foreground">AC Room</p>
@@ -497,8 +521,8 @@ const HostelApplication = () => {
                       type="button"
                       onClick={() => handleInputChange("acType", "normal")}
                       className={`p-6 rounded-lg border-2 transition-all duration-300 ${formData.acType === "normal"
-                          ? "border-primary bg-primary/10"
-                          : "border-border bg-card hover:border-primary/50"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-primary/50"
                         }`}
                     >
                       <p className="font-semibold text-foreground">Non-AC Room</p>

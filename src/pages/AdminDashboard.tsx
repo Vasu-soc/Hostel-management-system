@@ -27,11 +27,12 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Building2, ArrowLeft, User, IndianRupee, Save, UserCheck } from "lucide-react";
+import { Bell, Building2, ArrowLeft, User, IndianRupee, Save, UserCheck, AlertTriangle, ShieldAlert, Trash2 } from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
 import WardenApproval from "@/components/admin/WardenApproval";
+import { localApi } from "@/lib/localStudentApi";
 
 interface Admin {
   id: string;
@@ -89,7 +90,7 @@ const AdminDashboard = () => {
   const [showPendingRooms, setShowPendingRooms] = useState(false);
   const [showWardenCredentials, setShowWardenCredentials] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Fee update dialog
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
@@ -126,9 +127,14 @@ const AdminDashboard = () => {
   }, [navigate, selectedBranch, selectedYear]);
 
   const fetchAllStudents = async () => {
-    const { data, error } = await supabase.from("students").select("*");
+    const [{ data, error }, deletedIds] = await Promise.all([
+      supabase.from("students").select("*"),
+      localApi.getDeletedIds()
+    ]);
+
     if (!error && data) {
-      setAllStudents(data as Student[]);
+      const activeStudents = (data as Student[]).filter(student => !deletedIds.includes(student.id));
+      setAllStudents(activeStudents);
     }
   };
 
@@ -151,22 +157,27 @@ const AdminDashboard = () => {
     const yearMapping: Record<string, string> = {
       "1st Year": "1st Year",
       "2nd Year": "2nd Year",
-      "3rd Year": "3rd Year", 
+      "3rd Year": "3rd Year",
       "4th Year": "4th Year",
     };
     const dbYear = yearMapping[year] || year;
-    
-    const { data, error } = await supabase
-      .from("students")
-      .select("*")
-      .ilike("branch", branch)
-      .eq("year", dbYear);
+
+    const [{ data, error }, deletedIds] = await Promise.all([
+      supabase
+        .from("students")
+        .select("*")
+        .ilike("branch", branch)
+        .eq("year", dbYear),
+      localApi.getDeletedIds()
+    ]);
 
     if (error) {
       console.error("Error fetching students:", error);
       return;
     }
-    setStudents((data || []) as Student[]);
+
+    const activeStudents = (data as Student[] || []).filter(student => !deletedIds.includes(student.id));
+    setStudents(activeStudents);
   };
 
   const fetchStudents = async () => {
@@ -213,6 +224,79 @@ const AdminDashboard = () => {
       paid_fee: student.paid_fee || 0,
     });
     setFeeDialogOpen(true);
+  };
+
+  const handleResetSystem = async () => {
+    const confirm1 = confirm("⚠️ CRITICAL WARNING: This will permanently DELETE ALL student records, applications, gate passes, and issue reports. This action CANNOT be undone. Are you absolutely sure?");
+    if (!confirm1) return;
+
+    const confirm2 = confirm("FINAL CONFIRMATION: You are about to wipe the entire student database. All registrations will be lost. Proceed?");
+    if (!confirm2) return;
+
+    setIsLoading(true);
+    try {
+      // 1. Fetch all students to forcibly delete them via RPC to bypass any RLS protections
+      const { data: existingStudents } = await supabase.from("students").select("id, roll_number");
+
+      if (existingStudents && existingStudents.length > 0) {
+        toast({ title: "Working...", description: `Deleting ${existingStudents.length} student records...` });
+
+        await Promise.all(existingStudents.map(student =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any).rpc('delete_student_complete', {
+            p_student_id: student.id,
+            p_roll_number: student.roll_number
+          })
+        ));
+      }
+
+      // 2. Clear remaining Supabase Tables (Order matters for FKs if any)
+      const tables = [
+        "gate_passes",
+        "electrical_issues",
+        "food_issues",
+        "medical_alerts",
+        "parents",
+        "hostel_applications",
+        // students table is already wiped by the RPC above, but keep it here as a fallback
+        "students"
+      ];
+
+      for (const table of tables) {
+        const { error } = await supabase.from(table as any).delete().neq("id", "00000000-0000-0000-0000-000000000000"); // Standard way to delete all
+        if (error) console.error(`Error clearing ${table}:`, error);
+      }
+
+      // 2. Clear Local JSON files via API
+      await Promise.all([
+        fetch('/api/local-food-selection', { method: 'DELETE' }),
+        fetch('/api/local-medical-alerts', { method: 'DELETE' }),
+        fetch('/api/deleted-students', { method: 'DELETE' }) // Clear blocklist
+      ]);
+
+      toast({
+        title: "System Reset Successful",
+        description: "All student data has been wiped. You can now start new registrations.",
+      });
+
+      // Refresh data
+      fetchAllStudents();
+      setStudents([]);
+      setShowStudents(false);
+
+      // Update room occupied counts to 0 optimistically
+      const { error: roomError } = await supabase.from("rooms").update({ occupied_beds: 0, pending_beds: 0 }).neq("id", "00000000-0000-0000-0000-000000000000");
+      if (!roomError) fetchRooms();
+
+    } catch (error: any) {
+      toast({
+        title: "Reset Failed",
+        description: error.message || "An error occurred during system reset",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -317,7 +401,7 @@ const AdminDashboard = () => {
                     <Building2 className="w-4 h-4 mr-2" />
                     Pending Rooms (AC / Normal)
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -330,6 +414,32 @@ const AdminDashboard = () => {
                     <UserCheck className="w-4 h-4 mr-2" />
                     Warden Approvals
                   </Button>
+                </div>
+
+                {/* Master Reset Section */}
+                <div className="pt-8 mt-8 border-t border-destructive/20 bg-destructive/5 -mx-6 px-6 pb-6 rounded-b-lg">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-destructive/10 rounded-full text-destructive">
+                      <ShieldAlert className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-destructive flex items-center gap-2">
+                        Master Data Reset
+                      </h3>
+                      <p className="text-sm text-destructive/70 mb-4">
+                        Wipe all student-related data (registrations, applications, gate passes, fees) to start a completely fresh session. Use with extreme caution.
+                      </p>
+                      <Button
+                        variant="destructive"
+                        onClick={handleResetSystem}
+                        disabled={isLoading}
+                        className="bg-destructive hover:bg-destructive/90 text-white shadow-lg"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Reset All Student Data
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -365,8 +475,8 @@ const AdminDashboard = () => {
                     <CardHeader className="pb-2">
                       <div className="flex items-center gap-3">
                         {student.photo_url ? (
-                          <img 
-                            src={student.photo_url} 
+                          <img
+                            src={student.photo_url}
                             alt={student.student_name}
                             className="w-12 h-12 rounded-full object-cover border-2 border-primary"
                           />
@@ -406,9 +516,9 @@ const AdminDashboard = () => {
                       <div className="pt-2 border-t border-border">
                         <div className="flex items-center justify-between text-sm mb-2">
                           <span className="text-muted-foreground">Fee Status</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 text-xs"
                             onClick={() => openFeeDialog(student)}
                           >

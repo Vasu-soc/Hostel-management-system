@@ -195,13 +195,13 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
     }
   };
 
-  const pendingElectrical = localElectrical.filter((i) => i.status === "pending");
-  const pendingFood = localFood.filter((i) => i.status === "pending");
-  const pendingMedical = localMedical.filter((i) => i.status === "pending");
+  const pendingElectrical = localElectrical.filter((i) => (i.status || "pending") === "pending");
+  const pendingFood = localFood.filter((i) => (i.status || "pending") === "pending");
+  const pendingMedical = localMedical.filter((i) => (i.status || "pending") === "pending");
 
   return (
     <Tabs defaultValue="electrical" className="space-y-4">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
+      <TabsList className="grid w-full max-w-lg grid-cols-3">
         <TabsTrigger value="electrical" className="relative">
           <Zap className="w-4 h-4 mr-2" />
           Electrical
@@ -389,7 +389,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 <p className="font-medium mt-1">{selectedElectricalIssue.description}</p>
               </div>
 
-              {selectedElectricalIssue.status === "pending" && (
+              {(selectedElectricalIssue.status || "pending") === "pending" && (
                 <div className="flex gap-3 pt-4 border-t border-border">
                   <Button
                     variant="success"
@@ -446,7 +446,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 <p className="font-medium mt-1">{selectedFoodIssue.description}</p>
               </div>
 
-              {selectedFoodIssue.status === "pending" && (
+              {(selectedFoodIssue.status || "pending") === "pending" && (
                 <div className="flex gap-3 pt-4 border-t border-border">
                   <Button
                     variant="success"
@@ -508,7 +508,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 </div>
               </div>
 
-              {selectedMedicalAlert.status === "pending" && (
+              {(selectedMedicalAlert.status || "pending") === "pending" && (
                 <div className="flex gap-3 pt-4 border-t border-border">
                   <Button
                     variant="success"

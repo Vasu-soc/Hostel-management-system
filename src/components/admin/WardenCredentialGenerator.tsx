@@ -93,6 +93,7 @@ const WardenCredentialGenerator = ({ adminId }: WardenCredentialGeneratorProps) 
     const { data: wardenData } = await supabase
       .from("wardens")
       .select("*")
+      .not("username", "ilike", "deleted_%")
       .order("created_at", { ascending: false });
     
     if (wardenData) {

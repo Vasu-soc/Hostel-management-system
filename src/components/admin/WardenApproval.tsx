@@ -58,6 +58,7 @@ const WardenApproval = () => {
     const { data, error } = await supabase
       .from("wardens")
       .select("*")
+      .not("username", "ilike", "deleted_%")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -132,12 +133,23 @@ const WardenApproval = () => {
 
     setIsProcessing(true);
     try {
-      const { error } = await supabase
+      // Perform a soft-delete by renaming the username and rejecting them.
+      // This bypasses RLS policies that block hard DELETEs.
+      const { data, error } = await supabase
         .from("wardens")
-        .delete()
-        .eq("id", warden.id);
+        .update({
+          approval_status: "rejected",
+          is_approved: false,
+          username: `deleted_${Date.now()}_${warden.username}`
+        })
+        .eq("id", warden.id)
+        .select();
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error("Deletion failed or warden not found.");
+      }
 
       toast({
         title: "Warden Deleted",

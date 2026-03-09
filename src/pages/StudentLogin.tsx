@@ -22,6 +22,7 @@ import {
   formatValidationErrors
 } from "@/lib/validations";
 import { setStudentSession } from "@/lib/session";
+import { localApi } from "@/lib/localStudentApi";
 
 const branches = [
   { value: "cse", label: "CSE" },
@@ -98,9 +99,10 @@ const StudentLogin = () => {
       if (file.size > 2 * 1024 * 1024) {
         toast({
           title: "File Too Large",
-          description: "Please select an image under 2MB",
+          description: "Please select an image strictly under 2MB.",
           variant: "destructive",
         });
+        e.target.value = "";
         return;
       }
       setPhotoFile(file);
@@ -125,31 +127,50 @@ const StudentLogin = () => {
     confirmPassword: "",
   });
 
-  // Fetch rooms on mount
+  // Fetch rooms and accurately calculate occupancy on mount
   useEffect(() => {
-    const fetchRooms = async () => {
-      const { data, error } = await supabase
+    const fetchData = async () => {
+      const { data: roomsData, error: roomsError } = await supabase
         .from("rooms")
         .select("*")
         .order("room_number");
 
-      if (data && !error) {
-        // Filter rooms based on gender
-        // Boys: A (AC) or N (Non-AC) prefix, NOT GA/GN
-        // Girls: GA (AC) or GN (Non-AC) prefix
-        const isBoys = gender === "boys";
-        const filteredRooms = data.filter((r: Room) => {
-          if (isBoys) {
-            return (r.room_number.startsWith('A') || r.room_number.startsWith('N')) &&
-              !r.room_number.startsWith('GA') && !r.room_number.startsWith('GN');
-          } else {
-            return r.room_number.startsWith('GA') || r.room_number.startsWith('GN');
+      if (!roomsData || roomsError) return;
+
+      // Fetch students to correctly override potentially desycnced database occupied_beds
+      const { data: studentsData } = await supabase
+        .from("students")
+        .select("id, hostel_room_number, room_allotted");
+
+      const deletedIds = await localApi.getDeletedIds();
+      const actualOccupiedCounts: Record<string, number> = {};
+
+      if (studentsData) {
+        studentsData.forEach(student => {
+          if (student.hostel_room_number && student.room_allotted && !deletedIds.includes(student.id)) {
+            actualOccupiedCounts[student.hostel_room_number] = (actualOccupiedCounts[student.hostel_room_number] || 0) + 1;
           }
         });
-        setAllRooms(filteredRooms);
       }
+
+      // Filter rooms based on gender
+      // Boys: A (AC) or N (Non-AC) prefix, NOT GA/GN
+      // Girls: GA (AC) or GN (Non-AC) prefix
+      const isBoys = gender === "boys";
+      const filteredRooms = roomsData.filter((r: Room) => {
+        // OVERRIDE with the true calculation
+        r.occupied_beds = actualOccupiedCounts[r.room_number] || 0;
+
+        if (isBoys) {
+          return (r.room_number.startsWith('A') || r.room_number.startsWith('N')) &&
+            !r.room_number.startsWith('GA') && !r.room_number.startsWith('GN');
+        } else {
+          return r.room_number.startsWith('GA') || r.room_number.startsWith('GN');
+        }
+      });
+      setAllRooms(filteredRooms);
     };
-    fetchRooms();
+    fetchData();
   }, [gender]);
 
   // Filter available rooms based on selection (Floor + Block Type only)
@@ -244,6 +265,17 @@ const StudentLogin = () => {
         toast({
           title: "Invalid Password",
           description: "Please check your password and try again",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if student is approved (room_allotted is our approval flag)
+      if (!student.room_allotted) {
+        toast({
+          title: "Account Pending Approval",
+          description: "Your registration is complete. Please wait for the Warden to approve your room and give you login access.",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -365,13 +397,27 @@ const StudentLogin = () => {
         .maybeSingle();
 
       if (existing) {
-        toast({
-          title: "Already Registered",
-          description: "This Roll Number is already registered. Please login instead.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+        // If the student exists in DB but is in our "deleted blocklist", 
+        // it means they are a "ghost" (delete was blocked by RLS).
+        // Let's force delete them via RPC so the new registration can succeed.
+        const deletedIds = await localApi.getDeletedIds();
+
+        if (deletedIds.includes(existing.id)) {
+          console.log("Found ghost record for", registerData.rollNumber, "- forcibly deleting");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).rpc('delete_student_complete', {
+            p_student_id: existing.id,
+            p_roll_number: registerData.rollNumber.toUpperCase(),
+          });
+        } else {
+          toast({
+            title: "Already Registered",
+            description: "This Roll Number is already registered. Please login instead.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Upload photo if provided
@@ -825,10 +871,13 @@ const StudentLogin = () => {
                           <Label htmlFor="photo-upload" className="cursor-pointer">
                             <div className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
                               <Upload className="w-4 h-4" />
-                              {photoFile ? photoFile.name : "Upload photo (max 2MB)"}
+                              {photoFile ? photoFile.name : "Upload photo"}
                             </div>
                           </Label>
                           <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
+                            Max file size: 2MB (JPEG/PNG)
+                          </p>
                         </div>
                       </div>
                     </div>

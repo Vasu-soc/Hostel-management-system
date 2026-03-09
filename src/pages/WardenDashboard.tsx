@@ -30,9 +30,11 @@ import {
   ImagePlus,
   Pill,
   Phone,
+  Utensils,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { localApi } from "@/lib/localStudentApi";
 import CollegeHeader from "@/components/CollegeHeader";
 import PendingRoomsDashboard from "@/components/warden/PendingRoomsDashboard";
 import HostelRoomDetails from "@/components/warden/HostelRoomDetails";
@@ -40,6 +42,7 @@ import RoomAllotment from "@/components/warden/RoomAllotment";
 import StudyMaterialUpload from "@/components/warden/StudyMaterialUpload";
 import IssueReports from "@/components/warden/IssueReports";
 import MedicineManagement from "@/components/warden/MedicineManagement";
+import FoodSelectionChart from "@/components/warden/FoodSelectionChart";
 import { getWardenSession, clearWardenSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 
@@ -51,7 +54,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -144,7 +147,13 @@ const WardenDashboard = () => {
     let query = supabase.from("students").select("*").order("student_name");
     if (gender) query = query.eq("gender", gender);
     const { data } = await query;
-    if (data) setStudents(data as any[]);
+    if (data) {
+      // Get the blocklist of permanently deleted IDs
+      const deletedIds = await localApi.getDeletedIds();
+      // Filter out permanently deleted students from UI
+      const activeStudents = (data as any[]).filter(student => !deletedIds.includes(student.id));
+      setStudents(activeStudents);
+    }
   };
 
   const fetchRooms = async (isBoys: boolean, isGirls: boolean) => {
@@ -174,28 +183,44 @@ const WardenDashboard = () => {
   const fetchIssues = async (gender: string | null) => {
     const elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
     const foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
-    const medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
+
+    // Fetch medical alerts directly from Supabase
+    const { data: medicalData, error: medicalError } = await supabase
+      .from("medical_alerts")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (medicalError) {
+      console.error("Medical alerts fetch failed:", medicalError.message);
+      setMedicalAlerts([]);
+    } else {
+      setMedicalAlerts(medicalData || []);
+    }
 
     if (gender) {
       const { data: elecData } = await elecQuery.eq("students.gender", gender);
       const { data: foodData } = await foodQuery.eq("students.gender", gender);
-      const { data: medicalData } = await medicalQuery.eq("students.gender", gender);
       if (elecData) setElectricalIssues(elecData as any[]);
       if (foodData) setFoodIssues(foodData as any[]);
-      if (medicalData) setMedicalAlerts(medicalData as any[]);
     } else {
       const { data: elecData } = await elecQuery;
       const { data: foodData } = await foodQuery;
-      const { data: medicalData } = await medicalQuery;
       if (elecData) setElectricalIssues(elecData as any[]);
       if (foodData) setFoodIssues(foodData as any[]);
-      if (medicalData) setMedicalAlerts(medicalData as any[]);
     }
   };
 
   const fetchMaterials = async () => {
-    const { data } = await supabase.from("study_materials").select("*").order("created_at", { ascending: false });
-    if (data) setMaterials(data as any[]);
+    try {
+      const res = await fetch('/api/local-materials');
+      if (res.ok) {
+        const data = await res.json();
+        setMaterials(data);
+      }
+    } catch (e) {
+      console.error("Local study materials fetch failed", e);
+      setMaterials([]);
+    }
   };
 
   const fetchAllData = async () => {
@@ -537,9 +562,10 @@ const WardenDashboard = () => {
     { id: "applications" as TabType, label: "Applications", icon: FileText, count: pendingApplications.length },
     { id: "gatepasses" as TabType, label: "Gate Passes", icon: DoorOpen, count: pendingGatePasses.length },
     { id: "rooms" as TabType, label: "Hostel Rooms", icon: Building2 },
-    { id: "allotment" as TabType, label: "Room Allotment", icon: Users, count: pendingStudents.length },
+    { id: "allotment" as TabType, label: "Room Allotment", icon: Users },
     { id: "materials" as TabType, label: "Study Materials", icon: Upload },
     { id: "issues" as TabType, label: "Issues", icon: AlertTriangle, count: pendingElectrical.length + pendingFood.length },
+    { id: "foodSelection" as TabType, label: "Food Selection", icon: Utensils },
     { id: "medicines" as TabType, label: "Medicines", icon: Pill },
   ];
 
@@ -575,7 +601,7 @@ const WardenDashboard = () => {
               <tab.icon className="w-4 h-4 mr-2" />
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success text-success-foreground text-xs flex items-center justify-center pulse-dot">
+                <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full ${tab.id === 'allotment' ? 'bg-muted text-muted-foreground' : 'bg-success text-success-foreground'} text-xs flex items-center justify-center ${["applications", "gatepasses", "issues"].includes(tab.id) ? "pulse-dot" : ""}`}>
                   {tab.count}
                 </span>
               )}
@@ -809,14 +835,73 @@ const WardenDashboard = () => {
         {activeTab === "rooms" && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">Hostel Room Details</h2>
-            <HostelRoomDetails students={allottedStudents} onRefresh={fetchAllData} />
+            <HostelRoomDetails students={allottedStudents} onRefresh={fetchAllData} wardenType={warden.warden_type} />
           </div>
         )}
 
         {/* Room Allotment Tab */}
         {activeTab === "allotment" && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Room Allotment</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Room Allotment</h2>
+              {students.length > 0 && (
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="shadow-md hover:shadow-lg transition-all"
+                  onClick={async () => {
+                    const count = students.length;
+                    const wardenType = warden.warden_type === "boys" ? "Boys" : "Girls";
+                    if (!confirm(`SUPER WIPE: Are you sure you want to permanently delete ALL ${count} ${wardenType} students? This will erase their entire history (Gate Passes, Issues, Medical Alerts, Parents). This CANNOT be undone.`)) return;
+
+                    try {
+                      // Standardize roll numbers to avoid matching issues
+                      const rollNumbers = students.map(s => s.roll_number.toUpperCase().trim());
+                      const ids = students.map(s => s.id);
+
+                      // 1. Delete all dependencies first using both Roll Number and internal ID
+                      await Promise.all([
+                        supabase.from("gate_passes").delete().in("roll_number", rollNumbers),
+                        supabase.from("gate_passes").delete().in("student_id", ids),
+                        supabase.from("electrical_issues").delete().in("roll_number", rollNumbers),
+                        supabase.from("electrical_issues").delete().in("student_id", ids),
+                        supabase.from("food_issues").delete().in("roll_number", rollNumbers),
+                        supabase.from("food_issues").delete().in("student_id", ids),
+                        supabase.from("medical_alerts").delete().in("roll_number", rollNumbers),
+                        supabase.from("medical_alerts").delete().in("student_id", ids),
+                        supabase.from("parents").delete().in("student_roll_number", rollNumbers),
+                        supabase.from("password_reset_tokens").delete().in("user_identifier", rollNumbers)
+                      ]);
+
+                      // 2. Final blowout: delete the students themselves
+                      const { error } = await supabase
+                        .from("students")
+                        .delete()
+                        .in("id", ids);
+
+                      if (error) {
+                        toast({ title: "Deletion Error", description: error.message, variant: "destructive" });
+                      } else {
+                        // 3. Reset room occupancy for safety
+                        const roomNumbers = [...new Set(students.map(s => s.hostel_room_number).filter(Boolean))];
+                        if (roomNumbers.length > 0) {
+                          await supabase.from("rooms").update({ occupied_beds: 0 }).in("room_number", roomNumbers);
+                        }
+
+                        toast({ title: "Clearance Complete", description: `Removed all ${count} students and all linked data.` });
+                        await fetchAllData();
+                      }
+                    } catch (err: any) {
+                      console.error("Bulk wipe error:", err);
+                      toast({ title: "Error", description: "Failed to perform nuclear delete", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Wipe All {students.length} {warden.warden_type === "boys" ? "Boys" : "Girls"}
+                </Button>
+              )}
+            </div>
             <RoomAllotment rooms={rooms} pendingStudents={pendingStudents} allStudents={students} onRefresh={fetchAllData} />
           </div>
         )}
@@ -839,6 +924,15 @@ const WardenDashboard = () => {
               medicalAlerts={medicalAlerts}
               onRefresh={fetchAllData}
             />
+          </div>
+        )}
+
+        {/* Food Selection Tab */}
+        {activeTab === "foodSelection" && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-foreground">Food Selection Overview</h2>
+            <p className="text-muted-foreground">View the most preferred food items selected by students.</p>
+            <FoodSelectionChart />
           </div>
         )}
 
@@ -1227,7 +1321,7 @@ const WardenDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 };
 

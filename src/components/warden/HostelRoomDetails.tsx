@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Search, Trash2, IndianRupee, MessageSquare, User, Building2, ChevronRight, Bed, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { localApi } from "@/lib/localStudentApi";
 
 interface Room {
   id: string;
@@ -42,18 +43,19 @@ interface Student {
 interface HostelRoomDetailsProps {
   students: Student[];
   onRefresh: () => void;
+  wardenType?: string; // "boys" | "girls" | undefined
 }
 
-const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
+const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetailsProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
-  
+
   // Navigation state
   const [selectedBlockType, setSelectedBlockType] = useState<"ac" | "normal" | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  
+
   // Dialog states
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showFeeDialog, setShowFeeDialog] = useState(false);
@@ -67,7 +69,7 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
 
   useEffect(() => {
     loadRooms();
-  }, []);
+  }, [wardenType]);
 
   useEffect(() => {
     if (selectedRoom) {
@@ -82,13 +84,27 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
   }, [selectedRoom]);
 
   const loadRooms = async () => {
-    const { data, error } = await supabase
-      .from("rooms")
-      .select("*")
-      .order("room_number");
-    
+    let query = supabase.from("rooms").select("*").order("room_number");
+
+    // Filter rooms by hostel type so each warden only sees their own hostel rooms
+    if (wardenType === "girls") {
+      query = query.or("room_number.ilike.GA%,room_number.ilike.GN%");
+    } else if (wardenType === "boys") {
+      // Boys rooms start with A or N but NOT GA or GN
+      query = query.or("room_number.ilike.A%,room_number.ilike.N%");
+    }
+
+    const { data, error } = await query;
+
     if (!error && data) {
-      setRooms(data);
+      let filtered = data;
+      if (wardenType === "boys") {
+        // Extra safety: exclude any accidentally matched GA/GN rooms
+        filtered = data.filter(
+          (r: Room) => !r.room_number.startsWith("GA") && !r.room_number.startsWith("GN")
+        );
+      }
+      setRooms(filtered);
     }
   };
 
@@ -99,51 +115,69 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
   );
 
   const handleDeleteStudent = async (student: Student) => {
-    if (!confirm(`Remove ${student.student_name} from room ${student.hostel_room_number}?`)) return;
+    if (!confirm(`Are you sure you want to permanently delete ${student.student_name}? This cannot be undone.`)) return;
 
-    const roomNumber = student.hostel_room_number;
+    try {
+      // First try the local file API (no database, no RLS, always works)
+      const localResult = await localApi.deleteStudent(student.id);
 
-    const { error } = await supabase
-      .from("students")
-      .update({
-        hostel_room_number: null,
-        floor_number: null,
-        room_allotted: false,
-      })
-      .eq("id", student.id);
-
-    if (error) {
-      toast({ title: "Error", description: "Failed to remove student from room", variant: "destructive" });
-      return;
-    }
-
-    // Sync room occupied_beds with actual student count after removal
-    if (roomNumber) {
-      const { data: studentsInRoom } = await supabase
-        .from("students")
-        .select("id")
-        .eq("hostel_room_number", roomNumber)
-        .eq("room_allotted", true);
-      
-      const actualOccupied = studentsInRoom?.length || 0;
-
-      const { data: room } = await supabase
-        .from("rooms")
-        .select("id")
-        .eq("room_number", roomNumber)
-        .maybeSingle();
-
-      if (room) {
-        await supabase
-          .from("rooms")
-          .update({ occupied_beds: actualOccupied })
-          .eq("id", room.id);
+      if (localResult.success) {
+        toast({ title: "Deleted", description: `${student.student_name} permanently removed.` });
+        onRefresh();
+        loadRooms();
+        return;
       }
-    }
 
-    toast({ title: "Success", description: "Student removed from room" });
-    onRefresh();
-    loadRooms();
+      // If not in local storage, fall back to Supabase with cascade delete
+      const rollNumber = student.roll_number.toUpperCase().trim();
+      const roomNumber = student.hostel_room_number;
+
+      await Promise.all([
+        supabase.from("gate_passes").delete().eq("roll_number", rollNumber),
+        supabase.from("gate_passes").delete().eq("student_id", student.id),
+        supabase.from("electrical_issues").delete().eq("roll_number", rollNumber),
+        supabase.from("electrical_issues").delete().eq("student_id", student.id),
+        supabase.from("food_issues").delete().eq("roll_number", rollNumber),
+        supabase.from("food_issues").delete().eq("student_id", student.id),
+        supabase.from("medical_alerts").delete().eq("roll_number", rollNumber),
+        supabase.from("medical_alerts").delete().eq("student_id", student.id),
+        supabase.from("parents").delete().eq("student_roll_number", rollNumber),
+        supabase.from("password_reset_tokens").delete().eq("user_identifier", rollNumber),
+      ]);
+
+      const { data: deletedData, error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", student.id)
+        .select();
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      if (!deletedData || deletedData.length === 0) {
+        toast({
+          title: "Blocked by Database",
+          description: "Supabase RLS is blocking this delete. Go to Supabase → Authentication → Policies → students table → Add DELETE policy with USING (true).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Sync room occupancy
+      if (roomNumber) {
+        const { data: inRoom } = await supabase.from("students").select("id").eq("hostel_room_number", roomNumber).eq("room_allotted", true);
+        const { data: room } = await supabase.from("rooms").select("id").eq("room_number", roomNumber).maybeSingle();
+        if (room) await supabase.from("rooms").update({ occupied_beds: inRoom?.length || 0 }).eq("id", room.id);
+      }
+
+      toast({ title: "Deleted", description: `${student.student_name} permanently removed.` });
+      onRefresh();
+      loadRooms();
+    } catch (err: any) {
+      toast({ title: "Error", description: "Unexpected error during deletion", variant: "destructive" });
+    }
   };
 
   const handleFeeUpdate = async () => {
@@ -202,7 +236,7 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
     setBedStatuses(newStatuses);
 
     const closedCount = newStatuses.filter(s => !s).length;
-    
+
     const { error } = await supabase
       .from("rooms")
       .update({ closed_beds: closedCount } as any)
@@ -233,7 +267,7 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
   };
 
   const floors = ["1", "2", "3"];
-  
+
   const getFloorRooms = (floor: string, blockType: "ac" | "normal") => {
     return rooms.filter(r => r.floor_number === floor && r.ac_type === blockType);
   };
@@ -268,34 +302,34 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
       <div className="space-y-6">
         {/* Block Type Selection */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-lg transition-all border-2 border-border hover:border-primary"
-              onClick={() => setSelectedBlockType("ac")}
-            >
-              <CardContent className="py-8 text-center">
-                <Building2 className="w-16 h-16 mx-auto mb-4 text-primary" />
-                <h3 className="text-xl font-bold text-foreground">AC Block</h3>
-                <p className="text-muted-foreground mt-2">3 Floors • 18 Rooms</p>
-                <div className="flex justify-center mt-4">
-                  <Badge className="bg-primary">AC</Badge>
-                </div>
-              </CardContent>
-            </Card>
+            onClick={() => setSelectedBlockType("ac")}
+          >
+            <CardContent className="py-8 text-center">
+              <Building2 className="w-16 h-16 mx-auto mb-4 text-primary" />
+              <h3 className="text-xl font-bold text-foreground">AC Block</h3>
+              <p className="text-muted-foreground mt-2">3 Floors • 18 Rooms</p>
+              <div className="flex justify-center mt-4">
+                <Badge className="bg-primary">AC</Badge>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-all border-2 border-border hover:border-secondary"
-              onClick={() => setSelectedBlockType("normal")}
-            >
-              <CardContent className="py-8 text-center">
-                <Building2 className="w-16 h-16 mx-auto mb-4 text-secondary-foreground" />
-                <h3 className="text-xl font-bold text-foreground">Non-AC Block</h3>
-                <p className="text-muted-foreground mt-2">3 Floors • 18 Rooms</p>
-                <div className="flex justify-center mt-4">
-                  <Badge variant="secondary">Non-AC</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all border-2 border-border hover:border-secondary"
+            onClick={() => setSelectedBlockType("normal")}
+          >
+            <CardContent className="py-8 text-center">
+              <Building2 className="w-16 h-16 mx-auto mb-4 text-secondary-foreground" />
+              <h3 className="text-xl font-bold text-foreground">Non-AC Block</h3>
+              <p className="text-muted-foreground mt-2">3 Floors • 18 Rooms</p>
+              <div className="flex justify-center mt-4">
+                <Badge variant="secondary">Non-AC</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Dialogs */}
         <Dialog open={showFeeDialog} onOpenChange={setShowFeeDialog}>
@@ -339,17 +373,18 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
           <ChevronRight className="w-4 h-4" />
           <span className="font-medium text-foreground">{selectedBlockType === "ac" ? "AC Block" : "Non-AC Block"}</span>
         </div>
-        
+
         <h2 className="text-2xl font-bold text-foreground">{selectedBlockType === "ac" ? "AC Block" : "Non-AC Block"} - Floors</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {floors.map((floor) => {
             const floorRooms = getFloorRooms(floor, selectedBlockType);
             const totalBeds = floorRooms.reduce((acc, r) => acc + r.total_beds, 0);
-            const occupiedBeds = floorRooms.reduce((acc, r) => acc + (r.occupied_beds || 0), 0);
-            
+            // Use actual student count from students prop as source of truth (not stale room.occupied_beds)
+            const occupiedBeds = floorRooms.reduce((acc, r) => acc + getRoomOccupiedBeds(r.room_number), 0);
+
             return (
-              <Card 
+              <Card
                 key={floor}
                 className="cursor-pointer hover:shadow-lg transition-all border-2 border-border hover:border-primary"
                 onClick={() => setSelectedFloor(floor)}
@@ -379,7 +414,7 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
   // Render room selection or room detail
   if (!selectedRoom) {
     const floorRooms = getFloorRooms(selectedFloor, selectedBlockType);
-    
+
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -398,9 +433,9 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
             const actualOccupied = roomStudents.length;
             const closedBeds = room.closed_beds || 0;
             const availableBeds = Math.max(0, room.total_beds - actualOccupied - closedBeds);
-            
+
             return (
-              <Card 
+              <Card
                 key={room.id}
                 className="cursor-pointer hover:shadow-lg transition-all border-2 border-border hover:border-primary"
                 onClick={() => setSelectedRoom(room)}
@@ -505,7 +540,7 @@ const HostelRoomDetails = ({ students, onRefresh }: HostelRoomDetailsProps) => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {bedStatuses.map((isAvailable, index) => {
               const isOccupied = index < actualOccupiedBeds; // Use actual count from students
-              
+
               return (
                 <div key={index} className={`p-4 rounded-lg border-2 ${isOccupied ? 'bg-success/10 border-success/30' : isAvailable ? 'bg-muted border-border' : 'bg-destructive/10 border-destructive/30'}`}>
                   <div className="flex items-center justify-between mb-2">

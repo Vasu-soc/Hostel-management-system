@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill } from "lucide-react";
+import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getParentSession, clearParentSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -67,12 +67,18 @@ const ParentDashboard = () => {
   };
 
   const fetchMedicalAlerts = async (rollNumber: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("medical_alerts")
       .select("*")
       .eq("roll_number", rollNumber)
       .order("created_at", { ascending: false });
-    if (data) setMedicalAlerts(data);
+
+    if (error) {
+      console.error("Medical alerts fetch failed:", error.message);
+      setMedicalAlerts([]);
+    } else {
+      setMedicalAlerts(data || []);
+    }
   };
 
   // Real-time subscription for student updates
@@ -80,7 +86,7 @@ const ParentDashboard = () => {
     if (!parent) return;
 
     const channel = supabase
-      .channel("student-updates")
+      .channel("parent-updates")
       .on(
         "postgres_changes",
         {
@@ -102,6 +108,7 @@ const ParentDashboard = () => {
           filter: `roll_number=eq.${parent.student_roll_number}`,
         },
         () => {
+          // Refresh medical alerts whenever they're added or updated
           fetchMedicalAlerts(parent.student_roll_number);
         }
       )
@@ -202,17 +209,29 @@ const ParentDashboard = () => {
                     Medical History
                   </p>
                   {medicalAlerts.map((alert) => (
-                    <div key={alert.id} className="p-3 bg-destructive/5 border border-destructive/10 rounded-lg flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-destructive capitalize">{alert.issue_type}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(alert.created_at).toLocaleString()}
-                        </p>
+                    <div key={alert.id} className={`p-3 border rounded-lg flex flex-col gap-2 ${alert.status === 'resolved' ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/10'}`}>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className={`font-bold capitalize ${alert.status === 'resolved' ? 'text-success' : 'text-destructive'}`}>
+                            {alert.issue_type}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(alert.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${alert.status === 'resolved' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
+                          {alert.status || 'pending'}
+                        </span>
                       </div>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${alert.status === 'resolved' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'
-                        }`}>
-                        {alert.status}
-                      </span>
+
+                      {alert.status === 'resolved' && (
+                        <div className="p-2 mt-1 bg-success/10 rounded-md border border-success/20">
+                          <p className="text-sm font-medium text-success flex items-center gap-2">
+                            <Check className="w-4 h-4" />
+                            Your {student.gender === 'girl' || student.gender === 'female' ? 'daughter\'s' : student.gender === 'boy' || student.gender === 'male' ? 'son\'s' : 'son or daughter\'s'} problem is solved. Your kid is good!
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <div className="h-px bg-border my-4"></div>

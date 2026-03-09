@@ -2,7 +2,9 @@ import * as React from "react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Wind, Fan, User } from "lucide-react";
+import { Wind, Fan, User, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -336,6 +338,56 @@ const PendingRoomsDashboard = ({ rooms, students = [] }: PendingRoomsDashboardPr
                   </div>
                 </div>
               )}
+              {/* Actions */}
+              <div className="pt-3 border-t">
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={async () => {
+                    if (!confirm(`Are you sure you want to delete ${selectedStudent.student_name}? This will remove them from room ${selectedStudent.hostel_room_number}.`)) return;
+
+                    try {
+                      const rollNumber = selectedStudent.roll_number?.toUpperCase().trim();
+                      if (!rollNumber) return;
+
+                      // Nuclear history deletion
+                      await Promise.all([
+                        supabase.from("gate_passes").delete().eq("roll_number", rollNumber),
+                        supabase.from("gate_passes").delete().eq("student_id", selectedStudent.id),
+                        supabase.from("electrical_issues").delete().eq("roll_number", rollNumber),
+                        supabase.from("electrical_issues").delete().eq("student_id", selectedStudent.id),
+                        supabase.from("food_issues").delete().eq("roll_number", rollNumber),
+                        supabase.from("food_issues").delete().eq("student_id", selectedStudent.id),
+                        supabase.from("medical_alerts").delete().eq("roll_number", rollNumber),
+                        supabase.from("medical_alerts").delete().eq("student_id", selectedStudent.id),
+                        supabase.from("parents").delete().eq("student_roll_number", rollNumber),
+                        supabase.from("password_reset_tokens").delete().eq("user_identifier", rollNumber)
+                      ]);
+
+                      const { error } = await supabase
+                        .from("students")
+                        .delete()
+                        .eq("id", selectedStudent.id);
+
+                      if (error) throw error;
+
+                      // Reset room occupancy if it was allotted
+                      if (selectedStudent.hostel_room_number) {
+                        await (supabase as any).rpc('decrement_occupied_beds', { room_no: selectedStudent.hostel_room_number });
+                      }
+
+                      setSelectedStudent(null);
+                      window.location.reload(); // Quickest way to refresh everything
+                    } catch (err: any) {
+                      console.error("Delete error:", err);
+                      alert("Failed to delete student. Please check database permissions (RLS).");
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Student Profile
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
