@@ -134,7 +134,7 @@ const StudentDashboard = () => {
       return;
     }
     setStudent(session);
-    setSettingsForm({ rollNumber: session.roll_number, password: session.password || "" });
+    setSettingsForm({ rollNumber: session.roll_number, password: "" });
     refreshStudentData(session.id);
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
