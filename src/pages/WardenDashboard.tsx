@@ -54,7 +54,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -569,6 +569,7 @@ const WardenDashboard = () => {
     { id: "issues" as TabType, label: "Issues", icon: AlertTriangle, count: pendingElectrical.length + pendingFood.length },
     { id: "foodSelection" as TabType, label: "Food Selection", icon: Utensils },
     { id: "medicines" as TabType, label: "Medicines", icon: Pill },
+    { id: "completedFees" as TabType, label: "Fees Completed", icon: Check, count: students.filter(s => s.pending_fee <= 0 && s.room_allotted).length },
   ];
 
   if (!warden) {
@@ -610,6 +611,73 @@ const WardenDashboard = () => {
             </Button>
           ))}
         </div>
+
+        {/* Fees Completed Tab */}
+        {activeTab === "completedFees" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Fees Completed Students</h2>
+              <Badge variant="outline" className="text-success border-success/30 bg-success/10 px-4 py-1">
+                {students.filter(s => s.pending_fee <= 0 && s.room_allotted).length} Students Paid Fully
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {students.filter(s => s.pending_fee <= 0 && s.room_allotted).map((student) => {
+                const yearLabel = (year: string) => {
+                  if (year === "1") return "1st Year";
+                  if (year === "2") return "2nd Year";
+                  if (year === "3") return "3rd Year";
+                  if (year === "4") return "4th Year";
+                  return year + " Year";
+                };
+
+                return (
+                  <Card key={student.id} className="border-2 border-success/20 bg-success/5 shadow-sm">
+                    <CardHeader className="pb-2 border-b border-success/10 flex flex-row items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                          <User className="w-5 h-5 text-success" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base font-bold">{student.student_name}</CardTitle>
+                          <p className="text-xs text-muted-foreground">{student.roll_number}</p>
+                        </div>
+                      </div>
+                      <div className="p-1.5 bg-success rounded-full text-white">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Current Year:</span>
+                        <span className="font-bold text-success">{yearLabel(student.year)} Completed</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Total Paid:</span>
+                        <span className="font-bold">₹{Number(student.paid_fee || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="pt-3 border-t border-success/10">
+                        <p className="text-[10px] text-center font-black uppercase tracking-tighter text-success opacity-80 italic">
+                          Clearance Verified • Ready for {parseInt(student.year) + 1 || "Next"} Year
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {students.filter(s => s.pending_fee <= 0 && s.room_allotted).length === 0 && (
+                <div className="col-span-full py-20 text-center bg-muted/30 rounded-3xl border-2 border-dashed border-border">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                    <Check className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-lg font-bold text-muted-foreground">No students have completed fees yet</h3>
+                  <p className="text-sm text-muted-foreground">Fully paid students will appear here automatically.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (

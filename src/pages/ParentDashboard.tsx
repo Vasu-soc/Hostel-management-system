@@ -199,6 +199,15 @@ const ParentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
+                {student.pending_fee <= 0 && (
+                  <div className="p-4 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-2">
+                    <div className="flex items-center justify-center gap-2 text-success mb-1">
+                      <Check className="w-5 h-5" />
+                      <span className="font-bold text-sm uppercase tracking-wider">{student.year === "1" ? "1st" : student.year === "2" ? "2nd" : student.year === "3" ? "3rd" : student.year === "4" ? "4th" : student.year} Year Fees Completed!</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-medium">Your child's annual dues are fully cleared. Ready to continue for the {parseInt(student.year) + 1 || "next"} year.</p>
+                  </div>
+                )}
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
                   <p className="text-2xl font-bold text-foreground">

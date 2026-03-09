@@ -542,6 +542,15 @@ const StudentDashboard = () => {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
+                {student.pending_fee <= 0 && (
+                  <div className="p-3 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-4">
+                    <div className="flex items-center justify-center gap-2 text-success mb-1">
+                      <Check className="w-5 h-5" />
+                      <span className="font-bold text-sm uppercase tracking-wider">{student.year === "1" ? "1st" : student.year === "2" ? "2nd" : student.year === "3" ? "3rd" : student.year === "4" ? "4th" : student.year} Year Fees Completed!</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-medium">Excellent! Your annual dues are cleared. Ready to continue for the {parseInt(student.year) + 1 || "next"} year.</p>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Total Fee</span>
                   <span className="font-bold text-xl">₹{Number(student.total_fee ?? 84000).toLocaleString()}</span>
