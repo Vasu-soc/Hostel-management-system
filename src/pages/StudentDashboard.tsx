@@ -547,7 +547,7 @@ const StudentDashboard = () => {
                   <span className="font-bold text-xl">₹{Number(student.total_fee ?? 84000).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
-                  <span className="text-sm text-muted-foreground">Paid Amount</span>
+                  <span className="text-sm text-muted-foreground">Total Paid (History)</span>
                   <span className="font-bold text-xl text-success">₹{Number(student.paid_fee ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">

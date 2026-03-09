@@ -206,7 +206,7 @@ const ParentDashboard = () => {
                   </p>
                 </div>
                 <div className="p-4 bg-success/10 rounded-lg border border-success/20">
-                  <p className="text-sm text-muted-foreground mb-1">Paid Amount</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Paid (History)</p>
                   <p className="text-2xl font-bold text-success">
                     ₹{Number(student.paid_fee || 0).toLocaleString()}
                   </p>
