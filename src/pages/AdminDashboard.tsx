@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Building2, ArrowLeft, User, IndianRupee, Save, UserCheck, AlertTriangle, ShieldAlert, Trash2 } from "lucide-react";
+import { Bell, Building2, ArrowLeft, User, IndianRupee, Save, UserCheck, AlertTriangle, ShieldAlert, Trash2, Loader2 } from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
@@ -96,7 +97,10 @@ const AdminDashboard = () => {
   const [feeData, setFeeData] = useState({
     total_fee: 0,
     paid_fee: 0,
+    new_payment: 0,
   });
+  const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
+  const [isTransitioningYear, setIsTransitioningYear] = useState(false);
 
   useEffect(() => {
     const session = getAdminSession();
@@ -188,13 +192,13 @@ const AdminDashboard = () => {
   const handleUpdateFee = async () => {
     if (!selectedStudent) return;
 
-    const pending_fee = feeData.total_fee - feeData.paid_fee;
+    const pending_fee = feeData.total_fee - (feeData.paid_fee + feeData.new_payment);
 
     const { error } = await supabase
       .from("students")
       .update({
         total_fee: feeData.total_fee,
-        paid_fee: feeData.paid_fee,
+        paid_fee: feeData.paid_fee + feeData.new_payment,
         pending_fee: pending_fee,
       })
       .eq("id", selectedStudent.id);
@@ -202,6 +206,15 @@ const AdminDashboard = () => {
     if (error) {
       toast({ title: "Error", description: "Failed to update fee", variant: "destructive" });
       return;
+    }
+
+    if (feeData.new_payment > 0) {
+      await supabase.from("fee_transactions").insert({
+        student_id: selectedStudent.id,
+        amount: feeData.new_payment,
+        remarks: `Fee payment added by Admin`,
+        academic_year: selectedStudent.year,
+      });
     }
 
     toast({ title: "Success", description: "Fee details updated successfully" });
@@ -212,13 +225,72 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchStudentTransactions = async (studentId: string) => {
+    const { data } = await supabase
+      .from("fee_transactions")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("payment_date", { ascending: true });
+    setStudentTransactions(data || []);
+  };
+
+  const handleMoveToNextYear = async () => {
+    if (!selectedStudent) return;
+
+    const currentYear = selectedStudent.year;
+    const yearNumber = parseInt(currentYear) || 1;
+    if (yearNumber >= 4) {
+      toast({ title: "Note", description: "Student is already in the final year." });
+      return;
+    }
+
+    const getYearSuffix = (n: number) => {
+      if (n === 1) return "st";
+      if (n === 2) return "nd";
+      if (n === 3) return "rd";
+      return "th";
+    };
+
+    const nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
+
+    if (!confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
+
+    setIsTransitioningYear(true);
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({
+          year: nextYear,
+          paid_fee: 0,
+          pending_fee: 84000,
+          total_fee: 84000,
+        })
+        .eq("id", selectedStudent.id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: `Moved to ${nextYear} successfully!` });
+      setFeeDialogOpen(false);
+      fetchAllStudents();
+      if (selectedBranch && selectedYear) {
+        fetchStudentsData(selectedBranch, selectedYear);
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsTransitioningYear(false);
+    }
+  };
+
   const openFeeDialog = (student: Student) => {
     setSelectedStudent(student);
     setFeeData({
       total_fee: student.total_fee || 84000,
       paid_fee: student.paid_fee || 0,
+      new_payment: 0,
     });
     setFeeDialogOpen(true);
+    fetchStudentTransactions(student.id);
   };
 
   const handleResetSystem = async () => {
@@ -673,9 +745,14 @@ const AdminDashboard = () => {
           </DialogHeader>
           {selectedStudent && (
             <div className="space-y-4 pt-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="font-medium">{selectedStudent.student_name}</p>
-                <p className="text-sm text-muted-foreground">{selectedStudent.roll_number}</p>
+              <div className="p-3 bg-muted rounded-lg flex justify-between items-center">
+                <div>
+                  <p className="font-medium">{selectedStudent.student_name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedStudent.roll_number}</p>
+                </div>
+                <Badge variant="outline" className="font-bold text-primary">
+                  {selectedStudent.year}
+                </Badge>
               </div>
 
               <div className="space-y-2">
@@ -685,32 +762,66 @@ const AdminDashboard = () => {
                   type="number"
                   value={feeData.total_fee}
                   onChange={(e) => setFeeData({ ...feeData, total_fee: Number(e.target.value) })}
-                  className="h-12"
+                  className="h-12 border-2"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="paidFee">Paid Fee (₹)</Label>
+                <Label className="text-sm font-medium">Previously Paid (₹)</Label>
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {studentTransactions
+                    .filter(tx => tx.academic_year === selectedStudent.year)
+                    .map((tx, idx) => (
+                      <div key={tx.id} className="p-3 bg-background border-2 border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+                        <span className="font-medium text-xs">
+                          {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : `${idx + 1}th`} payment
+                        </span>
+                        <span className="font-bold text-primary text-sm">₹{tx.amount.toLocaleString()}</span>
+                      </div>
+                    ))}
+
+                  {studentTransactions.filter(tx => tx.academic_year === selectedStudent.year).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">No payments yet for {selectedStudent.year}.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPayment">New Paid Amount (₹)</Label>
                 <Input
-                  id="paidFee"
+                  id="newPayment"
                   type="number"
-                  value={feeData.paid_fee}
-                  onChange={(e) => setFeeData({ ...feeData, paid_fee: Number(e.target.value) })}
-                  className="h-12"
+                  value={feeData.new_payment || ""}
+                  onChange={(e) => setFeeData({ ...feeData, new_payment: Number(e.target.value) })}
+                  placeholder="Enter new payment"
+                  className="h-12 border-2"
                 />
               </div>
 
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">Pending Fee</p>
-                <p className="text-xl font-bold text-destructive">
-                  ₹{(feeData.total_fee - feeData.paid_fee).toLocaleString()}
+              <div className="p-4 bg-muted/30 rounded-xl border-2 border-border/50">
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Calculated Pending Balance</p>
+                <p className={`text-3xl font-black ${(feeData.total_fee - (feeData.paid_fee + feeData.new_payment)) > 0 ? "text-destructive" : "text-success"}`}>
+                  ₹{(feeData.total_fee - (feeData.paid_fee + feeData.new_payment)).toLocaleString()}
                 </p>
               </div>
 
-              <Button onClick={handleUpdateFee} className="w-full">
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={handleUpdateFee} className="flex-[2] h-12 text-lg font-bold shadow-lg" variant="hero">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </Button>
+
+                {(selectedStudent.pending_fee || 84000) <= 0 && (
+                  <Button
+                    onClick={handleMoveToNextYear}
+                    disabled={isTransitioningYear}
+                    className="flex-1 h-12 bg-success hover:bg-success/90 text-white shadow-lg"
+                    title="Move to Next Academic Year"
+                  >
+                    {isTransitioningYear ? <Loader2 className="animate-spin" /> : <div className="flex flex-col items-center leading-tight"><span className="text-[10px]">Next</span><span>Year</span></div>}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

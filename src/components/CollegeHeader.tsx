@@ -50,7 +50,7 @@ const CollegeHeader = () => {
     <header className="sticky top-0 z-50 w-full header-dynamic-bg shadow-xl border-b border-primary/20 transition-all duration-500">
       <div className="container mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-5">
         <div className="flex items-center justify-between gap-2 sm:gap-4 md:gap-6">
-          {/* Logo with Sanskrit Text below */}
+          {/* Logo with GIST Text below */}
           <div className="flex flex-col items-center flex-shrink-0 group">
             <div className="relative float-animation">
               <img
@@ -61,8 +61,8 @@ const CollegeHeader = () => {
               />
               <div className="absolute -inset-4 bg-primary/20 rounded-full blur-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             </div>
-            <p className="hidden sm:block text-[9px] md:text-[11px] text-primary mt-2 text-center whitespace-nowrap font-bold tracking-[0.2em] uppercase opacity-80 italic">
-              हृदाकाशे चिदादित्य स्सदाभासति भासति
+            <p className="text-[10px] sm:text-xs text-primary mt-1 sm:mt-2 text-center whitespace-nowrap font-black tracking-widest uppercase opacity-95">
+              GIST
             </p>
           </div>
 

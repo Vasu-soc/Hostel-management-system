@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -754,21 +755,60 @@ const StudentDashboard = () => {
               </Dialog>
             </div>
 
+            {(student?.pending_fee !== undefined && student.pending_fee <= 0 && student.paid_fee > 0) && (
+              <div className="bg-success/10 border-2 border-success/30 rounded-xl p-6 text-center animate-in zoom-in duration-500 mb-6 group hover:border-success/50 transition-all">
+                <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Check className="w-10 h-10 text-success" />
+                </div>
+                <h3 className="text-2xl font-black text-success mb-1 tracking-tight italic">Year Fees Completed!</h3>
+                <p className="text-sm text-success/80 font-medium">You have successfully cleared all dues for the {student.year}.</p>
+              </div>
+            )}
+
             {feeTransactions.length > 0 && (
-              <Card className="border-2 border-border shadow-sm">
-                <CardHeader className="pb-3 border-b border-border">
-                  <CardTitle className="text-lg">Fee Payment History</CardTitle>
+              <Card className="border-2 border-border shadow-sm overflow-hidden">
+                <CardHeader className="pb-3 border-b border-border bg-muted/30">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <span>Fee Payment History</span>
+                    <Badge variant="outline" className="text-[10px] uppercase tracking-tighter">Verified Records</Badge>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4 max-h-[300px] overflow-y-auto space-y-3">
-                  {feeTransactions.map((tx: any) => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div>
-                        <p className="font-semibold text-foreground">₹{tx.amount.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()} {new Date(tx.payment_date).toLocaleTimeString()}</p>
+                <CardContent className="pt-4 max-h-[500px] overflow-y-auto space-y-6">
+                  {/* Grouped by Academic Year */}
+                  {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
+                    <div key={year} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-[1px] flex-1 bg-border"></div>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">{year}</span>
+                        <div className="h-[1px] flex-1 bg-border"></div>
                       </div>
-                      {tx.remarks && (
-                        <p className="text-xs text-muted-foreground max-w-[120px] text-right truncate" title={tx.remarks}>{tx.remarks}</p>
-                      )}
+                      <div className="space-y-2">
+                        {feeTransactions
+                          .filter((tx: any) => (tx.academic_year || "Unknown") === year)
+                          .map((tx: any, idx) => (
+                            <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 50}ms` }}>
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-xs text-primary">
+                                  {idx === feeTransactions.filter((t: any) => (t.academic_year || "Unknown") === year).length - 1 ? "1st" : "New"}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
+                                  <p className="text-[10px] text-muted-foreground font-medium uppercase">
+                                    {new Date(tx.payment_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Paid Successfully</p>
+                                {tx.remarks && (
+                                  <p className="text-[10px] text-muted-foreground italic max-w-[150px] truncate" title={tx.remarks}>
+                                    "{tx.remarks}"
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   ))}
                 </CardContent>

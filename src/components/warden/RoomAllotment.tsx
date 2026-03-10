@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Check, Home, Users, IndianRupee, MessageSquare, User, Trash2 } from "lucide-react";
+import { Search, Check, Home, Users, IndianRupee, MessageSquare, User, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { localApi } from "@/lib/localStudentApi";
@@ -62,6 +62,8 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   const [pendingAmount, setPendingAmount] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
+  const [isTransitioningYear, setIsTransitioningYear] = useState(false);
 
   // Memoize room student counts from allStudents prop
   const roomStudentCounts = useMemo(() => {
@@ -239,6 +241,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
         student_id: selectedStudent.id,
         amount: newPayment,
         remarks: `Fee payment added by warden`,
+        academic_year: selectedStudent.year,
       });
     }
 
@@ -274,7 +277,16 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     onRefresh();
   };
 
-  const openFeeDialog = (student: Student) => {
+  const fetchStudentTransactions = async (studentId: string) => {
+    const { data } = await supabase
+      .from("fee_transactions")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("payment_date", { ascending: true });
+    setStudentTransactions(data || []);
+  };
+
+  const openFeeDialog = async (student: Student) => {
     setSelectedStudent(student);
     const total = student.total_fee || 84000;
     const oldPaid = student.paid_fee || 0;
@@ -282,6 +294,52 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     setPaidAmount(""); // Default to 0/empty to prevent confusion
     setPendingAmount((total - oldPaid).toString());
     setShowFeeDialog(true);
+    fetchStudentTransactions(student.id);
+  };
+
+  const handleMoveToNextYear = async () => {
+    if (!selectedStudent) return;
+
+    const currentYear = selectedStudent.year;
+    const yearNumber = parseInt(currentYear) || 1;
+    if (yearNumber >= 4) {
+      toast({ title: "Note", description: "Student is already in the final year." });
+      return;
+    }
+
+    const nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
+
+    if (!confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
+
+    setIsTransitioningYear(true);
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({
+          year: nextYear,
+          paid_fee: 0,
+          pending_fee: 84000, // Default for next year
+          total_fee: 84000,
+        })
+        .eq("id", selectedStudent.id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: `Moved to ${nextYear} successfully!` });
+      setShowFeeDialog(false);
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsTransitioningYear(false);
+    }
+  };
+
+  const getYearSuffix = (n: number) => {
+    if (n === 1) return "st";
+    if (n === 2) return "nd";
+    if (n === 3) return "rd";
+    return "th";
   };
 
   const openRemarksDialog = (student: Student) => {
@@ -523,7 +581,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
             <DialogTitle>Student Fees Updation - {selectedStudent?.student_name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div className="grid grid-cols-2 gap-4 text-sm mb-2">
               <div>
                 <p className="text-muted-foreground">Student Name</p>
                 <p className="font-medium">{selectedStudent?.student_name}</p>
@@ -531,6 +589,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
               <div>
                 <p className="text-muted-foreground">Roll Number</p>
                 <p className="font-medium">{selectedStudent?.roll_number}</p>
+                <p className="text-xs font-bold text-primary">{selectedStudent?.year}</p>
               </div>
             </div>
 
@@ -544,15 +603,38 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                   setTotalAmount(e.target.value);
                   const total = parseFloat(e.target.value) || 0;
                   const paid = parseFloat(paidAmount) || 0;
-                  setPendingAmount((total - paid).toString());
+                  const oldPaid = selectedStudent?.paid_fee || 0;
+                  setPendingAmount((total - oldPaid - paid).toString());
                 }}
                 placeholder="Total fee amount"
+                className="h-12 bg-background border-2"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Previously Paid (₹)</Label>
-              <p className="text-lg font-bold">₹{(selectedStudent?.paid_fee || 0).toLocaleString()}</p>
+              <Label className="text-sm font-medium">Previously Paid (₹)</Label>
+              <div className="space-y-2">
+                {studentTransactions
+                  .filter(tx => tx.academic_year === selectedStudent?.year)
+                  .map((tx, idx) => (
+                    <div key={tx.id} className="p-3 bg-background border-2 border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
+                      <span className="font-medium text-sm">
+                        {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : `${idx + 1}th`} payment
+                      </span>
+                      <span className="font-bold text-primary">₹{tx.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+
+                {studentTransactions.filter(tx => tx.academic_year === selectedStudent?.year).length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">No payments yet for this year.</p>
+                )}
+
+                {studentTransactions.filter(tx => tx.academic_year === selectedStudent?.year).length > 3 && (
+                  <div className="p-2 text-center">
+                    <Button variant="link" size="sm" className="text-xs">More payments...</Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -569,19 +651,36 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                   setPendingAmount((total - oldPaid - newPayment).toString());
                 }}
                 placeholder="Enter new payment added"
+                className="h-12 border-2"
               />
             </div>
 
-            <div className="p-3 bg-muted rounded-lg border border-border">
-              <p className="text-xs text-muted-foreground mb-1">Calculated Pending Balance</p>
-              <p className={`text-xl font-bold ${parseFloat(pendingAmount) > 0 ? "text-destructive" : "text-success"}`}>
+            <div className="p-4 bg-muted/30 rounded-xl border-2 border-border/50">
+              <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Calculated Pending Balance</p>
+              <p className={`text-3xl font-black ${parseFloat(pendingAmount) > 0 ? "text-destructive" : "text-success"}`}>
                 ₹{Number(pendingAmount).toLocaleString()}
               </p>
             </div>
 
-            <Button onClick={handleFeeUpdate} className="w-full" variant="hero">
-              Update Fee Details
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleFeeUpdate}
+                className="flex-[2] h-12 text-lg font-bold shadow-lg"
+                variant="hero"
+              >
+                Update Fee Details
+              </Button>
+
+              {selectedStudent && (selectedStudent.pending_fee || 84000) <= 0 && (
+                <Button
+                  onClick={handleMoveToNextYear}
+                  disabled={isTransitioningYear}
+                  className="flex-1 h-12 bg-success hover:bg-success/90 text-white shadow-lg"
+                >
+                  {isTransitioningYear ? <Loader2 className="animate-spin" /> : "Move to Next Year"}
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -157,6 +157,7 @@ export type Database = {
       }
       fee_transactions: {
         Row: {
+          academic_year: string | null
           amount: number
           id: string
           payment_date: string
@@ -164,6 +165,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          academic_year?: string | null
           amount: number
           id?: string
           payment_date?: string
@@ -171,6 +173,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          academic_year?: string | null
           amount?: number
           id?: string
           payment_date?: string
