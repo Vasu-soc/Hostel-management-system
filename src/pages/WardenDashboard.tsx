@@ -368,13 +368,19 @@ const WardenDashboard = () => {
         const existingStudent = students.find(s => s.roll_number === rollOrPhone || (s.email && s.email === application.email));
 
         if (existingStudent) {
-          await supabase.from("students").update({
+          const { error: updateError } = await supabase.from("students").update({
             room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
             total_fee: application.price || 84000,
             pending_fee: (application.price || 84000) - (existingStudent.paid_fee || 0),
           }).eq("id", existingStudent.id);
+
+          if (updateError) {
+            console.error("Failed to update existing student:", updateError);
+            toast({ title: "Error", description: "Failed to update existing student profile.", variant: "destructive" });
+            return;
+          }
         } else {
           // Ensure we have the photo url saved (can be huge)
           let finalPhotoUrl = application.photo_url;
@@ -386,12 +392,12 @@ const WardenDashboard = () => {
             if (appData) finalPhotoUrl = appData.photo_url;
           }
 
-          await supabase.from("students").insert({
+          const { error: insertError } = await supabase.from("students").insert({
             roll_number: rollOrPhone,
             student_name: application.student_name,
             email: application.email,
             branch: application.branch,
-            gender: application.gender,
+            gender: application.gender === "boy" ? "male" : (application.gender === "girl" ? "female" : application.gender),
             room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
@@ -401,6 +407,12 @@ const WardenDashboard = () => {
             year: "1st Year",
             photo_url: finalPhotoUrl
           });
+
+          if (insertError) {
+            console.error("Failed to insert new student:", insertError);
+            toast({ title: "Error", description: "Failed to create new student profile.", variant: "destructive" });
+            return;
+          }
         }
 
         // Pre-fetch immediately to update the UI
