@@ -564,7 +564,7 @@ const StudentDashboard = () => {
                 )}
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Total Fee</span>
-                  <span className="font-bold text-xl">₹{Number(student.total_fee ?? 84000).toLocaleString()}</span>
+                  <span className="font-bold text-xl">₹{Number(student.total_fee ?? 100000).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Total Paid (History)</span>
@@ -572,7 +572,7 @@ const StudentDashboard = () => {
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-muted-foreground">Pending Balance</span>
-                  <span className="font-bold text-xl text-destructive">₹{Number(student.pending_fee ?? 84000).toLocaleString()}</span>
+                  <span className="font-bold text-xl text-destructive">₹{Number(student.pending_fee ?? 100000).toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>

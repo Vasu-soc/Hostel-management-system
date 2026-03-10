@@ -132,7 +132,7 @@ const StudentLogin = () => {
     if (room.ac_type === 'ac') {
       return room.total_beds <= 2 ? 100000 : 90000;
     } else {
-      return room.total_beds <= 2 ? 84000 : 75000;
+      return room.total_beds <= 2 ? 100000 : 75000;
     }
   };
 
@@ -477,7 +477,7 @@ const StudentLogin = () => {
         setIsUploadingPhoto(false);
       }
       const selectedRoomData = availableRooms.find(r => r.room_number === registerData.roomNumber);
-      const fee = selectedRoomData ? getRoomFee(selectedRoomData) : 84000;
+      const fee = selectedRoomData ? getRoomFee(selectedRoomData) : 100000;
 
       const { error } = await supabase.from("students").insert({
         roll_number: registerData.rollNumber.toUpperCase(),

@@ -381,8 +381,8 @@ const WardenDashboard = () => {
             room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
-            total_fee: application.price || 84000,
-            pending_fee: (application.price || 84000) - (existingStudent.paid_fee || 0),
+            total_fee: application.price || 100000,
+            pending_fee: (application.price || 100000) - (existingStudent.paid_fee || 0),
             password: existingStudent.password || defaultPassword,
           }).eq("id", existingStudent.id);
 
@@ -411,8 +411,8 @@ const WardenDashboard = () => {
             room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
-            total_fee: application.price || 84000,
-            pending_fee: application.price || 84000,
+            total_fee: application.price || 100000,
+            pending_fee: application.price || 100000,
             paid_fee: 0,
             year: "1st Year",
             photo_url: finalPhotoUrl,

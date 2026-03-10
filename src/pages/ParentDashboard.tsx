@@ -211,7 +211,7 @@ const ParentDashboard = () => {
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
                   <p className="text-2xl font-bold text-foreground">
-                    ₹{Number(student.total_fee || 84000).toLocaleString()}
+                    ₹{Number(student.total_fee || 100000).toLocaleString()}
                   </p>
                 </div>
                 <div className="p-4 bg-success/10 rounded-lg border border-success/20">
@@ -223,7 +223,7 @@ const ParentDashboard = () => {
                 <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                   <p className="text-sm text-muted-foreground mb-1">Pending Amount</p>
                   <p className="text-2xl font-bold text-destructive">
-                    ₹{Number(student.pending_fee || 84000).toLocaleString()}
+                    ₹{Number(student.pending_fee || 100000).toLocaleString()}
                   </p>
                 </div>
               </CardContent>

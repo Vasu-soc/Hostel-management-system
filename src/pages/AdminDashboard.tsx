@@ -192,14 +192,14 @@ const AdminDashboard = () => {
   const handleUpdateFee = async () => {
     if (!selectedStudent) return;
 
-    const pending_fee = feeData.total_fee - (feeData.paid_fee + feeData.new_payment);
+    const newPending = Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment));
 
     const { error } = await supabase
       .from("students")
       .update({
         total_fee: feeData.total_fee,
         paid_fee: feeData.paid_fee + feeData.new_payment,
-        pending_fee: pending_fee,
+        pending_fee: newPending,
       })
       .eq("id", selectedStudent.id);
 
@@ -234,7 +234,7 @@ const AdminDashboard = () => {
     setStudentTransactions(data || []);
   };
 
-  const handleMoveToNextYear = async () => {
+  const handleMoveToNextYear = async (skipConfirm = false) => {
     if (!selectedStudent) return;
 
     const currentYear = selectedStudent.year;
@@ -253,7 +253,7 @@ const AdminDashboard = () => {
 
     const nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
 
-    if (!confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
+    if (!skipConfirm && !confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
 
     setIsTransitioningYear(true);
     try {
@@ -262,8 +262,8 @@ const AdminDashboard = () => {
         .update({
           year: nextYear,
           paid_fee: 0,
-          pending_fee: 84000,
-          total_fee: 84000,
+          pending_fee: selectedStudent.total_fee || 100000,
+          total_fee: selectedStudent.total_fee || 100000,
         })
         .eq("id", selectedStudent.id);
 
@@ -283,9 +283,23 @@ const AdminDashboard = () => {
   };
 
   const openFeeDialog = (student: Student) => {
+    // Check if year is already completed - if so, auto-transition when opening
+    if (student.paid_fee && student.total_fee && student.paid_fee >= student.total_fee && student.pending_fee === 0) {
+      const currentYear = student.year;
+      const yearNumber = parseInt(currentYear) || 1;
+      if (yearNumber < 4) {
+        setSelectedStudent(student);
+        // Delay to allow state to settle
+        setTimeout(() => {
+          handleMoveToNextYear(true);
+        }, 100);
+        return;
+      }
+    }
+
     setSelectedStudent(student);
     setFeeData({
-      total_fee: student.total_fee || 84000,
+      total_fee: student.total_fee || 100000,
       paid_fee: student.paid_fee || 0,
       new_payment: 0,
     });
@@ -599,7 +613,7 @@ const AdminDashboard = () => {
                         <div className="grid grid-cols-3 gap-2 text-center">
                           <div className="p-2 bg-muted/50 rounded">
                             <p className="text-xs text-muted-foreground">Total</p>
-                            <p className="font-medium text-sm">₹{(student.total_fee || 84000).toLocaleString()}</p>
+                            <p className="font-medium text-sm">₹{(student.total_fee || 100000).toLocaleString()}</p>
                           </div>
                           <div className="p-2 bg-success/10 rounded">
                             <p className="text-xs text-success">Paid</p>
@@ -607,7 +621,7 @@ const AdminDashboard = () => {
                           </div>
                           <div className="p-2 bg-destructive/10 rounded">
                             <p className="text-xs text-destructive">Pending</p>
-                            <p className="font-medium text-sm text-destructive">₹{(student.pending_fee || 84000).toLocaleString()}</p>
+                            <p className="font-medium text-sm text-destructive">₹{Math.max(0, student.pending_fee || (student.total_fee || 100000) - (student.paid_fee || 0)).toLocaleString()}</p>
                           </div>
                         </div>
                       </div>
@@ -800,18 +814,24 @@ const AdminDashboard = () => {
 
               <div className="p-4 bg-muted/30 rounded-xl border-2 border-border/50">
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Calculated Pending Balance</p>
-                <p className={`text-3xl font-black ${(feeData.total_fee - (feeData.paid_fee + feeData.new_payment)) > 0 ? "text-destructive" : "text-success"}`}>
-                  ₹{(feeData.total_fee - (feeData.paid_fee + feeData.new_payment)).toLocaleString()}
+                <p className={`text-3xl font-black ${Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment)) > 0 ? "text-destructive" : "text-success"}`}>
+                  ₹{Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment)).toLocaleString()}
                 </p>
               </div>
 
               <div className="flex gap-3">
-                <Button onClick={handleUpdateFee} className="flex-[2] h-12 text-lg font-bold shadow-lg" variant="hero">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+                {Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment)) > 0 ? (
+                  <Button onClick={handleUpdateFee} className="flex-[2] h-12 text-lg font-bold shadow-lg" variant="hero">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </Button>
+                ) : (
+                  <div className="flex-[2] p-3 bg-success/10 border-2 border-success/30 rounded-lg text-center font-bold text-success animate-in zoom-in">
+                    Year Fees Completed!
+                  </div>
+                )}
 
-                {(selectedStudent.pending_fee || 84000) <= 0 && (
+                {(selectedStudent.pending_fee || 100000) <= 0 && (
                   <Button
                     onClick={handleMoveToNextYear}
                     disabled={isTransitioningYear}

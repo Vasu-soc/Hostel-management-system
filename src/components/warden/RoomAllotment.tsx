@@ -216,11 +216,11 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     if (!selectedStudent) return;
 
     const newPayment = parseFloat(paidAmount) || 0;
-    const currentTotalFee = parseFloat(totalAmount) || selectedStudent.total_fee || 84000;
+    const currentTotalFee = parseFloat(totalAmount) || selectedStudent.total_fee || 100000;
 
     const oldPaid = selectedStudent.paid_fee || 0;
     const newTotalPaid = oldPaid + newPayment;
-    const newPending = currentTotalFee - newTotalPaid;
+    const newPending = Math.max(0, currentTotalFee - newTotalPaid);
 
     const { error } = await supabase
       .from("students")
@@ -245,13 +245,21 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
       });
     }
 
-    toast({ title: "Success", description: "Fee details updated successfully" });
+    toast({ title: "Success", description: newPending <= 0 ? "Year Fees Completed!" : "Fee details updated successfully" });
+
+    // If pending is 0, we'll keep the dialog open but transition will happen on re-open or if they click Move to Next Year.
+    // However, user wants it automatic. Let's trigger it if pending is 0.
+    if (newPending <= 0) {
+      // We'll let the user see the "0" balance first, then they close or re-open.
+      // The user said: "automatically if the total hostel payment is complete ... after open again that fees updation he move on the 2nd year."
+      // So I will implement the check in openFeeDialog.
+    }
+
     setShowFeeDialog(false);
     setSelectedStudent(null);
     setPaidAmount("");
     setPendingAmount("");
 
-    // Refresh everything
     onRefresh();
   };
 
@@ -287,17 +295,30 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   };
 
   const openFeeDialog = async (student: Student) => {
+    // Check if year is already completed - if so, auto-transition when opening
+    if (student.paid_fee && student.total_fee && student.paid_fee >= student.total_fee && student.pending_fee === 0) {
+      const yearNumber = parseInt(student.year) || 1;
+      if (yearNumber < 4) {
+        setSelectedStudent(student);
+        // We delay the auto-transition slightly to allow state to settle
+        setTimeout(() => {
+          handleMoveToNextYear(true);
+        }, 100);
+        return;
+      }
+    }
+
     setSelectedStudent(student);
-    const total = student.total_fee || 84000;
+    const total = student.total_fee || 100000;
     const oldPaid = student.paid_fee || 0;
     setTotalAmount(total.toString());
-    setPaidAmount(""); // Default to 0/empty to prevent confusion
-    setPendingAmount((total - oldPaid).toString());
+    setPaidAmount("");
+    setPendingAmount(Math.max(0, total - oldPaid).toString());
     setShowFeeDialog(true);
     fetchStudentTransactions(student.id);
   };
 
-  const handleMoveToNextYear = async () => {
+  const handleMoveToNextYear = async (skipConfirm = false) => {
     if (!selectedStudent) return;
 
     const currentYear = selectedStudent.year;
@@ -309,7 +330,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
 
     const nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
 
-    if (!confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
+    if (!skipConfirm && !confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
 
     setIsTransitioningYear(true);
     try {
@@ -318,8 +339,8 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
         .update({
           year: nextYear,
           paid_fee: 0,
-          pending_fee: 84000, // Default for next year
-          total_fee: 84000,
+          pending_fee: selectedStudent.total_fee || 100000,
+          total_fee: selectedStudent.total_fee || 100000,
         })
         .eq("id", selectedStudent.id);
 
@@ -663,15 +684,21 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
             </div>
 
             <div className="flex gap-3">
-              <Button
-                onClick={handleFeeUpdate}
-                className="flex-[2] h-12 text-lg font-bold shadow-lg"
-                variant="hero"
-              >
-                Update Fee Details
-              </Button>
+              {parseFloat(pendingAmount) > 0 ? (
+                <Button
+                  onClick={handleFeeUpdate}
+                  className="flex-[2] h-12 text-lg font-bold shadow-lg"
+                  variant="hero"
+                >
+                  Update Fee Details
+                </Button>
+              ) : (
+                <div className="flex-[2] p-3 bg-success/10 border-2 border-success/30 rounded-lg text-center font-bold text-success animate-in zoom-in">
+                  Year Fees Completed!
+                </div>
+              )}
 
-              {selectedStudent && (selectedStudent.pending_fee || 84000) <= 0 && (
+              {selectedStudent && (selectedStudent.pending_fee || 100000) <= 0 && (
                 <Button
                   onClick={handleMoveToNextYear}
                   disabled={isTransitioningYear}
