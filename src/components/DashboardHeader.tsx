@@ -8,7 +8,7 @@ interface DashboardHeaderProps {
   title: string;
   titleColor?: string;
   userName: string;
-  userSubtitle?: string;
+  userSubtitle?: React.ReactNode;
   userPhotoUrl?: string;
   onLogout: () => void;
   showPhoto?: boolean;

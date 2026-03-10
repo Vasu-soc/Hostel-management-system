@@ -528,7 +528,14 @@ const StudentDashboard = () => {
         title={`${genderLabel} Student Page`}
         titleColor={gender === "boys" ? "text-accent" : "text-primary"}
         userName={student.student_name}
-        userSubtitle={isUploadingPhoto ? "Uploading photo..." : student.roll_number}
+        userSubtitle={
+          isUploadingPhoto ? "Uploading photo..." : (
+            <div className="flex flex-col gap-0.5">
+              <span>{student.roll_number}</span>
+              <span className="text-xs opacity-80">{student.branch?.toUpperCase()} • {student.year} Year</span>
+            </div>
+          )
+        }
         userPhotoUrl={student.photo_url || undefined}
         onLogout={handleLogout}
         onPhotoUpload={() => photoInputRef.current?.click()}
@@ -849,7 +856,11 @@ const StudentDashboard = () => {
             <CardContent className="p-6">
               <form onSubmit={handleGatePassSubmit} className="space-y-4">
                 <div className="space-y-2"><Label>Student Name</Label><Input value={student.student_name} disabled className="bg-muted" /></div>
-                <div className="space-y-2"><Label>Roll No</Label><Input value={student.roll_number} disabled className="bg-muted" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Roll No</Label><Input value={student.roll_number} disabled className="bg-muted" /></div>
+                  <div className="space-y-2"><Label>Branch</Label><Input value={student.branch?.toUpperCase()} disabled className="bg-muted" title={student.branch?.toUpperCase()} /></div>
+                </div>
+                <div className="space-y-2"><Label>Year</Label><Input value={student.year} disabled className="bg-muted" /></div>
                 <div className="space-y-2">
                   <Label>Email Address *</Label>
                   <Input
