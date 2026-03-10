@@ -38,6 +38,7 @@ interface Student {
   paid_fee: number;
   pending_fee: number;
   remarks?: string;
+  photo_url?: string | null;
 }
 
 interface HostelRoomDetailsProps {
@@ -635,9 +636,17 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
             {roomStudents.map((student) => (
               <div key={student.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="w-5 h-5 text-primary" />
-                  </div>
+                  {student.photo_url ? (
+                    <img
+                      src={student.photo_url}
+                      alt={student.student_name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-primary"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{student.student_name}</p>
