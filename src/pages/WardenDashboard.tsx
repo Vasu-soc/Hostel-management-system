@@ -144,15 +144,15 @@ const WardenDashboard = () => {
   const fetchApplications = async (gender: string | null) => {
     // Omit large base64 string columns (photo_url, signature_url) for initial fast loading
     let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price").order("created_at", { ascending: false });
-    if (gender) query = query.eq("gender", gender);
+    if (gender) query = query.ilike("gender", gender);
     const { data } = await query;
     if (data) setApplications(data as any[]);
   };
 
   const fetchStudents = async (gender: string | null) => {
-    const query = supabase.from("students").select("*").order("student_name");
+    let query = supabase.from("students").select("*").order("student_name");
     if (gender) {
-      query.eq("gender", gender);
+      query = query.ilike("gender", gender);
     }
 
     const [dbResult, deletedIds] = await Promise.all([
@@ -185,21 +185,21 @@ const WardenDashboard = () => {
 
   const fetchGatePasses = async (gender: string | null) => {
     let query = supabase.from("gate_passes").select("*, students!inner(gender)").order("created_at", { ascending: false });
-    if (gender) query = query.eq("students.gender", gender);
+    if (gender) query = query.ilike("students.gender", gender);
     const { data } = await query;
     if (data) setGatePasses(data as any[]);
   };
 
   const fetchIssues = async (gender: string | null) => {
-    const elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
-    const foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
-    const medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
+    let elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
+    let foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
+    let medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
 
     if (gender) {
       const [{ data: elecData }, { data: foodData }, { data: medicalData, error: medicalError }] = await Promise.all([
-        elecQuery.eq("students.gender", gender),
-        foodQuery.eq("students.gender", gender),
-        medicalQuery.eq("students.gender", gender)
+        elecQuery.ilike("students.gender", gender),
+        foodQuery.ilike("students.gender", gender),
+        medicalQuery.ilike("students.gender", gender)
       ]);
 
       if (elecData) setElectricalIssues(elecData as any[]);
