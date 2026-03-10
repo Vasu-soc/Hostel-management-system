@@ -9,11 +9,17 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn } from "lucide-react";
+import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn, FileText } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import gisteduLogo from "@/assets/gistedu-logo.png";
 
 const loginOptions = [
+  {
+    label: "Hostel Application Form",
+    path: "/hostel-application",
+    icon: FileText,
+    color: "text-blue-500"
+  },
   {
     label: "Register (Boys)",
     path: "/student-login?gender=boys&mode=register",

@@ -67,7 +67,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   const roomStudentCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     allStudents.forEach(s => {
-      if (s.room_allotted && s.hostel_room_number) {
+      if (s.hostel_room_number) {
         counts[s.hostel_room_number] = (counts[s.hostel_room_number] || 0) + 1;
       }
     });
@@ -127,12 +127,11 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
       return;
     }
 
-    // Get actual count of students in this room after approval
+    // Get actual count of students in this room after approval (including blocked/pending)
     const { data: studentsInRoom } = await supabase
       .from("students")
       .select("id")
-      .eq("hostel_room_number", room.room_number)
-      .eq("room_allotted", true);
+      .eq("hostel_room_number", room.room_number);
 
     const actualOccupied = studentsInRoom?.length || 0;
 
@@ -203,7 +202,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
 
       // Sync room count
       if (student.hostel_room_number) {
-        const { data: inRoom } = await supabase.from("students").select("id").eq("hostel_room_number", student.hostel_room_number).eq("room_allotted", true);
+        const { data: inRoom } = await supabase.from("students").select("id").eq("hostel_room_number", student.hostel_room_number);
         const { data: room } = await supabase.from("rooms").select("id").eq("room_number", student.hostel_room_number).maybeSingle();
         if (room) await supabase.from("rooms").update({ occupied_beds: inRoom?.length || 0 }).eq("id", room.id);
       }

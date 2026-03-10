@@ -138,7 +138,8 @@ const WardenDashboard = () => {
   };
 
   const fetchApplications = async (gender: string | null) => {
-    let query = supabase.from("hostel_applications").select("*").order("created_at", { ascending: false });
+    // Omit large base64 string columns (photo_url, signature_url) for initial fast loading
+    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price").order("created_at", { ascending: false });
     if (gender) query = query.eq("gender", gender);
     const { data } = await query;
     if (data) setApplications(data as any[]);
@@ -345,7 +346,8 @@ const WardenDashboard = () => {
         if ((isBoys && !isBoysRoom) || (isGirls && !isGirlsRoom)) continue;
 
         if (room.room_type === application.room_type && room.ac_type === application.ac_type) {
-          const roomStudents = students.filter(s => s.hostel_room_number === room.room_number && s.room_allotted);
+          // Count ALL students holding a spot in this room (both allotted and blocked/pending)
+          const roomStudents = students.filter(s => s.hostel_room_number === room.room_number);
           const actualOccupied = roomStudents.length;
           const closedBeds = room.closed_beds || 0;
           const availableBeds = Math.max(0, room.total_beds - actualOccupied - closedBeds);
@@ -366,27 +368,37 @@ const WardenDashboard = () => {
 
         if (existingStudent) {
           await supabase.from("students").update({
-            room_allotted: true,
+            room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
             total_fee: application.price || 84000,
             pending_fee: (application.price || 84000) - (existingStudent.paid_fee || 0),
           }).eq("id", existingStudent.id);
         } else {
+          // Ensure we have the photo url saved (can be huge)
+          let finalPhotoUrl = application.photo_url;
+          if (!finalPhotoUrl && (selectedApplication?.id === application.id)) {
+            finalPhotoUrl = selectedApplication.photo_url;
+          }
+          if (!finalPhotoUrl) {
+            const { data: appData } = await supabase.from("hostel_applications").select("photo_url").eq("id", application.id).single();
+            if (appData) finalPhotoUrl = appData.photo_url;
+          }
+
           await supabase.from("students").insert({
             roll_number: rollOrPhone,
             student_name: application.student_name,
             email: application.email,
             branch: application.branch,
             gender: application.gender,
-            room_allotted: true,
+            room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
             total_fee: application.price || 84000,
             pending_fee: application.price || 84000,
             paid_fee: 0,
             year: "1st Year",
-            photo_url: application.photo_url
+            photo_url: finalPhotoUrl
           });
         }
 
@@ -434,6 +446,22 @@ const WardenDashboard = () => {
           ac_type: application.ac_type,
         },
       }).catch(err => console.error('Email invoke error:', err));
+    }
+  };
+
+  const handleApplicationClick = async (app: any) => {
+    // Set initial data to open dialog instantly
+    setSelectedApplication(app);
+
+    // Fetch the heavy base64 strings dynamically
+    const { data, error } = await supabase
+      .from("hostel_applications")
+      .select("photo_url, signature_url")
+      .eq("id", app.id)
+      .single();
+
+    if (data && !error) {
+      setSelectedApplication((prev: any) => prev?.id === app.id ? { ...prev, photo_url: data.photo_url, signature_url: data.signature_url } : prev);
     }
   };
 
@@ -808,14 +836,15 @@ const WardenDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {applications.map((app) => {
                   const matchedStudent = students.find(s => s.roll_number === (app.phone_number || "").toUpperCase().trim() || (s.email && s.email === app.email));
-                  const allocatedRoom = (app.status === "accepted" || app.status === "approved") && matchedStudent?.room_allotted ? matchedStudent.hostel_room_number : null;
+                  // Show the room even if it's only "blocked" (room_allotted = false)
+                  const allocatedRoom = (app.status === "accepted" || app.status === "approved") && matchedStudent?.hostel_room_number ? matchedStudent.hostel_room_number : null;
 
                   return (
                     <Card
                       key={app.id}
                       className={`border-2 cursor-pointer transition-all hover:shadow-lg ${app.status === "pending" ? "border-success/50" : "border-border"
                         }`}
-                      onClick={() => setSelectedApplication(app)}
+                      onClick={() => handleApplicationClick(app)}
                     >
                       <CardHeader className="pb-2 relative">
                         {app.status === "pending" && (
@@ -1205,7 +1234,7 @@ const WardenDashboard = () => {
                 </div>
                 {(() => {
                   const matchedStudent = students.find(s => s.roll_number === (selectedApplication.phone_number || "").toUpperCase().trim() || (s.email && s.email === selectedApplication.email));
-                  const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved") && matchedStudent?.room_allotted ? matchedStudent.hostel_room_number : null;
+                  const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved") && matchedStudent?.hostel_room_number ? matchedStudent.hostel_room_number : null;
                   if (allocatedRoom) {
                     return (
                       <div className="detail-item">
