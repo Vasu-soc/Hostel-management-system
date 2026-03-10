@@ -76,6 +76,7 @@ const WardenDashboard = () => {
 
   // Dialog states
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+  const [appImages, setAppImages] = useState<Record<string, { photo_url: string, signature_url: string, loading: boolean }>>({});
   const [selectedGatePass, setSelectedGatePass] = useState<any | null>(null);
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
@@ -453,15 +454,40 @@ const WardenDashboard = () => {
     // Set initial data to open dialog instantly
     setSelectedApplication(app);
 
-    // Fetch the heavy base64 strings dynamically
-    const { data, error } = await supabase
-      .from("hostel_applications")
-      .select("photo_url, signature_url")
-      .eq("id", app.id)
-      .single();
+    // If we haven't fetched images for this app yet, fetch them
+    if (!appImages[app.id] || (!appImages[app.id].photo_url && !appImages[app.id].signature_url && !appImages[app.id].loading)) {
+      setAppImages(prev => ({ ...prev, [app.id]: { loading: true, photo_url: "", signature_url: "" } }));
 
-    if (data && !error) {
-      setSelectedApplication((prev: any) => prev?.id === app.id ? { ...prev, photo_url: data.photo_url, signature_url: data.signature_url } : prev);
+      try {
+        const { data, error } = await supabase
+          .from("hostel_applications")
+          .select("photo_url, signature_url")
+          .eq("id", app.id)
+          .single();
+
+        if (error) {
+          console.error("Failed to fetch application images", error);
+          setAppImages(prev => ({ ...prev, [app.id]: { loading: false, photo_url: "", signature_url: "" } }));
+        } else if (data) {
+          setAppImages(prev => ({
+            ...prev,
+            [app.id]: {
+              loading: false,
+              photo_url: data.photo_url || "",
+              signature_url: data.signature_url || ""
+            }
+          }));
+
+          // Also update selectedApplication in case it's still open to ensure both places have it
+          setSelectedApplication((prevApp: any) => prevApp?.id === app.id ? { ...prevApp, photo_url: data.photo_url, signature_url: data.signature_url } : prevApp);
+        }
+      } catch (err) {
+        console.error("Error fetching images", err);
+        setAppImages(prev => ({ ...prev, [app.id]: { loading: false, photo_url: "", signature_url: "" } }));
+      }
+    } else if (!appImages[app.id].loading) {
+      // If already fetched and cached, update selectedApplication immediately
+      setSelectedApplication((prevApp: any) => prevApp?.id === app.id ? { ...prevApp, photo_url: appImages[app.id].photo_url, signature_url: appImages[app.id].signature_url } : prevApp);
     }
   };
 
@@ -1161,9 +1187,14 @@ const WardenDashboard = () => {
               <div className="photos-section flex justify-between items-start gap-4 pb-4 border-b border-border">
                 <div className="photo-box flex-1">
                   <p className="photo-label text-sm text-muted-foreground mb-2">Passport Photo</p>
-                  {selectedApplication.photo_url ? (
+                  {appImages[selectedApplication.id]?.loading ? (
+                    <div className="w-24 h-28 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border flex-col gap-2">
+                      <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-[10px] text-muted-foreground">Loading...</span>
+                    </div>
+                  ) : (selectedApplication.photo_url || appImages[selectedApplication.id]?.photo_url) ? (
                     <img
-                      src={selectedApplication.photo_url}
+                      src={selectedApplication.photo_url || appImages[selectedApplication.id]?.photo_url}
                       alt="Passport Photo"
                       className="w-24 h-28 object-cover border-2 border-border rounded"
                     />
@@ -1175,14 +1206,19 @@ const WardenDashboard = () => {
                 </div>
                 <div className="photo-box flex-1 text-right">
                   <p className="photo-label text-sm text-muted-foreground mb-2">Signature</p>
-                  {selectedApplication.signature_url ? (
+                  {appImages[selectedApplication.id]?.loading ? (
+                    <div className="w-40 h-16 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto flex-col gap-2">
+                      <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-[10px] text-muted-foreground">Loading...</span>
+                    </div>
+                  ) : (selectedApplication.signature_url || appImages[selectedApplication.id]?.signature_url) ? (
                     <img
-                      src={selectedApplication.signature_url}
+                      src={selectedApplication.signature_url || appImages[selectedApplication.id]?.signature_url}
                       alt="Signature"
-                      className="w-32 h-16 object-contain border-2 border-border rounded ml-auto"
+                      className="w-40 h-16 object-contain border-2 border-border rounded ml-auto p-1 bg-white"
                     />
                   ) : (
-                    <div className="w-32 h-16 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto">
+                    <div className="w-40 h-16 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto">
                       <span className="text-xs text-muted-foreground">No Signature</span>
                     </div>
                   )}

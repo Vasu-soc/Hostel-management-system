@@ -108,10 +108,6 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   }, [selectedRoom, allStudents]);
 
   const handleApproveStudent = async (student: Student, room: Room) => {
-    if (getAvailableBeds(room) <= 0) {
-      toast({ title: "Error", description: "No available beds in this room", variant: "destructive" });
-      return;
-    }
 
     const { error: studentError } = await supabase
       .from("students")
@@ -493,7 +489,6 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                               <Button
                                 size="sm"
                                 onClick={() => handleApproveStudent(student, selectedRoom)}
-                                disabled={getAvailableBeds(selectedRoom) <= 0}
                               >
                                 <Check className="w-4 h-4 mr-1" />
                                 Approve
