@@ -30,3 +30,20 @@ BEGIN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.food_selections;
     END IF;
 END $$;
+
+-- Create Storage Bucket for Study Materials
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('study_materials', 'study_materials', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage Policies for study_materials
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND policyname = 'Allow public read on study_materials') THEN
+        CREATE POLICY "Allow public read on study_materials" ON storage.objects FOR SELECT USING (bucket_id = 'study_materials');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND policyname = 'Allow public uploads to study_materials') THEN
+        CREATE POLICY "Allow public uploads to study_materials" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'study_materials');
+    END IF;
+END $$;
+
