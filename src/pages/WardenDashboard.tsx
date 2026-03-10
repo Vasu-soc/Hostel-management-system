@@ -806,42 +806,54 @@ const WardenDashboard = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {applications.map((app) => (
-                  <Card
-                    key={app.id}
-                    className={`border-2 cursor-pointer transition-all hover:shadow-lg ${app.status === "pending" ? "border-success/50" : "border-border"
-                      }`}
-                    onClick={() => setSelectedApplication(app)}
-                  >
-                    <CardHeader className="pb-2 relative">
-                      {app.status === "pending" && (
-                        <span className="absolute top-4 right-4 w-3 h-3 rounded-full bg-success pulse-dot" />
-                      )}
-                      <CardTitle className="text-lg">{app.student_name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{app.branch?.toUpperCase()}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          {getRoomTypeName(app.room_type)}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(app.status)}`}>
-                            {app.status?.charAt(0).toUpperCase() + app.status?.slice(1)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                            onClick={(e) => handleDeleteApplication(app.id, e)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                {applications.map((app) => {
+                  const matchedStudent = students.find(s => s.roll_number === (app.phone_number || "").toUpperCase().trim() || (s.email && s.email === app.email));
+                  const allocatedRoom = (app.status === "accepted" || app.status === "approved") && matchedStudent?.room_allotted ? matchedStudent.hostel_room_number : null;
+
+                  return (
+                    <Card
+                      key={app.id}
+                      className={`border-2 cursor-pointer transition-all hover:shadow-lg ${app.status === "pending" ? "border-success/50" : "border-border"
+                        }`}
+                      onClick={() => setSelectedApplication(app)}
+                    >
+                      <CardHeader className="pb-2 relative">
+                        {app.status === "pending" && (
+                          <span className="absolute top-4 right-4 w-3 h-3 rounded-full bg-success pulse-dot" />
+                        )}
+                        <CardTitle className="text-lg">{app.student_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{app.branch?.toUpperCase()}</p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              {getRoomTypeName(app.room_type)}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {allocatedRoom && (
+                                <span className="px-2 py-1 rounded text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                                  Room: {allocatedRoom}
+                                </span>
+                              )}
+                              <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(app.status)}`}>
+                                {app.status?.charAt(0).toUpperCase() + app.status?.slice(1)}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                onClick={(e) => handleDeleteApplication(app.id, e)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1191,6 +1203,19 @@ const WardenDashboard = () => {
                     {selectedApplication.status}
                   </p>
                 </div>
+                {(() => {
+                  const matchedStudent = students.find(s => s.roll_number === (selectedApplication.phone_number || "").toUpperCase().trim() || (s.email && s.email === selectedApplication.email));
+                  const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved") && matchedStudent?.room_allotted ? matchedStudent.hostel_room_number : null;
+                  if (allocatedRoom) {
+                    return (
+                      <div className="detail-item">
+                        <p className="detail-label text-sm text-primary font-semibold">Allocated Room</p>
+                        <p className="detail-value font-bold text-primary">{allocatedRoom}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 <div className="detail-item col-span-2 fee-section">
                   <p className="detail-label text-sm text-muted-foreground">Total Fee</p>
                   <p className="detail-value font-semibold text-primary text-lg">
