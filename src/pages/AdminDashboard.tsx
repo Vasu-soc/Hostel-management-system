@@ -833,7 +833,7 @@ const AdminDashboard = () => {
 
                 {(selectedStudent.pending_fee || 100000) <= 0 && (
                   <Button
-                    onClick={handleMoveToNextYear}
+                    onClick={() => handleMoveToNextYear()}
                     disabled={isTransitioningYear}
                     className="flex-1 h-12 bg-success hover:bg-success/90 text-white shadow-lg"
                     title="Move to Next Academic Year"
