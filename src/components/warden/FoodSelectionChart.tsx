@@ -132,59 +132,61 @@ export default function FoodSelectionChart() {
                             <p className="text-lg">No food selections recorded yet.</p>
                         </div>
                     ) : (
-                        <div className="h-[400px] w-full pt-4">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={data}
-                                    margin={{
-                                        top: 20,
-                                        right: 30,
-                                        left: 20,
-                                        bottom: 60,
-                                    }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                                    <XAxis
-                                        dataKey="name"
-                                        angle={-45}
-                                        textAnchor="end"
-                                        height={80}
-                                        tick={{ fill: 'currentColor', fontSize: 13, fontWeight: 500 }}
-                                        axisLine={{ stroke: '#e5e7eb' }}
-                                        tickLine={false}
-                                    />
-                                    <YAxis
-                                        allowDecimals={false}
-                                        tick={{ fill: 'currentColor', fontSize: 12 }}
-                                        axisLine={{ stroke: '#e5e7eb' }}
-                                        tickLine={false}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
-                                        contentStyle={{
-                                            borderRadius: '12px',
-                                            border: '1px solid rgba(229, 231, 235, 1)',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            padding: '12px'
+                        <div className="w-full overflow-x-auto pb-4">
+                            <div className="min-w-[600px] h-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        data={data}
+                                        margin={{
+                                            top: 20,
+                                            right: 30,
+                                            left: 20,
+                                            bottom: 60,
                                         }}
-                                        itemStyle={{ fontWeight: 'bold' }}
-                                    />
-                                    <Bar
-                                        dataKey="count"
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={50}
                                     >
-                                        {data.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={COLORS[index % COLORS.length]}
-                                                fillOpacity={0.8}
-                                                className="transition-all duration-300 hover:fill-opacity-100"
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
+                                        <XAxis
+                                            dataKey="name"
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                            tick={{ fill: 'currentColor', fontSize: 13, fontWeight: 500 }}
+                                            axisLine={{ stroke: '#e5e7eb' }}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            allowDecimals={false}
+                                            tick={{ fill: 'currentColor', fontSize: 12 }}
+                                            axisLine={{ stroke: '#e5e7eb' }}
+                                            tickLine={false}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+                                            contentStyle={{
+                                                borderRadius: '12px',
+                                                border: '1px solid rgba(229, 231, 235, 1)',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                                padding: '12px'
+                                            }}
+                                            itemStyle={{ fontWeight: 'bold' }}
+                                        />
+                                        <Bar
+                                            dataKey="count"
+                                            radius={[6, 6, 0, 0]}
+                                            maxBarSize={50}
+                                        >
+                                            {data.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={COLORS[index % COLORS.length]}
+                                                    fillOpacity={0.8}
+                                                    className="transition-all duration-300 hover:fill-opacity-100"
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     )}
                 </CardContent>
