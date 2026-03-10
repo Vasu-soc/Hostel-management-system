@@ -814,14 +814,29 @@ const AdminDashboard = () => {
 
               <div className="p-4 bg-muted/30 rounded-xl border-2 border-border/50">
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Calculated Pending Balance</p>
-                <p className={`text-3xl font-black ${Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment)) > 0 ? "text-destructive" : "text-success"}`}>
-                  ₹{Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment)).toLocaleString()}
-                </p>
+                {(() => {
+                  const calcPending = feeData.total_fee - feeData.paid_fee - (feeData.new_payment || 0);
+                  return (
+                    <>
+                      <p className={`text-3xl font-black ${calcPending < 0 ? "text-destructive" : calcPending === 0 ? "text-success" : "text-foreground"}`}>
+                        ₹{calcPending.toLocaleString()}
+                      </p>
+                      {calcPending < 0 && (
+                        <p className="text-xs text-destructive mt-1 font-bold">New payment cannot exceed pending balance!</p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="flex gap-3">
-                {Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment)) > 0 ? (
-                  <Button onClick={handleUpdateFee} className="flex-[2] h-12 text-lg font-bold shadow-lg" variant="hero">
+                {((feeData.total_fee - feeData.paid_fee) > 0 || feeData.total_fee !== selectedStudent.total_fee) ? (
+                  <Button
+                    onClick={handleUpdateFee}
+                    className="flex-[2] h-12 text-lg font-bold shadow-lg"
+                    variant="hero"
+                    disabled={(feeData.total_fee - feeData.paid_fee - (feeData.new_payment || 0)) < 0 || (feeData.new_payment || 0) < 0}
+                  >
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
                   </Button>
