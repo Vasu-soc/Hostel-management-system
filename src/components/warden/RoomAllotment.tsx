@@ -678,17 +678,28 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
 
             <div className="p-4 bg-muted/30 rounded-xl border-2 border-border/50">
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Calculated Pending Balance</p>
-              <p className={`text-3xl font-black ${parseFloat(pendingAmount) > 0 ? "text-destructive" : "text-success"}`}>
-                ₹{Number(pendingAmount).toLocaleString()}
-              </p>
+              {(() => {
+                const calcPending = parseFloat(pendingAmount) || 0;
+                return (
+                  <>
+                    <p className={`text-3xl font-black ${calcPending < 0 ? "text-destructive" : calcPending === 0 ? "text-success" : "text-foreground"}`}>
+                      ₹{calcPending.toLocaleString()}
+                    </p>
+                    {calcPending < 0 && (
+                      <p className="text-xs text-destructive mt-1 font-bold">New payment cannot exceed pending balance!</p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="flex gap-3">
-              {parseFloat(pendingAmount) > 0 ? (
+              {((parseFloat(totalAmount) || 0) - (selectedStudent?.paid_fee || 0) > 0 || parseFloat(totalAmount) !== (selectedStudent?.total_fee || 100000)) ? (
                 <Button
                   onClick={handleFeeUpdate}
                   className="flex-[2] h-12 text-lg font-bold shadow-lg"
                   variant="hero"
+                  disabled={parseFloat(pendingAmount) < 0 || (parseFloat(paidAmount) || 0) < 0}
                 >
                   Update Fee Details
                 </Button>
