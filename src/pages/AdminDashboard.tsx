@@ -32,7 +32,6 @@ import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
 import WardenApproval from "@/components/admin/WardenApproval";
-import { localApi } from "@/lib/localStudentApi";
 
 interface Admin {
   id: string;
@@ -127,10 +126,8 @@ const AdminDashboard = () => {
   }, [navigate, selectedBranch, selectedYear]);
 
   const fetchAllStudents = async () => {
-    const [{ data, error }, deletedIds] = await Promise.all([
-      supabase.from("students").select("*"),
-      localApi.getDeletedIds()
-    ]);
+    const { data, error } = await supabase.from("students").select("*");
+    const deletedIds: string[] = []; // Local blocklist not supported on Vercel yet
 
     if (!error && data) {
       const activeStudents = (data as Student[]).filter(student => !deletedIds.includes(student.id));
@@ -162,14 +159,12 @@ const AdminDashboard = () => {
     };
     const dbYear = yearMapping[year] || year;
 
-    const [{ data, error }, deletedIds] = await Promise.all([
-      supabase
-        .from("students")
-        .select("*")
-        .ilike("branch", branch)
-        .eq("year", dbYear),
-      localApi.getDeletedIds()
-    ]);
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .ilike("branch", branch)
+      .eq("year", dbYear);
+    const deletedIds: string[] = [];
 
     if (error) {
       console.error("Error fetching students:", error);
@@ -267,12 +262,15 @@ const AdminDashboard = () => {
         if (error) console.error(`Error clearing ${table}:`, error);
       }
 
-      // 2. Clear Local JSON files via API
-      await Promise.all([
-        fetch('/api/local-food-selection', { method: 'DELETE' }),
-        fetch('/api/local-medical-alerts', { method: 'DELETE' }),
-        fetch('/api/deleted-students', { method: 'DELETE' }) // Clear blocklist
-      ]);
+      // 2. Clear Local JSON files (Not applicable on Vercel)
+      try {
+        await Promise.all([
+          // These are placeholder calls that might fail gracefully or be removed
+          supabase.from("food_selections").delete().neq("id", "00000000-0000-0000-0000-000000000000")
+        ]);
+      } catch (e) {
+        console.warn("Local cleanup skipped", e);
+      }
 
       toast({
         title: "System Reset Successful",

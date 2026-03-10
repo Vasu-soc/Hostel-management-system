@@ -32,6 +32,9 @@ import {
   Pill,
   Phone,
   Utensils,
+  Loader2,
+  PieChart as PieChartIcon,
+  Table as TableIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -485,13 +488,18 @@ const WardenDashboard = () => {
             ...prev,
             [app.id]: {
               loading: false,
-              photo_url: data.photo_url || "",
-              signature_url: data.signature_url || ""
+              photo_url: data.photo_url || "NONE",
+              signature_url: data.signature_url || "NONE"
             }
           }));
 
           // Also update selectedApplication in case it's still open to ensure both places have it
-          setSelectedApplication((prevApp: any) => prevApp?.id === app.id ? { ...prevApp, photo_url: data.photo_url, signature_url: data.signature_url } : prevApp);
+          setSelectedApplication((prevApp: any) => {
+            if (prevApp?.id === app.id) {
+              return { ...prevApp, photo_url: data.photo_url, signature_url: data.signature_url };
+            }
+            return prevApp;
+          });
         }
       } catch (err) {
         console.error("Error fetching images", err);
@@ -1199,16 +1207,16 @@ const WardenDashboard = () => {
               <div className="photos-section flex justify-between items-start gap-4 pb-4 border-b border-border">
                 <div className="photo-box flex-1">
                   <p className="photo-label text-sm text-muted-foreground mb-2">Passport Photo</p>
-                  {appImages[selectedApplication.id]?.loading ? (
+                  {(!appImages[selectedApplication.id] || appImages[selectedApplication.id]?.loading) ? (
                     <div className="w-24 h-28 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border flex-col gap-2">
                       <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
                       <span className="text-[10px] text-muted-foreground">Loading...</span>
                     </div>
-                  ) : (selectedApplication.photo_url || appImages[selectedApplication.id]?.photo_url) ? (
+                  ) : (selectedApplication.photo_url || (appImages[selectedApplication.id]?.photo_url && appImages[selectedApplication.id]?.photo_url !== "NONE")) ? (
                     <img
                       src={selectedApplication.photo_url || appImages[selectedApplication.id]?.photo_url}
                       alt="Passport Photo"
-                      className="w-24 h-28 object-cover border-2 border-border rounded"
+                      className="w-24 h-28 object-cover border-2 border-border rounded shadow-sm"
                     />
                   ) : (
                     <div className="w-24 h-28 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border">
@@ -1218,19 +1226,19 @@ const WardenDashboard = () => {
                 </div>
                 <div className="photo-box flex-1 text-right">
                   <p className="photo-label text-sm text-muted-foreground mb-2">Signature</p>
-                  {appImages[selectedApplication.id]?.loading ? (
-                    <div className="w-40 h-16 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto flex-col gap-2">
+                  {(!appImages[selectedApplication.id] || appImages[selectedApplication.id]?.loading) ? (
+                    <div className="w-48 h-20 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto flex-col gap-2">
                       <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
                       <span className="text-[10px] text-muted-foreground">Loading...</span>
                     </div>
-                  ) : (selectedApplication.signature_url || appImages[selectedApplication.id]?.signature_url) ? (
+                  ) : (selectedApplication.signature_url || (appImages[selectedApplication.id]?.signature_url && appImages[selectedApplication.id]?.signature_url !== "NONE")) ? (
                     <img
                       src={selectedApplication.signature_url || appImages[selectedApplication.id]?.signature_url}
                       alt="Signature"
-                      className="w-40 h-16 object-contain border-2 border-border rounded ml-auto p-1 bg-white"
+                      className="w-48 h-20 object-contain bg-white border-2 border-border rounded shadow-sm"
                     />
                   ) : (
-                    <div className="w-40 h-16 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto">
+                    <div className="w-48 h-20 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto">
                       <span className="text-xs text-muted-foreground">No Signature</span>
                     </div>
                   )}

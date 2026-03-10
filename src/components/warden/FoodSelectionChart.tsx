@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Utensils, Users, PieChart as PieChartIcon, Table as TableIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -29,17 +30,15 @@ export default function FoodSelectionChart() {
         if (!confirm("Are you sure you want to clear all food selection data? This cannot be undone.")) return;
 
         try {
-            const response = await fetch('/api/local-food-selection', {
-                method: 'DELETE'
+            const { error } = await supabase.from('food_selections').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+            if (error) throw error;
+
+            toast({
+                title: "Data Cleared",
+                description: "All food selection data has been removed successfully.",
             });
-            if (response.ok) {
-                toast({
-                    title: "Data Cleared",
-                    description: "All food selection data has been removed successfully.",
-                });
-                setData([]);
-                setTotalCount(0);
-            }
+            setData([]);
+            setTotalCount(0);
         } catch (error) {
             console.error("Failed to clear food selections:", error);
             toast({
@@ -53,10 +52,10 @@ export default function FoodSelectionChart() {
     const fetchFoodSelections = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/local-food-selection');
-            if (response.ok) {
-                const selections = await response.json();
+            const { data: selections, error } = await supabase.from('food_selections').select('*');
+            if (error) throw error;
 
+            if (selections) {
                 // Count frequencies
                 const counts: Record<string, number> = {};
                 let total = 0;

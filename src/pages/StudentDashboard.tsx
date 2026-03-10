@@ -453,26 +453,16 @@ const StudentDashboard = () => {
     if (!student || !selectedFoodItem) return;
 
     try {
-      const response = await fetch('/api/local-food-selection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          student_id: student.id,
-          student_name: student.student_name,
-          roll_number: student.roll_number,
-          food_item: selectedFoodItem,
-        }),
+      const { error } = await supabase.from('food_selections').insert({
+        student_id: student.id,
+        student_name: student.student_name,
+        roll_number: student.roll_number,
+        food_item: selectedFoodItem,
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Failed to save food selection");
-      }
+      if (error) throw error;
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to save food selection", variant: "destructive" });
       return;
     }
 

@@ -82,6 +82,41 @@ export type Database = {
           },
         ]
       }
+      food_selections: {
+        Row: {
+          id: string
+          student_id: string | null
+          student_name: string
+          roll_number: string
+          food_item: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id?: string | null
+          student_name: string
+          roll_number: string
+          food_item: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string | null
+          student_name?: string
+          roll_number?: string
+          food_item?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_selections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       food_issues: {
         Row: {
           created_at: string

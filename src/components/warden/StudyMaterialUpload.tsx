@@ -76,30 +76,19 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
       if (file) {
         const fileExt = file.name.split('.').pop();
         const safeFileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${wardenId}/${safeFileName}`;
 
-        await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = async () => {
-            try {
-              const res = await fetch('/api/local-upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileName: safeFileName, fileData: reader.result })
-              });
-              const result = await res.json();
-              if (result.success) {
-                file_url = result.url;
-                resolve(true);
-              } else {
-                reject(new Error(result.error || "Failed to save file locally"));
-              }
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.onerror = (err) => reject(err);
-        });
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('study_materials')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('study_materials')
+          .getPublicUrl(filePath);
+
+        file_url = urlData.publicUrl;
       }
 
       const { error: insertError } = await supabase.from('study_materials').insert({
