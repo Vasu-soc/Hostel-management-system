@@ -297,12 +297,12 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
 
   // Get actual occupied beds from students in room (source of truth)
   const getRoomOccupiedBeds = (roomNumber: string) => {
-    return students.filter(s => s.hostel_room_number === roomNumber && s.room_allotted).length;
+    return students.filter(s => s.hostel_room_number === roomNumber).length;
   };
 
   const getRoomStudents = (roomNumber: string) => {
     // Deduplicate by student id to prevent duplicates
-    const roomStudents = students.filter(s => s.hostel_room_number === roomNumber && s.room_allotted);
+    const roomStudents = students.filter(s => s.hostel_room_number === roomNumber);
     return roomStudents.filter((student, index, self) =>
       index === self.findIndex((s) => s.id === student.id)
     );
@@ -655,6 +655,11 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
                           <Check className="w-3 h-3" />
                           <span>Paid</span>
                         </div>
+                      )}
+                      {!student.room_allotted && (
+                        <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 text-amber-500 border-amber-500/20 uppercase font-bold">
+                          Blocked
+                        </Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{student.roll_number}</p>

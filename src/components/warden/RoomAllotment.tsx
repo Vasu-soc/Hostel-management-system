@@ -346,8 +346,10 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                   onClick={() => setSelectedRoom(room)}
                 >
                   <CardHeader className="pb-2 relative">
-                    {pendingStudents.some(s => !s.room_allotted && s.hostel_room_number === room.room_number) && (
-                      <span className="absolute top-4 right-4 w-3 h-3 rounded-full bg-destructive shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
+                    {pendingStudents.filter(s => !s.room_allotted && s.hostel_room_number === room.room_number).length > 0 && (
+                      <Badge className="absolute -top-2 -right-2 bg-destructive text-white h-6 w-6 rounded-full flex items-center justify-center p-0 shadow-lg border-2 border-background animate-pulse">
+                        {pendingStudents.filter(s => !s.room_allotted && s.hostel_room_number === room.room_number).length}
+                      </Badge>
                     )}
                     <div className="flex items-center justify-between pr-4">
                       <CardTitle className="text-lg">Room {room.room_number}</CardTitle>
