@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getParentSession, clearParentSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
+import PaymentPortal from "@/components/PaymentPortal";
 
 const WARDEN_CONTACT = "9553866278";
 
@@ -228,6 +229,8 @@ const ParentDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <PaymentPortal />
 
             {/* Fee Transactions - Under Fee Details */}
             {feeTransactions.length > 0 && (

@@ -1,38 +1,22 @@
 import { useEffect, useState } from "react";
-import hostelBuilding from "@/assets/hostel-building.png";
-import hostelCorridor from "@/assets/hostel-corridor.png";
-import hostelMess from "@/assets/hostel-mess.png";
-import roomSingle from "@/assets/room-single.png";
-import roomDoubleNew from "@/assets/room-double-new.png";
-import roomTriple from "@/assets/room-triple.png";
-import roomFourNew from "@/assets/room-four-new.png";
-import roomDormNew from "@/assets/room-dorm-new.png";
-import hostelAi1 from "@/assets/hostel-ai-1.png";
-import hostelAi2 from "@/assets/hostel-ai-2.png";
-import hostelAi3 from "@/assets/hostel-ai-3.png";
-import hostelAi4 from "@/assets/hostel-ai-4.png";
-import hostelAi5 from "@/assets/hostel-ai-5.png";
-import hostelAi6 from "@/assets/hostel-ai-6.png";
-import hostelAi7 from "@/assets/hostel-ai-7.png";
-import hostelAi8 from "@/assets/hostel-ai-8.png";
+import carousel1 from "@/assets/carousel-1.jpg";
+import carousel2 from "@/assets/carousel-2.jpg";
+import carousel3 from "@/assets/carousel-3.jpg";
+import carousel4 from "@/assets/carousel-4.jpg";
+import carousel5 from "@/assets/carousel-5.jpg";
+import carousel6 from "@/assets/carousel-6.jpg";
+import carousel7 from "@/assets/carousel-7.jpg";
+import carousel8 from "@/assets/carousel-8.jpg";
 
 const images = [
-  hostelBuilding,
-  hostelAi1,
-  roomSingle,
-  hostelAi5,
-  roomDoubleNew,
-  hostelAi2,
-  roomTriple,
-  hostelAi6,
-  roomFourNew,
-  hostelCorridor,
-  hostelAi3,
-  roomDormNew,
-  hostelAi7,
-  hostelMess,
-  hostelAi4,
-  hostelAi8,
+  carousel1,
+  carousel2,
+  carousel3,
+  carousel4,
+  carousel5,
+  carousel6,
+  carousel7,
+  carousel8,
 ];
 
 // Preload all images immediately

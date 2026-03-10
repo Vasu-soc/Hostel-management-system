@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, Building, ExternalLink, QrCode, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+import qrCodeImg from "@/assets/qrcode.jpg";
+
 const PaymentPortal = () => {
   const { toast } = useToast();
 
@@ -64,8 +66,8 @@ const PaymentPortal = () => {
 
         {/* QR Code */}
         <div className="flex flex-col items-center py-4">
-          <div className="w-32 h-32 bg-white rounded-lg border-2 border-border flex items-center justify-center">
-            <QrCode className="w-24 h-24 text-foreground" />
+          <div className="w-32 h-32 bg-white rounded-lg border-2 border-border flex items-center justify-center overflow-hidden">
+            <img src={qrCodeImg} alt="QR Code" className="w-full h-full object-cover" />
           </div>
           <p className="text-xs text-muted-foreground mt-2">Scan to Pay</p>
         </div>
