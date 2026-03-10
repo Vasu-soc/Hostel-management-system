@@ -25,7 +25,14 @@ export const localApi = {
         try {
             const res = await fetch('/api/deleted-students');
             if (!res.ok) return [];
-            return res.json();
+
+            // Check if response is JSON (Vercel might return HTML for unknown routes)
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                return [];
+            }
+
+            return await res.json();
         } catch { return []; }
     },
 
@@ -44,37 +51,53 @@ export const localApi = {
 
     /** Fetch all students, optionally filtered by gender */
     async getStudents(gender?: string): Promise<any[]> {
-        const url = gender ? `/api/local-students?gender=${gender}` : '/api/local-students';
-        const res = await fetch(url);
-        if (!res.ok) return [];
-        return res.json();
+        try {
+            const url = gender ? `/api/local-students?gender=${gender}` : '/api/local-students';
+            const res = await fetch(url);
+            if (!res.ok) return [];
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) return [];
+            return await res.json();
+        } catch { return []; }
     },
 
     /** Fetch single student by ID */
     async getStudent(id: string): Promise<any | null> {
-        const res = await fetch(`/api/local-students/${id}`);
-        if (!res.ok) return null;
-        return res.json();
+        try {
+            const res = await fetch(`/api/local-students/${id}`);
+            if (!res.ok) return null;
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) return null;
+            return await res.json();
+        } catch { return null; }
     },
 
     /** Create a new student */
     async createStudent(data: Record<string, any>): Promise<{ success: boolean; data?: any; error?: string }> {
-        const res = await fetch('/api/local-students', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        return res.json();
+        try {
+            const res = await fetch('/api/local-students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) return { success: false, error: "Invalid response type" };
+            return await res.json();
+        } catch { return { success: false, error: "Network error" }; }
     },
 
     /** Update a student by ID */
     async updateStudent(id: string, updates: Record<string, any>): Promise<{ success: boolean; data?: any; error?: string }> {
-        const res = await fetch(`/api/local-students/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updates),
-        });
-        return res.json();
+        try {
+            const res = await fetch(`/api/local-students/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) return { success: false, error: "Invalid response type" };
+            return await res.json();
+        } catch { return { success: false, error: "Network error" }; }
     },
 
     /**
@@ -102,20 +125,28 @@ export const localApi = {
 
     /** Fetch rooms, optionally filtered by 'boys' | 'girls' | undefined (all) */
     async getRooms(type?: 'boys' | 'girls'): Promise<any[]> {
-        const url = type ? `/api/local-rooms?type=${type}` : '/api/local-rooms';
-        const res = await fetch(url);
-        if (!res.ok) return [];
-        return res.json();
+        try {
+            const url = type ? `/api/local-rooms?type=${type}` : '/api/local-rooms';
+            const res = await fetch(url);
+            if (!res.ok) return [];
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) return [];
+            return await res.json();
+        } catch { return []; }
     },
 
     /** Update room record by room_number (used to sync occupied_beds) */
     async updateRoom(roomNumber: string, updates: Record<string, any>): Promise<{ success: boolean; error?: string }> {
-        const res = await fetch(`/api/local-rooms/${roomNumber}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updates),
-        });
-        return res.json();
+        try {
+            const res = await fetch(`/api/local-rooms/${roomNumber}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) return { success: false, error: "Invalid response type" };
+            return await res.json();
+        } catch { return { success: false, error: "Network error" }; }
     },
 };
 
