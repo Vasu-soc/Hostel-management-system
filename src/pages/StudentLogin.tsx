@@ -143,7 +143,17 @@ const StudentLogin = () => {
         .select("*")
         .order("room_number");
 
-      if (!roomsData || roomsError) return;
+      if (roomsError) {
+        console.error("Error fetching rooms:", roomsError);
+        return;
+      }
+
+      if (!roomsData || roomsData.length === 0) {
+        console.warn("No rooms found in database");
+        return;
+      }
+
+      console.log(`Fetched ${roomsData.length} total rooms from Supabase`);
 
       // Fetch students to correctly override potentially desycnced database occupied_beds
       const { data: studentsData } = await supabase
@@ -178,6 +188,7 @@ const StudentLogin = () => {
         }
       });
       setAllRooms(filteredRooms);
+      console.log(`Filtered to ${filteredRooms.length} ${gender} rooms`);
     };
     fetchData();
   }, [gender]);
@@ -190,25 +201,30 @@ const StudentLogin = () => {
     }
 
     const filtered = allRooms.filter((room) => {
-      // Check floor - be extremely robust with string/number and casing
-      const dbFloor = String(room.floor_number || "").trim();
-      const selectedFloor = String(registerData.floorNumber || "").trim();
-      if (dbFloor !== selectedFloor) return false;
+      // 1. Check Floor Number (Robust matching: 'Floor 1' vs '1')
+      const dbFloor = String(room.floor_number || "").replace(/\D/g, '').trim();
+      const selectedFloor = String(registerData.floorNumber || "").replace(/\D/g, '').trim();
+      if (dbFloor !== selectedFloor && dbFloor !== "" && selectedFloor !== "") return false;
 
-      // Check AC type - case insensitive trimmed
+      // 2. Check AC Type (Robust matching: 'ac' vs 'AC Block')
       const dbAc = String(room.ac_type || "").trim().toLowerCase();
       const selectedAc = String(registerData.hostelBlockType || "").trim().toLowerCase();
-      if (dbAc !== selectedAc) return false;
 
-      // Check availability (has at least 1 available bed)
-      const occupied = room.occupied_beds || 0;
-      const closed = room.closed_beds || 0;
-      const total = room.total_beds || 0;
+      const isAcSelected = selectedAc.includes('ac');
+      const isAcDb = dbAc === 'ac' || dbAc.includes('ac');
+
+      if (isAcSelected !== isAcDb) return false;
+
+      // 3. Check availability
+      const occupied = Number(room.occupied_beds || 0);
+      const closed = Number(room.closed_beds || 0);
+      const total = Number(room.total_beds || 0);
       const available = total - occupied - closed;
 
       return available > 0;
     });
 
+    console.log(`Preferred Room Filter: found ${filtered.length} rooms for Floor ${registerData.floorNumber}, Block ${registerData.hostelBlockType}`);
     setAvailableRooms(filtered);
 
     // Clear room number if previously selected room is no longer available
