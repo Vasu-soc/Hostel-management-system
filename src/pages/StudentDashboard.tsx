@@ -66,6 +66,7 @@ const StudentDashboard = () => {
   const gender = searchParams.get("gender") || "boys";
 
   const [student, setStudent] = useState<StudentSession | null>(null);
+  const [isDefaultPassword, setIsDefaultPassword] = useState(false);
   const [gatePasses, setGatePasses] = useState<Record<string, unknown>[]>([]);
   const [feeTransactions, setFeeTransactions] = useState<Record<string, unknown>[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<Record<string, unknown>[]>([]);
@@ -114,6 +115,11 @@ const StudentDashboard = () => {
 
     if (data) {
       console.log("Fetched latest student data:", data);
+      if (data.password === "Hostel@123") {
+        setIsDefaultPassword(true);
+      } else {
+        setIsDefaultPassword(false);
+      }
       setStudent(prev => {
         const updated = (prev ? { ...prev, ...data } : { ...data, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }) as StudentSession;
         // Sync back to session storage so it persists
@@ -490,6 +496,20 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {isDefaultPassword && (
+        <div className="bg-destructive text-destructive-foreground p-3 text-center text-sm font-bold animate-pulse sticky top-0 z-[100] flex items-center justify-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          SECURITY WARNING: You are using the default password. Please change it in Settings immediately!
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-4 h-8 bg-white text-destructive hover:bg-neutral-100 border-none"
+            onClick={() => setSettingsDialogOpen(true)}
+          >
+            Go to Settings
+          </Button>
+        </div>
+      )}
       {/* Hidden file input for profile photo upload */}
       <input
         ref={photoInputRef}

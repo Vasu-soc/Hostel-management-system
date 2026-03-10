@@ -167,13 +167,14 @@ const StudentLogin = () => {
       const isBoys = gender === "boys";
       const filteredRooms = roomsData.filter((r: Room) => {
         // OVERRIDE with the true calculation
+        const roomNum = (r.room_number || "").trim().toUpperCase();
         r.occupied_beds = actualOccupiedCounts[r.room_number] || 0;
 
         if (isBoys) {
-          return (r.room_number.startsWith('A') || r.room_number.startsWith('N')) &&
-            !r.room_number.startsWith('GA') && !r.room_number.startsWith('GN');
+          return (roomNum.startsWith('A') || roomNum.startsWith('N')) &&
+            !roomNum.startsWith('GA') && !roomNum.startsWith('GN');
         } else {
-          return r.room_number.startsWith('GA') || r.room_number.startsWith('GN');
+          return roomNum.startsWith('GA') || roomNum.startsWith('GN');
         }
       });
       setAllRooms(filteredRooms);
@@ -189,16 +190,21 @@ const StudentLogin = () => {
     }
 
     const filtered = allRooms.filter((room) => {
-      // Check floor
-      if (room.floor_number !== registerData.floorNumber) return false;
+      // Check floor - be extremely robust with string/number and casing
+      const dbFloor = String(room.floor_number || "").trim();
+      const selectedFloor = String(registerData.floorNumber || "").trim();
+      if (dbFloor !== selectedFloor) return false;
 
-      // Check AC type
-      if (room.ac_type !== registerData.hostelBlockType) return false;
+      // Check AC type - case insensitive trimmed
+      const dbAc = String(room.ac_type || "").trim().toLowerCase();
+      const selectedAc = String(registerData.hostelBlockType || "").trim().toLowerCase();
+      if (dbAc !== selectedAc) return false;
 
       // Check availability (has at least 1 available bed)
       const occupied = room.occupied_beds || 0;
       const closed = room.closed_beds || 0;
-      const available = room.total_beds - occupied - closed;
+      const total = room.total_beds || 0;
+      const available = total - occupied - closed;
 
       return available > 0;
     });

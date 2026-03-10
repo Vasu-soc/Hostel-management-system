@@ -150,14 +150,18 @@ const WardenDashboard = () => {
   };
 
   const fetchStudents = async (gender: string | null) => {
-    let query = supabase.from("students").select("*").order("student_name");
-    if (gender) query = query.eq("gender", gender);
-    const { data } = await query;
-    if (data) {
-      // Get the blocklist of permanently deleted IDs
-      const deletedIds = await localApi.getDeletedIds();
-      // Filter out permanently deleted students from UI
-      const activeStudents = (data as any[]).filter(student => !deletedIds.includes(student.id));
+    const query = supabase.from("students").select("*").order("student_name");
+    if (gender) {
+      query.eq("gender", gender);
+    }
+
+    const [dbResult, deletedIds] = await Promise.all([
+      query,
+      localApi.getDeletedIds()
+    ]);
+
+    if (dbResult.data) {
+      const activeStudents = (dbResult.data as any[]).filter(student => !deletedIds.includes(student.id));
       setStudents(activeStudents);
     }
   };
@@ -344,8 +348,9 @@ const WardenDashboard = () => {
 
       let availableRoom = null;
       for (const room of rooms) {
-        const isGirlsRoom = room.room_number.startsWith("GA") || room.room_number.startsWith("GN");
-        const isBoysRoom = (room.room_number.startsWith("A") || room.room_number.startsWith("N")) && !isGirlsRoom;
+        const roomNum = (room.room_number || "").toUpperCase().trim();
+        const isGirlsRoom = roomNum.startsWith("GA") || roomNum.startsWith("GN");
+        const isBoysRoom = (roomNum.startsWith("A") || roomNum.startsWith("N")) && !isGirlsRoom;
 
         if ((isBoys && !isBoysRoom) || (isGirls && !isGirlsRoom)) continue;
 
@@ -364,10 +369,11 @@ const WardenDashboard = () => {
       }
 
       if (!availableRoom) {
-        alert("There are no rooms of that application requirements based.");
+        alert("There are no available rooms matching this application's requirements.");
         action = "rejected";
       } else {
         const rollOrPhone = (application.phone_number || "").toUpperCase().trim();
+        const defaultPassword = "Hostel@123"; // Standard default password
         const existingStudent = students.find(s => s.roll_number === rollOrPhone || (s.email && s.email === application.email));
 
         if (existingStudent) {
@@ -377,6 +383,7 @@ const WardenDashboard = () => {
             floor_number: availableRoom.floor_number,
             total_fee: application.price || 84000,
             pending_fee: (application.price || 84000) - (existingStudent.paid_fee || 0),
+            password: existingStudent.password || defaultPassword,
           }).eq("id", existingStudent.id);
 
           if (updateError) {
@@ -408,7 +415,8 @@ const WardenDashboard = () => {
             pending_fee: application.price || 84000,
             paid_fee: 0,
             year: "1st Year",
-            photo_url: finalPhotoUrl
+            photo_url: finalPhotoUrl,
+            password: defaultPassword,
           });
 
           if (insertError) {
@@ -425,7 +433,11 @@ const WardenDashboard = () => {
           fetchRooms(isBoys, isGirls);
         }
 
-        toast({ title: "Room Blocked", description: `Assigned bed in Room ${availableRoom.room_number}` });
+        toast({
+          title: "Room Blocked",
+          description: `Room ${availableRoom.room_number} blocked. Username: ${rollOrPhone}, Default Password: ${defaultPassword}`,
+          duration: 10000
+        });
       }
     }
 

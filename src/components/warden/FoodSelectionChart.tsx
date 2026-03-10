@@ -131,7 +131,7 @@ export default function FoodSelectionChart() {
                             <p className="text-lg">No food selections recorded yet.</p>
                         </div>
                     ) : (
-                        <div className="w-full overflow-x-auto pb-4">
+                        <div className="w-full overflow-x-auto pb-4 h-[400px]">
                             <div className="min-w-[600px] h-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart

@@ -84,17 +84,17 @@ export const localApi = {
      *    → Even if Supabase RLS blocks DB delete, student stays hidden forever
      */
     async deleteStudent(id: string): Promise<{ success: boolean; wasLocal: boolean; error?: string }> {
-        // Always add to blocklist first (this is the guaranteed permanent hide)
+        // Always try to add to blocklist first (this is the guaranteed permanent hide)
         await this.markDeleted(id);
 
         // Also try to remove from local students.json
         try {
             const res = await fetch(`/api/local-students/${id}`, { method: 'DELETE' });
+            if (!res.ok) return { success: false, wasLocal: false };
             const result = await res.json();
-            return { success: true, wasLocal: result.success === true };
+            return { success: result.success === true, wasLocal: result.success === true };
         } catch {
-            // Even if local delete fails, the blocklist ensures the student stays hidden
-            return { success: true, wasLocal: false };
+            return { success: false, wasLocal: false };
         }
     },
 
