@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   LogOut,
   FileText,
@@ -183,30 +184,40 @@ const WardenDashboard = () => {
   const fetchIssues = async (gender: string | null) => {
     const elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
     const foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
-
-    // Fetch medical alerts directly from Supabase
-    const { data: medicalData, error: medicalError } = await supabase
-      .from("medical_alerts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (medicalError) {
-      console.error("Medical alerts fetch failed:", medicalError.message);
-      setMedicalAlerts([]);
-    } else {
-      setMedicalAlerts(medicalData || []);
-    }
+    const medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
 
     if (gender) {
-      const { data: elecData } = await elecQuery.eq("students.gender", gender);
-      const { data: foodData } = await foodQuery.eq("students.gender", gender);
+      const [{ data: elecData }, { data: foodData }, { data: medicalData, error: medicalError }] = await Promise.all([
+        elecQuery.eq("students.gender", gender),
+        foodQuery.eq("students.gender", gender),
+        medicalQuery.eq("students.gender", gender)
+      ]);
+
       if (elecData) setElectricalIssues(elecData as any[]);
       if (foodData) setFoodIssues(foodData as any[]);
+
+      if (medicalError) {
+        console.error("Medical alerts fetch failed:", medicalError.message);
+        setMedicalAlerts([]);
+      } else {
+        setMedicalAlerts(medicalData || []);
+      }
     } else {
-      const { data: elecData } = await elecQuery;
-      const { data: foodData } = await foodQuery;
+      const [{ data: elecData }, { data: foodData }, { data: medicalData, error: medicalError }] = await Promise.all([
+        elecQuery,
+        foodQuery,
+        medicalQuery
+      ]);
+
       if (elecData) setElectricalIssues(elecData as any[]);
       if (foodData) setFoodIssues(foodData as any[]);
+
+      if (medicalError) {
+        console.error("Medical alerts fetch failed:", medicalError.message);
+        setMedicalAlerts([]);
+      } else {
+        setMedicalAlerts(medicalData || []);
+      }
     }
   };
 
@@ -317,9 +328,78 @@ const WardenDashboard = () => {
     navigate("/");
   };
 
-  const handleApplicationAction = async (applicationId: string, action: "accepted" | "rejected") => {
+  const handleApplicationAction = async (applicationId: string, initialAction: "accepted" | "rejected") => {
     // Get the application details for email
     const application = applications.find(app => app.id === applicationId);
+    let action = initialAction;
+
+    if (action === "accepted" && application) {
+      const isBoys = warden?.warden_type === "boys";
+      const isGirls = warden?.warden_type === "girls";
+
+      let availableRoom = null;
+      for (const room of rooms) {
+        const isGirlsRoom = room.room_number.startsWith("GA") || room.room_number.startsWith("GN");
+        const isBoysRoom = (room.room_number.startsWith("A") || room.room_number.startsWith("N")) && !isGirlsRoom;
+
+        if ((isBoys && !isBoysRoom) || (isGirls && !isGirlsRoom)) continue;
+
+        if (room.room_type === application.room_type && room.ac_type === application.ac_type) {
+          const roomStudents = students.filter(s => s.hostel_room_number === room.room_number && s.room_allotted);
+          const actualOccupied = roomStudents.length;
+          const closedBeds = room.closed_beds || 0;
+          const availableBeds = Math.max(0, room.total_beds - actualOccupied - closedBeds);
+
+          if (availableBeds > 0) {
+            availableRoom = room;
+            break;
+          }
+        }
+      }
+
+      if (!availableRoom) {
+        alert("There are no rooms of that application requirements based.");
+        action = "rejected";
+      } else {
+        const rollOrPhone = (application.phone_number || "").toUpperCase().trim();
+        const existingStudent = students.find(s => s.roll_number === rollOrPhone || (s.email && s.email === application.email));
+
+        if (existingStudent) {
+          await supabase.from("students").update({
+            room_allotted: true,
+            hostel_room_number: availableRoom.room_number,
+            floor_number: availableRoom.floor_number,
+            total_fee: application.price || 84000,
+            pending_fee: (application.price || 84000) - (existingStudent.paid_fee || 0),
+          }).eq("id", existingStudent.id);
+        } else {
+          await supabase.from("students").insert({
+            roll_number: rollOrPhone,
+            student_name: application.student_name,
+            email: application.email,
+            branch: application.branch,
+            gender: application.gender,
+            room_allotted: true,
+            hostel_room_number: availableRoom.room_number,
+            floor_number: availableRoom.floor_number,
+            total_fee: application.price || 84000,
+            pending_fee: application.price || 84000,
+            paid_fee: 0,
+            year: "1st Year",
+            photo_url: application.photo_url
+          });
+        }
+
+        // Pre-fetch immediately to update the UI
+        if (warden) {
+          const studentGender = warden.warden_type === "boys" ? "male" : warden.warden_type === "girls" ? "female" : null;
+          fetchStudents(studentGender);
+          fetchRooms(isBoys, isGirls);
+        }
+
+        toast({ title: "Room Blocked", description: `Assigned bed in Room ${availableRoom.room_number}` });
+      }
+    }
 
     const { error } = await supabase
       .from("hostel_applications")
@@ -564,7 +644,7 @@ const WardenDashboard = () => {
     { id: "applications" as TabType, label: "Applications", icon: FileText, count: pendingApplications.length },
     { id: "gatepasses" as TabType, label: "Gate Passes", icon: DoorOpen, count: pendingGatePasses.length },
     { id: "rooms" as TabType, label: "Hostel Rooms", icon: Building2 },
-    { id: "allotment" as TabType, label: "Room Allotment", icon: Users },
+    { id: "allotment" as TabType, label: "Room Allotment", icon: Users, count: pendingStudents.length },
     { id: "materials" as TabType, label: "Study Materials", icon: Upload },
     { id: "issues" as TabType, label: "Issues", icon: AlertTriangle, count: pendingElectrical.length + pendingFood.length },
     { id: "foodSelection" as TabType, label: "Food Selection", icon: Utensils },

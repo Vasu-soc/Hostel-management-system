@@ -218,20 +218,19 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   const handleFeeUpdate = async () => {
     if (!selectedStudent) return;
 
-    const paid = parseFloat(paidAmount) || 0;
-    const total = parseFloat(totalAmount) || 84000;
-    const pending = total - paid;
+    const newPayment = parseFloat(paidAmount) || 0;
+    const currentTotalFee = parseFloat(totalAmount) || selectedStudent.total_fee || 84000;
 
-    // Calculate the difference indicating new amount paid
     const oldPaid = selectedStudent.paid_fee || 0;
-    const newAddition = paid - oldPaid;
+    const newTotalPaid = oldPaid + newPayment;
+    const newPending = currentTotalFee - newTotalPaid;
 
     const { error } = await supabase
       .from("students")
       .update({
-        paid_fee: paid,
-        pending_fee: pending,
-        total_fee: total,
+        paid_fee: newTotalPaid,
+        pending_fee: newPending,
+        total_fee: currentTotalFee,
       })
       .eq("id", selectedStudent.id);
 
@@ -240,10 +239,10 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
       return;
     }
 
-    if (newAddition > 0) {
+    if (newPayment > 0) {
       await supabase.from("fee_transactions").insert({
         student_id: selectedStudent.id,
-        amount: newAddition,
+        amount: newPayment,
         remarks: `Fee payment added by warden`,
       });
     }
@@ -283,10 +282,10 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   const openFeeDialog = (student: Student) => {
     setSelectedStudent(student);
     const total = student.total_fee || 84000;
-    const paid = student.paid_fee || 0;
+    const oldPaid = student.paid_fee || 0;
     setTotalAmount(total.toString());
-    setPaidAmount(paid.toString());
-    setPendingAmount((total - paid).toString());
+    setPaidAmount(""); // Default to 0/empty to prevent confusion
+    setPendingAmount((total - oldPaid).toString());
     setShowFeeDialog(true);
   };
 
@@ -556,18 +555,24 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="paidAmount">Paid Amount (₹)</Label>
+              <Label>Previously Paid (₹)</Label>
+              <p className="text-lg font-bold">₹{(selectedStudent?.paid_fee || 0).toLocaleString()}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paidAmount">New Paid Amount (₹)</Label>
               <Input
                 id="paidAmount"
                 type="number"
                 value={paidAmount}
                 onChange={(e) => {
                   setPaidAmount(e.target.value);
-                  const paid = parseFloat(e.target.value) || 0;
+                  const newPayment = parseFloat(e.target.value) || 0;
                   const total = parseFloat(totalAmount) || 0;
-                  setPendingAmount((total - paid).toString());
+                  const oldPaid = selectedStudent?.paid_fee || 0;
+                  setPendingAmount((total - oldPaid - newPayment).toString());
                 }}
-                placeholder="Enter paid amount"
+                placeholder="Enter new payment added"
               />
             </div>
 

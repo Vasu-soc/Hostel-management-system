@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Search, Trash2, IndianRupee, MessageSquare, User, Building2, ChevronRight, Bed, X } from "lucide-react";
+import { Search, Trash2, IndianRupee, MessageSquare, User, Building2, ChevronRight, Bed, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { localApi } from "@/lib/localStudentApi";
