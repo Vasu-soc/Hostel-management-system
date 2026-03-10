@@ -283,20 +283,6 @@ const AdminDashboard = () => {
   };
 
   const openFeeDialog = (student: Student) => {
-    // Check if year is already completed - if so, auto-transition when opening
-    if (student.paid_fee && student.total_fee && student.paid_fee >= student.total_fee && student.pending_fee === 0) {
-      const currentYear = student.year;
-      const yearNumber = parseInt(currentYear) || 1;
-      if (yearNumber < 4) {
-        setSelectedStudent(student);
-        // Delay to allow state to settle
-        setTimeout(() => {
-          handleMoveToNextYear(true);
-        }, 100);
-        return;
-      }
-    }
-
     setSelectedStudent(student);
     setFeeData({
       total_fee: student.total_fee || 100000,
@@ -841,8 +827,13 @@ const AdminDashboard = () => {
                     Save Changes
                   </Button>
                 ) : (
-                  <div className="flex-[2] p-3 bg-success/10 border-2 border-success/30 rounded-lg text-center font-bold text-success animate-in zoom-in">
-                    Year Fees Completed!
+                  <div className="flex-[2] p-3 bg-success/10 border-2 border-success/30 rounded-lg text-center font-bold text-success animate-in zoom-in text-xs flex items-center justify-center">
+                    {(() => {
+                      const yearNum = parseInt(selectedStudent.year) || 1;
+                      if (yearNum >= 4) return "All 4 Years Completed!";
+                      const nextYear = `${yearNum + 1}${yearNum + 1 === 2 ? 'nd' : yearNum + 1 === 3 ? 'rd' : 'th'} Year`;
+                      return `Next payment updation open in ${nextYear}, now the ${selectedStudent.year} fees is completed.`;
+                    })()}
                   </div>
                 )}
 
