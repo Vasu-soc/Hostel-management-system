@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Eye, EyeOff, KeyRound, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -126,12 +127,14 @@ const ResetPassword = () => {
         .eq("token", token);
 
       setResetSuccess(true);
+      logger.info("password_reset_complete", tokenData.user_identifier, "success");
       toast({
         title: "Password Reset Successful",
         description: "Your password has been updated. You can now login with your new password.",
       });
 
     } catch (error: any) {
+      logger.error("password_reset_complete", tokenData?.user_identifier || "unknown", "failure");
       toast({
         title: "Error",
         description: error.message || "Failed to reset password",

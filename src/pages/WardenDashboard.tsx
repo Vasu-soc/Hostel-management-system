@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -333,8 +334,11 @@ const WardenDashboard = () => {
   }, [warden]);
 
   const handleLogout = () => {
+    if (warden) {
+      logger.info("warden_logout", warden.username, "success");
+    }
     clearWardenSession();
-    navigate("/");
+    navigate("/warden-login");
   };
 
   const handleApplicationAction = async (applicationId: string, initialAction: "accepted" | "rejected") => {
@@ -448,9 +452,12 @@ const WardenDashboard = () => {
       .eq("id", applicationId);
 
     if (error) {
-      toast({ title: "Error", description: "Failed to update application", variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      logger.error("room_allocation", applicationId, "failure");
       return;
     }
+
+    logger.info(action === "accepted" ? "room_allocation_approved" : "room_allocation_rejected", applicationId, "success");
 
     toast({
       title: action === "accepted" ? "Application Accepted" : "Application Rejected",

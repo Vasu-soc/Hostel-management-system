@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Building2, Check, Upload, Camera, PenLine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 // Removed college-header import - CollegeHeader only shown on home page
 import roomSingle from "@/assets/room-single.png";
 import roomDoubleNew from "@/assets/room-double-new.png";
@@ -227,6 +228,8 @@ const HostelApplication = () => {
 
       if (error) throw error;
 
+      logger.info("hostel_application", formData.studentName, "success");
+      
       // Send notification to warden email (fire and forget)
       supabase.functions.invoke("send-request-notification", {
         body: {
@@ -248,6 +251,7 @@ const HostelApplication = () => {
         navigate("/");
       }, 1500);
     } catch (error: any) {
+      logger.error("hostel_application", formData.studentName || "unknown", "failure");
       toast({
         title: "Error",
         description: error.message || "Failed to submit application",

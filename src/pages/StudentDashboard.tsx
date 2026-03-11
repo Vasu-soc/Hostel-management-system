@@ -39,6 +39,7 @@ import CollegeHeader from "@/components/CollegeHeader";
 import PaymentPortal from "@/components/PaymentPortal";
 import { gatePassSchema, issueReportSchema, formatValidationErrors } from "@/lib/validations";
 import { getStudentSession, clearStudentSession, StudentSession } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const WARDEN_CONTACT = "9553866278";
 
@@ -355,6 +356,9 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = () => {
+    if (student) {
+      logger.info("logout", student.roll_number, "success");
+    }
     clearStudentSession();
     navigate("/");
   };
@@ -390,10 +394,12 @@ const StudentDashboard = () => {
     });
 
     if (error) {
+      logger.error("gate_pass_submission", student.roll_number, "failure");
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
+    logger.info("gate_pass_submission", student.roll_number, "success");
     // Send notification to warden email (fire and forget)
     supabase.functions.invoke("send-request-notification", {
       body: {
@@ -432,9 +438,12 @@ const StudentDashboard = () => {
 
     const { error } = await supabase.from(table).insert(insertData);
     if (error) {
+      logger.error(`${type}_issue_report`, student.roll_number, "failure");
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
+
+    logger.info(`${type}_issue_report`, student.roll_number, "success");
 
     // Send notification to warden email (fire and forget)
     supabase.functions.invoke("send-request-notification", {
@@ -467,9 +476,12 @@ const StudentDashboard = () => {
     });
 
     if (error) {
+      logger.error("medical_alert", student.roll_number, "failure");
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
+
+    logger.info("medical_alert", student.roll_number, "success");
 
     // Send notification to warden email (fire and forget)
     supabase.functions.invoke("send-request-notification", {

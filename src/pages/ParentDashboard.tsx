@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getParentSession, clearParentSession } from "@/lib/session";
+import { logger } from "@/lib/logger";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
 import PaymentPortal from "@/components/PaymentPortal";
@@ -172,6 +173,10 @@ const ParentDashboard = () => {
   }, [student?.id]);
 
   const handleLogout = () => {
+    const parent = getParentSession();
+    if (parent) {
+      logger.info("parent_logout", parent.mobile_number, "success");
+    }
     clearParentSession();
     navigate("/");
   };

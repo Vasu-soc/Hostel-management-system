@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -205,8 +206,11 @@ const AdminDashboard = () => {
 
     if (error) {
       toast({ title: "Error", description: "Failed to update fee", variant: "destructive" });
+      logger.error("fee_update", selectedStudent.roll_number, "failure");
       return;
     }
+
+    logger.info("fee_update", selectedStudent.roll_number, "success");
 
     if (feeData.new_payment > 0) {
       await supabase.from("fee_transactions").insert({
@@ -348,6 +352,7 @@ const AdminDashboard = () => {
         title: "System Reset Successful",
         description: "All student data has been wiped. You can now start new registrations.",
       });
+      logger.info("system_reset", admin.username, "success");
 
       // Refresh data
       fetchAllStudents();
@@ -359,6 +364,7 @@ const AdminDashboard = () => {
       if (!roomError) fetchRooms();
 
     } catch (error: any) {
+      logger.error("system_reset", admin.username, "failure");
       toast({
         title: "Reset Failed",
         description: error.message || "An error occurred during system reset",
@@ -370,6 +376,9 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
+    if (admin) {
+      logger.info("admin_logout", admin.username, "success");
+    }
     clearAdminSession();
     navigate("/admin-login");
     toast({

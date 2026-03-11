@@ -11,6 +11,7 @@ import { Search, Trash2, IndianRupee, MessageSquare, User, Building2, ChevronRig
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { localApi } from "@/lib/localStudentApi";
+import { logger } from "@/lib/logger";
 
 interface Room {
   id: string;
@@ -203,8 +204,11 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
 
     if (error) {
       toast({ title: "Error", description: "Failed to update fee details", variant: "destructive" });
+      logger.error("fee_update", selectedStudent.roll_number, "failure");
       return;
     }
+
+    logger.info("fee_update", selectedStudent.roll_number, "success");
 
     if (newPayment > 0) {
       await supabase.from("fee_transactions").insert({

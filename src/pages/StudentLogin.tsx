@@ -23,6 +23,7 @@ import {
 } from "@/lib/validations";
 import { setStudentSession } from "@/lib/session";
 import { localApi } from "@/lib/localStudentApi";
+import { logger } from "@/lib/logger";
 
 const branches = [
   { value: "cse", label: "CSE" },
@@ -259,6 +260,7 @@ const StudentLogin = () => {
       if (error) throw error;
 
       if (!student) {
+        logger.error("login", loginData.rollNumber, "failure");
         toast({
           title: "Student Not Found",
           description: "Please register first before logging in",
@@ -271,6 +273,7 @@ const StudentLogin = () => {
       // Check gender validation
       const expectedGender = gender === "boys" ? "male" : "female";
       if (student.gender !== expectedGender) {
+        logger.error("login", loginData.rollNumber, "failure");
         toast({
           title: "Access Denied",
           description: `This login is only for ${gender}. Please use the correct login portal.`,
@@ -292,6 +295,7 @@ const StudentLogin = () => {
       }
 
       if (student.password !== loginData.password) {
+        logger.error("login", loginData.rollNumber, "failure");
         toast({
           title: "Invalid Password",
           description: "Please check your password and try again",
@@ -300,9 +304,10 @@ const StudentLogin = () => {
         setIsLoading(false);
         return;
       }
-
+      
       // Check if student is approved (room_allotted is our approval flag)
       if (!student.room_allotted) {
+        logger.error("login", loginData.rollNumber, "failure");
         toast({
           title: "Account Pending Approval",
           description: "Your registration is complete. Please wait for the Warden to approve your room and give you login access.",
@@ -314,6 +319,7 @@ const StudentLogin = () => {
 
       // Use secure session management (no password stored)
       setStudentSession(student as Record<string, unknown>);
+      logger.info("login", loginData.rollNumber, "success");
       navigate(`/student-dashboard?gender=${gender}`);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
@@ -355,6 +361,7 @@ const StudentLogin = () => {
       // Use secure session management (no password stored)
       setStudentSession(studentForPassword);
 
+      logger.info("password_setup", studentForPassword.roll_number as string, "success");
       toast({
         title: "Password Set Successfully!",
         description: "You are now logged in",
@@ -363,6 +370,7 @@ const StudentLogin = () => {
       navigate(`/student-dashboard?gender=${gender}`);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to set password";
+      logger.error("password_setup", studentForPassword?.roll_number as string, "failure");
       toast({
         title: "Error",
         description: errorMessage,
@@ -500,6 +508,7 @@ const StudentLogin = () => {
 
       if (error) throw error;
 
+      logger.info("student_registration", registerData.rollNumber.toUpperCase(), "success");
       toast({
         title: "Registration Successful!",
         description: "You can now login with your Roll Number and password",
@@ -509,6 +518,7 @@ const StudentLogin = () => {
       setLoginData({ ...loginData, rollNumber: registerData.rollNumber.toUpperCase() });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Registration failed";
+      logger.error("student_registration", registerData.rollNumber.toUpperCase(), "failure");
       toast({
         title: "Error",
         description: errorMessage,
@@ -566,6 +576,7 @@ const StudentLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
+        logger.info("password_reset_request", forgotPasswordData.email, "success");
         toast({
           title: "Email Sent",
           description: data.message || "Password reset link has been sent to your email",
@@ -573,6 +584,7 @@ const StudentLogin = () => {
         setShowForgotPassword(false);
         setForgotPasswordData({ email: "" });
       } else {
+        logger.error("password_reset_request", forgotPasswordData.email, "failure");
         toast({
           title: "Error",
           description: data.error || "Failed to send reset email",

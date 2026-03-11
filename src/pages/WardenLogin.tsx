@@ -21,6 +21,7 @@ import {
   formatValidationErrors
 } from "@/lib/validations";
 import { setWardenSession } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const WardenLogin = () => {
   const navigate = useNavigate();
@@ -87,6 +88,7 @@ const WardenLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
+        logger.info("password_reset_request", forgotPasswordData.username, "success");
         toast({
           title: "Email Sent",
           description: data.message || "Password reset link has been sent to your email",
@@ -94,6 +96,7 @@ const WardenLogin = () => {
         setShowForgotPassword(false);
         setForgotPasswordData({ username: "", email: "" });
       } else {
+        logger.error("password_reset_request", forgotPasswordData.username, "failure");
         toast({
           title: "Error",
           description: data.error || "Failed to send reset email",
@@ -137,6 +140,7 @@ const WardenLogin = () => {
       if (error) throw error;
 
       if (!warden) {
+        logger.error("warden_login", loginData.username, "failure");
         toast({
           title: "Warden Not Found",
           description: "Please register first before logging in",
@@ -147,6 +151,7 @@ const WardenLogin = () => {
       }
 
       if (warden.password !== loginData.password) {
+        logger.error("warden_login", loginData.username, "failure");
         toast({
           title: "Invalid Password",
           description: "Please check your password and try again",
@@ -158,6 +163,7 @@ const WardenLogin = () => {
 
       // Check approval status
       if (warden.approval_status === "pending") {
+        logger.error("warden_login", loginData.username, "failure");
         toast({
           title: "Approval Pending",
           description: "Your registration is pending approval from the Admin. Please wait.",
@@ -168,6 +174,7 @@ const WardenLogin = () => {
       }
 
       if (warden.approval_status === "rejected") {
+        logger.error("warden_login", loginData.username, "failure");
         toast({
           title: "Registration Rejected",
           description: warden.rejected_reason || "Your registration was rejected by the Admin.",
@@ -179,6 +186,7 @@ const WardenLogin = () => {
 
       // Use secure session management (no password stored)
       setWardenSession(warden as Record<string, unknown>);
+      logger.info("warden_login", loginData.username, "success");
       navigate("/warden-dashboard");
     } catch (error: any) {
       console.error("Login Error Object:", error);
@@ -198,6 +206,7 @@ const WardenLogin = () => {
         description: errorMessage,
         variant: "destructive",
       });
+      logger.error("warden_login", loginData.username, "failure");
     } finally {
       setIsLoading(false);
     }

@@ -14,6 +14,7 @@ import {
   formatValidationErrors
 } from "@/lib/validations";
 import { setParentSession } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const ParentLogin = () => {
   const navigate = useNavigate();
@@ -78,6 +79,7 @@ const ParentLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
+        logger.info("password_reset_request", forgotPasswordData.mobileNumber, "success");
         toast({
           title: "Email Sent",
           description: data.message || "Password reset link has been sent to your email",
@@ -85,6 +87,7 @@ const ParentLogin = () => {
         setShowForgotPassword(false);
         setForgotPasswordData({ mobileNumber: "", email: "" });
       } else {
+        logger.error("password_reset_request", forgotPasswordData.mobileNumber, "failure");
         toast({
           title: "Error",
           description: data.error || "Failed to send reset email",
@@ -128,6 +131,7 @@ const ParentLogin = () => {
       if (error) throw error;
 
       if (!parent) {
+        logger.error("parent_login", loginData.mobileNumber, "failure");
         toast({
           title: "Parent Not Found",
           description: "Please register first before logging in",
@@ -138,6 +142,7 @@ const ParentLogin = () => {
       }
 
       if (parent.password !== loginData.password) {
+        logger.error("parent_login", loginData.mobileNumber, "failure");
         toast({
           title: "Invalid Password",
           description: "Please check your password and try again",
@@ -149,9 +154,11 @@ const ParentLogin = () => {
 
       // Use secure session management (no password stored)
       setParentSession(parent as Record<string, unknown>);
+      logger.info("parent_login", loginData.mobileNumber, "success");
       navigate("/parent-dashboard");
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
+      logger.error("parent_login", loginData.mobileNumber, "failure");
       toast({
         title: "Error",
         description: errorMessage,
@@ -240,6 +247,7 @@ const ParentLogin = () => {
 
       if (error) throw error;
 
+      logger.info("parent_registration", registerData.mobileNumber, "success");
       toast({
         title: "Registration Successful!",
         description: "You can now login with your mobile number",
@@ -249,6 +257,7 @@ const ParentLogin = () => {
       setLoginData({ ...loginData, mobileNumber: registerData.mobileNumber });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Registration failed";
+      logger.error("parent_registration", registerData.mobileNumber, "failure");
       toast({
         title: "Error",
         description: errorMessage,

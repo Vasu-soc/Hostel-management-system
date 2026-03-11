@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search, Check, Home, Users, IndianRupee, MessageSquare, User, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { localApi } from "@/lib/localStudentApi";
 
 interface Room {
@@ -275,6 +276,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
       }
     }
 
+    logger.info("fee_payment", selectedStudent.roll_number, "success");
     toast({ title: "Success", description: newPending <= 0 ? "Year Fees Completed!" : "Fee details updated successfully" });
 
     // Refresh the local students list to reflect changes in the UI

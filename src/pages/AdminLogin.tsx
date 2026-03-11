@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { adminLoginSchema, formatValidationErrors } from "@/lib/validations";
 import { setAdminSession } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -58,6 +59,7 @@ const AdminLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
+        logger.info("password_reset_request", forgotPasswordData.username, "success");
         toast({
           title: "Email Sent",
           description: data.message || "Password reset link has been sent to your email",
@@ -65,6 +67,7 @@ const AdminLogin = () => {
         setShowForgotPassword(false);
         setForgotPasswordData({ username: "", email: "" });
       } else {
+        logger.error("password_reset_request", forgotPasswordData.username, "failure");
         toast({
           title: "Error",
           description: data.error || "Failed to send reset email",
@@ -108,6 +111,7 @@ const AdminLogin = () => {
       if (error) throw error;
 
       if (!admin) {
+        logger.error("admin_login", loginData.username, "failure");
         toast({
           title: "Admin Not Found",
           description: "No admin account found with this username",
@@ -118,6 +122,7 @@ const AdminLogin = () => {
       }
 
       if (admin.password !== loginData.password) {
+        logger.error("admin_login", loginData.username, "failure");
         toast({
           title: "Invalid Password",
           description: "Please check your password and try again",
@@ -129,6 +134,7 @@ const AdminLogin = () => {
 
       // Use secure session management (no password stored)
       setAdminSession(admin as Record<string, unknown>);
+      logger.info("admin_login", loginData.username, "success");
       toast({
         title: "Login Successful",
         description: `Welcome back, ${admin.name}!`,
@@ -136,6 +142,7 @@ const AdminLogin = () => {
       navigate("/admin-dashboard");
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "An error occurred during login";
+      logger.error("admin_login", loginData.username, "failure");
       toast({
         title: "Login Failed",
         description: errorMessage,

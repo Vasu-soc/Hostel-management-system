@@ -8,7 +8,63 @@ import { componentTagger } from "lovable-tagger";
 const localApiPlugin = () => ({
   name: 'local-api',
   configureServer(server: any) {
+    const logsDir = path.resolve(__dirname, 'logs');
+    const logFile = path.join(logsDir, 'app.log');
+    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+
+    const writeToLog = (entry: { eventType: string, username?: string, action: string, status: string, ip?: string }) => {
+      const timestamp = new Date().toISOString().replace('T', ' ').split('.')[0];
+      const username = entry.username || 'anonymous';
+      const ip = entry.ip || '127.0.0.1';
+      const logLine = `${timestamp} ${entry.eventType} action=${entry.action} username=${username} ip=${ip} status=${entry.status}\n`;
+      fs.appendFileSync(logFile, logLine);
+    };
+
     server.middlewares.use((req: any, res: any, next: any) => {
+      // General middleware: Log every HTTP request
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+      
+      // We don't log typical asset requests to keep logs clean for Splunk, but we log all API calls
+      if (req.url?.startsWith('/api/')) {
+        const clientIp = ip.toString();
+        const requestUrl = req.url;
+        const requestMethod = req.method;
+        
+        res.on('finish', () => {
+          const statusText = res.statusCode < 400 ? 'success' : 'failure';
+          writeToLog({
+            eventType: 'INFO',
+            action: `${requestMethod} ${requestUrl}`,
+            username: 'system',
+            ip: clientIp,
+            status: statusText
+          });
+        });
+      }
+
+      // 0. Dedicated Logging Endpoint for Frontend Events
+      if (req.url === '/api/logs' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (chunk: any) => body += chunk.toString());
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            writeToLog({
+              eventType: data.eventType || 'INFO',
+              username: data.username,
+              action: data.action,
+              status: data.status,
+              ip: data.ip || ip.toString()
+            });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true }));
+          } catch (e: any) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+        return;
+      }
       // 1. Local File Updloads (PDFs/Materials)
       if (req.url === '/api/local-upload' && req.method === 'POST') {
         let body = '';
