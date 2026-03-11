@@ -762,15 +762,7 @@ const StudentDashboard = () => {
               </Dialog>
             </div>
 
-            {(student?.pending_fee !== undefined && student.pending_fee <= 0 && student.paid_fee > 0) && (
-              <div className="bg-success/10 border-2 border-success/30 rounded-xl p-6 text-center animate-in zoom-in duration-500 mb-6 group hover:border-success/50 transition-all">
-                <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Check className="w-10 h-10 text-success" />
-                </div>
-                <h3 className="text-2xl font-black text-success mb-1 tracking-tight italic">Year Fees Completed!</h3>
-                <p className="text-sm text-success/80 font-medium">You have successfully cleared all dues for the {student.year}.</p>
-              </div>
-            )}
+
 
             {feeTransactions.length > 0 && (
               <Card className="border-2 border-border shadow-sm overflow-hidden">
@@ -892,7 +884,32 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
-
+            {studyMaterials.length > 0 && (
+              <Card className="border-2 border-border">
+                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
+                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+                  {studyMaterials.map((mat) => (
+                    <div key={mat.id as string} className="p-2 bg-muted rounded-lg flex items-center justify-between">
+                      <span className="text-sm font-medium">{mat.subject_name as string}</span>
+                      <div className="flex gap-2 items-center">
+                        {mat.file_url && (
+                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
+                            <FileText className="w-3 h-3" />
+                            Open File
+                          </a>
+                        )}
+                        {mat.drive_link && (
+                          <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded">
+                            <ExternalLink className="w-3 h-3" />
+                            Drive Link
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right Column - Gate Pass Status */}
@@ -1024,31 +1041,14 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
-            {studyMaterials.length > 0 && (
-              <Card className="border-2 border-border">
-                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
-                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
-                  {studyMaterials.map((mat) => (
-                    <div key={mat.id as string} className="p-2 bg-muted rounded-lg flex items-center justify-between">
-                      <span className="text-sm font-medium">{mat.subject_name as string}</span>
-                      <div className="flex gap-2 items-center">
-                        {mat.file_url && (
-                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
-                            <FileText className="w-3 h-3" />
-                            Open File
-                          </a>
-                        )}
-                        {mat.drive_link && (
-                          <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded">
-                            <ExternalLink className="w-3 h-3" />
-                            Drive Link
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+            {(student?.pending_fee !== undefined && student.pending_fee <= 0 && student.paid_fee > 0) && (
+              <div className="bg-success/10 border-2 border-success/30 rounded-xl p-6 text-center animate-in zoom-in duration-500 mb-6 group hover:border-success/50 transition-all">
+                <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Check className="w-10 h-10 text-success" />
+                </div>
+                <h3 className="text-2xl font-black text-success mb-1 tracking-tight italic">Year Fees Completed!</h3>
+                <p className="text-sm text-success/80 font-medium">You have successfully cleared all dues for the {student.year}.</p>
+              </div>
             )}
           </div>
         </div>
