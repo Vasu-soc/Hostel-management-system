@@ -126,20 +126,7 @@ const ParentDashboard = () => {
           filter: `roll_number=eq.${parent.student_roll_number}`,
         },
         () => {
-          // Refresh medical alerts whenever they're added or updated
           fetchMedicalAlerts(parent.student_roll_number);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "fee_transactions",
-          filter: `student_id=eq.${student?.id}`,
-        },
-        () => {
-          if (student?.id) fetchFeeTransactions(student.id);
         }
       )
       .subscribe();
@@ -148,6 +135,30 @@ const ParentDashboard = () => {
       supabase.removeChannel(channel);
     };
   }, [parent]);
+
+  useEffect(() => {
+    if (!student?.id) return;
+
+    const channel = supabase
+      .channel(`parent-fee-updates-${student.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "fee_transactions",
+          filter: `student_id=eq.${student.id}`,
+        },
+        () => {
+          fetchFeeTransactions(student.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [student?.id]);
 
   const handleLogout = () => {
     clearParentSession();

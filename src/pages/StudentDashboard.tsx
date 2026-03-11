@@ -215,6 +215,23 @@ const StudentDashboard = () => {
     };
   }, [student?.id]);
 
+  // Real-time: fee transactions (so history updates instantly when warden adds payment)
+  useEffect(() => {
+    if (!student?.id) return;
+    const channel = supabase
+      .channel(`fee-updates-${student.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "fee_transactions",
+        filter: `student_id=eq.${student.id}`,
+      }, () => {
+        fetchFeeTransactions(student.id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [student?.id]);
+
   // Real-time: gate passes (so approved status + warden signature load instantly)
   useEffect(() => {
     if (!student?.roll_number) return;

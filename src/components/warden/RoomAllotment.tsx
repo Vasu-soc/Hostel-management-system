@@ -238,23 +238,23 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     }
 
     if (newPayment > 0) {
-      await supabase.from("fee_transactions").insert({
+      const { error: txError } = await supabase.from("fee_transactions").insert({
         student_id: selectedStudent.id,
         amount: newPayment,
         remarks: transactionRemark.trim() || `Fee payment added by warden`,
         academic_year: selectedStudent.year,
       });
+
+      if (txError) {
+        console.error("Transaction Error:", txError);
+        toast({ title: "Warning", description: "Fee updated but failed to save history record", variant: "destructive" });
+      }
     }
 
     toast({ title: "Success", description: newPending <= 0 ? "Year Fees Completed!" : "Fee details updated successfully" });
 
-    // If pending is 0, we'll keep the dialog open but transition will happen on re-open or if they click Move to Next Year.
-    // However, user wants it automatic. Let's trigger it if pending is 0.
-    if (newPending <= 0) {
-      // We'll let the user see the "0" balance first, then they close or re-open.
-      // The user said: "automatically if the total hostel payment is complete ... after open again that fees updation he move on the 2nd year."
-      // So I will implement the check in openFeeDialog.
-    }
+    // Refresh the local students list to reflect changes in the UI
+    onRefresh();
 
     setShowFeeDialog(false);
     setSelectedStudent(null);
