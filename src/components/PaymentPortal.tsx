@@ -1,7 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Building, ExternalLink, QrCode, Copy } from "lucide-react";
+import { CreditCard, Building, ExternalLink, Copy, Download, ZoomIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import qrCodeImg from "@/assets/qrcode.jpg";
 
@@ -14,6 +21,15 @@ const PaymentPortal = () => {
       title: "Copied!",
       description: `${label} copied to clipboard`,
     });
+  };
+
+  const handleDownloadQR = () => {
+    const link = document.createElement("a");
+    link.href = qrCodeImg;
+    link.download = "payment_qrcode.jpg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -64,12 +80,45 @@ const PaymentPortal = () => {
           </div>
         </div>
 
-        {/* QR Code */}
-        <div className="flex flex-col items-center py-4">
-          <div className="w-32 h-32 bg-white rounded-lg border-2 border-border flex items-center justify-center overflow-hidden">
-            <img src={qrCodeImg} alt="QR Code" className="w-full h-full object-cover" />
+        {/* QR Code with Zoom and Apps */}
+        <div className="flex flex-col items-center py-4 bg-muted/30 rounded-lg border border-border">
+          <Dialog>
+            <DialogTrigger asChild>
+              <div className="relative group cursor-pointer w-32 h-32 bg-white rounded-lg border-2 border-border flex items-center justify-center overflow-hidden hover:border-primary transition-colors">
+                <img src={qrCodeImg} alt="QR Code" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                  <ZoomIn className="w-6 h-6 mb-1" />
+                  <span className="text-xs font-semibold">Zoom</span>
+                </div>
+              </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md w-11/12 max-h-[90vh] rounded-xl flex flex-col items-center justify-center p-6">
+              <DialogHeader>
+                <DialogTitle className="text-center w-full">Scan Payment QR</DialogTitle>
+              </DialogHeader>
+              <div className="w-full flex items-center justify-center my-4 bg-white p-2 rounded-lg border">
+                <img src={qrCodeImg} alt="QR Code Enlarged" className="w-full max-w-sm rounded-lg shadow-sm" />
+              </div>
+              <Button onClick={handleDownloadQR} className="w-full flex items-center justify-center gap-2 mt-2" variant="default">
+                <Download className="w-4 h-4" />
+                Download QR Code
+              </Button>
+            </DialogContent>
+          </Dialog>
+          <p className="text-xs text-muted-foreground mt-3 font-medium uppercase tracking-wider">Scan to Pay</p>
+
+          {/* Payment Apps Links */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-4 w-full px-3">
+            <a href="phonepe://" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-100 text-center">
+              <span className="font-bold text-xs text-indigo-700 whitespace-nowrap">PhonePe</span>
+            </a>
+            <a href="tez://upi/" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-100 text-center">
+              <span className="font-bold text-xs text-blue-700 whitespace-nowrap">GPay</span>
+            </a>
+            <a href="paytmmp://" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-sky-50 hover:bg-sky-100 transition-colors border border-sky-100 text-center">
+              <span className="font-bold text-xs text-sky-700 whitespace-nowrap">Paytm</span>
+            </a>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Scan to Pay</p>
         </div>
 
         {/* Google Form Link */}
