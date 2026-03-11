@@ -892,84 +892,60 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
-            {studyMaterials.length > 0 && (
-              <Card className="border-2 border-border">
-                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
-                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
-                  {studyMaterials.map((mat) => (
-                    <div key={mat.id as string} className="p-2 bg-muted rounded-lg flex items-center justify-between">
-                      <span className="text-sm font-medium">{mat.subject_name as string}</span>
-                      <div className="flex gap-2 items-center">
-                        {mat.file_url && (
-                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
-                            <FileText className="w-3 h-3" />
-                            Open File
-                          </a>
-                        )}
-                        {mat.drive_link && (
-                          <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded">
-                            <ExternalLink className="w-3 h-3" />
-                            Drive Link
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+
           </div>
 
           {/* Right Column - Gate Pass Status */}
-          <Card className="border-2 border-border">
-            <CardHeader className="text-center border-b border-border"><CardTitle className="text-xl">Gate Pass Status</CardTitle></CardHeader>
-            <CardContent className="p-6">
-              {latestGatePass ? (
-                <div className="space-y-4">
-                  {/* Student Photo for Identity Verification - Click to Zoom */}
-                  {student.photo_url && (
-                    <div className="flex justify-center mb-4">
-                      <img
-                        src={student.photo_url}
-                        alt="Student Photo"
-                        className="w-24 h-24 rounded-lg object-cover border-2 border-primary shadow-md cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                        onClick={() => setPhotoDialogOpen(true)}
-                      />
-                    </div>
-                  )}
-                  <div className="flex justify-center mb-4">{getStatusBadge(latestGatePass.status as string)}</div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Student Name</span><span className="font-medium">{student.student_name}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Roll Number</span><span>{student.roll_number}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Branch</span><span>{student.branch?.toUpperCase()}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Year</span><span>{student.year}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Out Date</span><span>{latestGatePass.out_date as string}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">In Date</span><span>{latestGatePass.in_date as string}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Purpose</span><span className="text-right max-w-[60%]">{latestGatePass.purpose as string}</span></div>
-                  </div>
-                  {/* Warden Signature for Approved Gate Pass */}
-                  {latestGatePass.status === "approved" && wardenSignature && (
-                    <div className="pt-4 border-t border-border mt-4">
-                      <p className="text-sm text-muted-foreground mb-2 text-center">Warden Signature</p>
-                      <div className="flex justify-center">
+          <div className="space-y-6">
+            <Card className="border-2 border-border">
+              <CardHeader className="text-center border-b border-border"><CardTitle className="text-xl">Gate Pass Status</CardTitle></CardHeader>
+              <CardContent className="p-6">
+                {latestGatePass ? (
+                  <div className="space-y-4">
+                    {/* Student Photo for Identity Verification - Click to Zoom */}
+                    {student.photo_url && (
+                      <div className="flex justify-center mb-4">
                         <img
-                          src={wardenSignature}
-                          alt="Warden Signature"
-                          className="h-16 object-contain border border-border rounded p-1 bg-white"
+                          src={student.photo_url}
+                          alt="Student Photo"
+                          className="w-24 h-24 rounded-lg object-cover border-2 border-primary shadow-md cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                          onClick={() => setPhotoDialogOpen(true)}
                         />
                       </div>
+                    )}
+                    <div className="flex justify-center mb-4">{getStatusBadge(latestGatePass.status as string)}</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Student Name</span><span className="font-medium">{student.student_name}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Roll Number</span><span>{student.roll_number}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Branch</span><span>{student.branch?.toUpperCase()}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Year</span><span>{student.year}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Out Date</span><span>{latestGatePass.out_date as string}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">In Date</span><span>{latestGatePass.in_date as string}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Purpose</span><span className="text-right max-w-[60%]">{latestGatePass.purpose as string}</span></div>
                     </div>
-                  )}
-                  {/* Print Button for Approved Gate Pass */}
-                  {latestGatePass.status === "approved" && (
-                    <div className="pt-4">
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2"
-                        onClick={() => {
-                          const printWindow = window.open('', '_blank');
-                          if (printWindow) {
-                            printWindow.document.write(`
+                    {/* Warden Signature for Approved Gate Pass */}
+                    {latestGatePass.status === "approved" && wardenSignature && (
+                      <div className="pt-4 border-t border-border mt-4">
+                        <p className="text-sm text-muted-foreground mb-2 text-center">Warden Signature</p>
+                        <div className="flex justify-center">
+                          <img
+                            src={wardenSignature}
+                            alt="Warden Signature"
+                            className="h-16 object-contain border border-border rounded p-1 bg-white"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {/* Print Button for Approved Gate Pass */}
+                    {latestGatePass.status === "approved" && (
+                      <div className="pt-4">
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={() => {
+                            const printWindow = window.open('', '_blank');
+                            if (printWindow) {
+                              printWindow.document.write(`
                               <!DOCTYPE html>
                               <html>
                               <head>
@@ -1030,23 +1006,51 @@ const StudentDashboard = () => {
                               </body>
                               </html>
                             `);
-                            printWindow.document.close();
-                            printWindow.focus();
-                            setTimeout(() => printWindow.print(), 250);
-                          }
-                        }}
-                      >
-                        <Printer className="w-4 h-4" />
-                        Print Gate Pass
-                      </Button>
+                              printWindow.document.close();
+                              printWindow.focus();
+                              setTimeout(() => printWindow.print(), 250);
+                            }
+                          }}
+                        >
+                          <Printer className="w-4 h-4" />
+                          Print Gate Pass
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">No gate pass requests yet</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {studyMaterials.length > 0 && (
+              <Card className="border-2 border-border">
+                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
+                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+                  {studyMaterials.map((mat) => (
+                    <div key={mat.id as string} className="p-2 bg-muted rounded-lg flex items-center justify-between">
+                      <span className="text-sm font-medium">{mat.subject_name as string}</span>
+                      <div className="flex gap-2 items-center">
+                        {mat.file_url && (
+                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
+                            <FileText className="w-3 h-3" />
+                            Open File
+                          </a>
+                        )}
+                        {mat.drive_link && (
+                          <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded">
+                            <ExternalLink className="w-3 h-3" />
+                            Drive Link
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">No gate pass requests yet</div>
-              )}
-            </CardContent>
-          </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* Quick Links Section */}
