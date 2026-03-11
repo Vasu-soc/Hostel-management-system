@@ -429,3 +429,35 @@ $$;
 GRANT EXECUTE ON FUNCTION public.delete_student_complete(UUID, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.delete_student_complete(UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.delete_student_complete(UUID, TEXT) TO service_role;
+
+-- Fee Transactions Table
+CREATE TABLE IF NOT EXISTS public.fee_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    amount NUMERIC NOT NULL,
+    academic_year TEXT,
+    payment_date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    remarks TEXT
+);
+
+ALTER TABLE public.fee_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable read access for all users" ON public.fee_transactions
+    FOR SELECT USING (true);
+
+CREATE POLICY "Enable insert access for all users" ON public.fee_transactions
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Enable update access for all users" ON public.fee_transactions
+    FOR UPDATE USING (true);
+
+CREATE POLICY "Enable delete access for all users" ON public.fee_transactions
+    FOR DELETE USING (true);
+
+-- Enable Realtime for fee_transactions
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'fee_transactions') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.fee_transactions;
+    END IF;
+END $$;

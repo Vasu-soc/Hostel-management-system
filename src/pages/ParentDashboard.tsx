@@ -7,8 +7,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getParentSession, clearParentSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -43,6 +45,7 @@ const ParentDashboard = () => {
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
   const [feeTransactions, setFeeTransactions] = useState<any[]>([]);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
+  const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = useState(false);
 
   useEffect(() => {
     const session = getParentSession();
@@ -230,58 +233,106 @@ const ParentDashboard = () => {
               </CardContent>
             </Card>
 
+            <Card className="border-2 border-border mb-6">
+              <CardHeader className="border-b border-border flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
+                  Payment History
+                </CardTitle>
+                <Dialog open={paymentHistoryDialogOpen} onOpenChange={setPaymentHistoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs font-bold gap-2 border-primary/30 hover:bg-primary/5">
+                      <Clock className="w-3 h-3" />
+                      View All
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                         <Clock className="w-6 h-6 text-primary" />
+                         Fee Payment History
+                      </DialogTitle>
+                    </DialogHeader>
+                    {feeTransactions.length > 0 ? (
+                      <div className="space-y-6 pt-4">
+                        {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
+                          <div key={year} className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-[1px] flex-1 bg-border"></div>
+                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">{year}</span>
+                              <div className="h-[1px] flex-1 bg-border"></div>
+                            </div>
+                            <div className="space-y-2">
+                              {feeTransactions
+                                .filter((tx: any) => (tx.academic_year || "Unknown") === year)
+                                .map((tx: any, idx, filteredArr) => {
+                                  const paymentIndex = filteredArr.length - idx;
+                                  const getOrdinal = (n: number) => {
+                                    const s = ["th", "st", "nd", "rd"];
+                                    const v = n % 100;
+                                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                                  };
+
+                                  return (
+                                    <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 hover:shadow-md transition-all">
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-[10px] text-primary">
+                                          {getOrdinal(paymentIndex)}
+                                        </div>
+                                        <div>
+                                          <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
+                                          <p className="text-[10px] text-muted-foreground font-medium uppercase">
+                                            {new Date(tx.payment_date).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Verified</p>
+                                        {tx.remarks && (
+                                          <p className="text-[10px] text-muted-foreground italic max-w-[120px] truncate" title={tx.remarks}>
+                                            "{tx.remarks}"
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Clock className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                        <p>No payment records found.</p>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground mb-4 font-medium">Keep track of every fee installment paid by your child.</p>
+                {feeTransactions.length > 0 ? (
+                  <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 flex justify-between items-center group hover:bg-primary/10 transition-colors">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase font-black text-primary tracking-widest">Latest Record</span>
+                      <span className="font-bold text-lg text-foreground tracking-tighter">₹{(feeTransactions[0] as any).amount.toLocaleString()}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] bg-white border-primary/20">
+                      {new Date((feeTransactions[0] as any).payment_date).toLocaleDateString()}
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="text-center py-3 bg-muted/30 rounded-lg border-2 border-dashed border-border/50">
+                    <p className="text-[10px] italic text-muted-foreground font-medium uppercase tracking-wider">Waiting for first payment...</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <PaymentPortal />
 
-            {/* Fee Transactions - Under Fee Details */}
-            {feeTransactions.length > 0 && (
-              <Card className="border-2 border-border mt-6 overflow-hidden">
-                <CardHeader className="pb-3 border-b border-border bg-muted/30">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span>Fee Payment History</span>
-                    <Calendar className="w-5 h-5 text-muted-foreground/50" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 max-h-[500px] overflow-y-auto space-y-6">
-                  {/* Grouped by Academic Year */}
-                  {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
-                    <div key={year} className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-[1px] flex-1 bg-border"></div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">{year}</span>
-                        <div className="h-[1px] flex-1 bg-border"></div>
-                      </div>
-                      <div className="space-y-2">
-                        {feeTransactions
-                          .filter((tx: any) => (tx.academic_year || "Unknown") === year)
-                          .map((tx: any, idx) => (
-                            <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 transition-all animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 50}ms` }}>
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-xs text-primary">
-                                  {idx === feeTransactions.filter((t: any) => (t.academic_year || "Unknown") === year).length - 1 ? "1st" : "New"}
-                                </div>
-                                <div>
-                                  <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
-                                  <p className="text-[10px] text-muted-foreground font-medium uppercase">
-                                    {new Date(tx.payment_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Received</p>
-                                {tx.remarks && (
-                                  <p className="text-[10px] text-muted-foreground italic max-w-[150px] truncate" title={tx.remarks}>
-                                    "{tx.remarks}"
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+
           </div>
 
           {/* Remarks - Right Panel */}

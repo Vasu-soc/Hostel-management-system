@@ -62,6 +62,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   const [pendingAmount, setPendingAmount] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [transactionRemark, setTransactionRemark] = useState("");
   const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
   const [isTransitioningYear, setIsTransitioningYear] = useState(false);
 
@@ -240,7 +241,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
       await supabase.from("fee_transactions").insert({
         student_id: selectedStudent.id,
         amount: newPayment,
-        remarks: `Fee payment added by warden`,
+        remarks: transactionRemark.trim() || `Fee payment added by warden`,
         academic_year: selectedStudent.year,
       });
     }
@@ -259,6 +260,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     setSelectedStudent(null);
     setPaidAmount("");
     setPendingAmount("");
+    setTransactionRemark("");
 
     onRefresh();
   };
@@ -300,6 +302,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     const oldPaid = student.paid_fee || 0;
     setTotalAmount(total.toString());
     setPaidAmount("");
+    setTransactionRemark("");
     setPendingAmount(Math.max(0, total - oldPaid).toString());
     setShowFeeDialog(true);
     fetchStudentTransactions(student.id);
@@ -624,14 +627,26 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
               <div className="space-y-2">
                 {studentTransactions
                   .filter(tx => tx.academic_year === selectedStudent?.year)
-                  .map((tx, idx) => (
-                    <div key={tx.id} className="p-3 bg-background border-2 border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
-                      <span className="font-medium text-sm">
-                        {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : `${idx + 1}th`} payment
-                      </span>
-                      <span className="font-bold text-primary">₹{tx.amount.toLocaleString()}</span>
-                    </div>
-                  ))}
+                  .map((tx, idx) => {
+                    const getOrdinal = (n: number) => {
+                      const s = ["th", "st", "nd", "rd"];
+                      const v = n % 100;
+                      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                    };
+                    return (
+                      <div key={tx.id} className="p-3 bg-background border-2 border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm">
+                            {getOrdinal(idx + 1)} Payment
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                            {new Date(tx.payment_date).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
+                        </div>
+                        <span className="font-bold text-primary">₹{tx.amount.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
 
                 {studentTransactions.filter(tx => tx.academic_year === selectedStudent?.year).length === 0 && (
                   <p className="text-xs text-muted-foreground italic">No payments yet for this year.</p>
@@ -660,6 +675,17 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
                 }}
                 placeholder="Enter new payment added"
                 className="h-12 border-2"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transactionRemark">Payment Note / Remark (Optional)</Label>
+              <Input
+                id="transactionRemark"
+                value={transactionRemark}
+                onChange={(e) => setTransactionRemark(e.target.value)}
+                placeholder="e.g. 1st Term, cash payment, etc."
+                className="h-10 border-2"
               />
             </div>
 

@@ -109,14 +109,17 @@ const PaymentPortal = () => {
 
           {/* Payment Apps Links */}
           <div className="flex flex-wrap items-center justify-center gap-3 mt-4 w-full px-3">
-            <a href="phonepe://" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-100 text-center">
-              <span className="font-bold text-xs text-indigo-700 whitespace-nowrap">PhonePe</span>
+            <a href="phonepe://" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 text-center shadow-sm hover:shadow-md">
+              <img src="/logos/phonepe.png" alt="PhonePe" className="h-8 w-auto mb-1 object-contain" />
+              <span className="font-bold text-[10px] text-indigo-700 whitespace-nowrap">PhonePe</span>
             </a>
-            <a href="tez://upi/" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-100 text-center">
-              <span className="font-bold text-xs text-blue-700 whitespace-nowrap">GPay</span>
+            <a href="tez://upi/" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all border border-blue-100 text-center shadow-sm hover:shadow-md">
+              <img src="/logos/gpay.png" alt="GPay" className="h-8 w-auto mb-1 object-contain" />
+              <span className="font-bold text-[10px] text-blue-700 whitespace-nowrap">GPay</span>
             </a>
-            <a href="paytmmp://" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-sky-50 hover:bg-sky-100 transition-colors border border-sky-100 text-center">
-              <span className="font-bold text-xs text-sky-700 whitespace-nowrap">Paytm</span>
+            <a href="paytmmp://" className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-sky-50 hover:bg-sky-100 transition-all border border-sky-100 text-center shadow-sm hover:shadow-md">
+              <img src="/logos/paytm.png" alt="Paytm" className="h-8 w-auto mb-1 object-contain" />
+              <span className="font-bold text-[10px] text-sky-700 whitespace-nowrap">Paytm</span>
             </a>
           </div>
         </div>

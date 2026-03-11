@@ -81,6 +81,7 @@ const StudentDashboard = () => {
   const [wardenSignature, setWardenSignature] = useState<string | null>(null);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [resourcesDialogOpen, setResourcesDialogOpen] = useState(false);
+  const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "" });
@@ -584,6 +585,102 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
+            <Card className="border-2 border-border shadow-sm">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0 text-center">
+                <CardTitle className="text-lg">Payment History</CardTitle>
+                <Dialog open={paymentHistoryDialogOpen} onOpenChange={setPaymentHistoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 border-primary/30 hover:bg-primary/5 h-8 text-xs font-bold"
+                    >
+                      <Clock className="w-3 h-3" />
+                      View All
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        Detailed Payment History
+                      </DialogTitle>
+                    </DialogHeader>
+                    {feeTransactions.length > 0 ? (
+                      <div className="space-y-6 pt-4">
+                        {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
+                          <div key={year} className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-[1px] flex-1 bg-border"></div>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">{year}</span>
+                              <div className="h-[1px] flex-1 bg-border"></div>
+                            </div>
+                            <div className="space-y-2">
+                              {feeTransactions
+                                .filter((tx: any) => (tx.academic_year || "Unknown") === year)
+                                .map((tx: any, idx, filteredArr) => {
+                                  const paymentIndex = filteredArr.length - idx;
+                                  const getOrdinal = (n: number) => {
+                                    const s = ["th", "st", "nd", "rd"];
+                                    const v = n % 100;
+                                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                                  };
+
+                                  return (
+                                    <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 hover:shadow-md transition-all">
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-[10px] text-primary">
+                                          {getOrdinal(paymentIndex)}
+                                        </div>
+                                        <div>
+                                          <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
+                                          <p className="text-[10px] text-muted-foreground font-medium uppercase">
+                                            {new Date(tx.payment_date).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Success</p>
+                                        {tx.remarks && (
+                                          <p className="text-[10px] text-muted-foreground italic max-w-[120px] truncate" title={tx.remarks}>
+                                            "{tx.remarks}"
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Clock className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                        <p>No payment history records found.</p>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent className="pt-0 pb-4">
+                <p className="text-xs text-muted-foreground mb-4">View your full transaction history and payment receipts.</p>
+                {feeTransactions.length > 0 ? (
+                   <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Latest Payment</span>
+                        <span className="font-black text-lg">₹{(feeTransactions[0] as any).amount.toLocaleString()}</span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] bg-white">
+                        {new Date((feeTransactions[0] as any).payment_date).toLocaleDateString()}
+                      </Badge>
+                   </div>
+                ) : (
+                  <p className="text-[10px] italic text-muted-foreground text-center py-2 bg-muted/30 rounded-lg">No payments recorded yet.</p>
+                )}
+              </CardContent>
+            </Card>
+
             <PaymentPortal />
 
             <div className="space-y-3">
@@ -764,55 +861,7 @@ const StudentDashboard = () => {
 
 
 
-            {feeTransactions.length > 0 && (
-              <Card className="border-2 border-border shadow-sm overflow-hidden">
-                <CardHeader className="pb-3 border-b border-border bg-muted/30">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span>Fee Payment History</span>
-                    <Badge variant="outline" className="text-[10px] uppercase tracking-tighter">Verified Records</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 max-h-[500px] overflow-y-auto space-y-6">
-                  {/* Grouped by Academic Year */}
-                  {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
-                    <div key={year} className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-[1px] flex-1 bg-border"></div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">{year}</span>
-                        <div className="h-[1px] flex-1 bg-border"></div>
-                      </div>
-                      <div className="space-y-2">
-                        {feeTransactions
-                          .filter((tx: any) => (tx.academic_year || "Unknown") === year)
-                          .map((tx: any, idx) => (
-                            <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 50}ms` }}>
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-xs text-primary">
-                                  {idx === feeTransactions.filter((t: any) => (t.academic_year || "Unknown") === year).length - 1 ? "1st" : "New"}
-                                </div>
-                                <div>
-                                  <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
-                                  <p className="text-[10px] text-muted-foreground font-medium uppercase">
-                                    {new Date(tx.payment_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Paid Successfully</p>
-                                {tx.remarks && (
-                                  <p className="text-[10px] text-muted-foreground italic max-w-[150px] truncate" title={tx.remarks}>
-                                    "{tx.remarks}"
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+
 
 
           </div>
