@@ -822,6 +822,76 @@ const StudentDashboard = () => {
               </Card>
             )}
 
+
+          </div>
+
+          {/* Middle Column - Gate Pass Form */}
+          <div className="space-y-6">
+            <Card className="border-2 border-border">
+              <CardHeader className="text-center border-b border-border"><CardTitle className="text-xl flex items-center justify-center gap-2"><Calendar className="w-5 h-5 text-primary" />Gate Pass</CardTitle></CardHeader>
+              <CardContent className="p-6">
+                <form onSubmit={handleGatePassSubmit} className="space-y-4">
+                  <div className="space-y-2"><Label>Student Name</Label><Input value={student.student_name} disabled className="bg-muted" /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>Roll No</Label><Input value={student.roll_number} disabled className="bg-muted" /></div>
+                    <div className="space-y-2"><Label>Branch</Label><Input value={student.branch?.toUpperCase()} disabled className="bg-muted" title={student.branch?.toUpperCase()} /></div>
+                  </div>
+                  <div className="space-y-2"><Label>Year</Label><Input value={student.year} disabled className="bg-muted" /></div>
+                  <div className="space-y-2">
+                    <Label>Email Address *</Label>
+                    <Input
+                      type="email"
+                      placeholder="Enter your email for notifications"
+                      value={gatePassForm.email || student.email || ""}
+                      onChange={(e) => setGatePassForm({ ...gatePassForm, email: e.target.value })}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">Gate pass status will be sent to this email</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Student Mobile (10 digits)</Label>
+                    <Input
+                      type="tel"
+                      placeholder="Enter 10-digit mobile"
+                      value={gatePassForm.studentMobile}
+                      onChange={(e) => setGatePassForm({ ...gatePassForm, studentMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      maxLength={10}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Parent Mobile (10 digits)</Label>
+                    <Input
+                      type="tel"
+                      placeholder="Enter parent mobile"
+                      value={gatePassForm.parentMobile}
+                      onChange={(e) => setGatePassForm({ ...gatePassForm, parentMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      maxLength={10}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Out Date *</Label><Input type="date" value={gatePassForm.outDate} onChange={(e) => setGatePassForm({ ...gatePassForm, outDate: e.target.value })} /></div>
+                    <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />In Date *</Label><Input type="date" value={gatePassForm.inDate} onChange={(e) => setGatePassForm({ ...gatePassForm, inDate: e.target.value })} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />Out Time</Label><Input type="time" value={gatePassForm.outTime} onChange={(e) => setGatePassForm({ ...gatePassForm, outTime: e.target.value })} /></div>
+                    <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />In Time</Label><Input type="time" value={gatePassForm.inTime} onChange={(e) => setGatePassForm({ ...gatePassForm, inTime: e.target.value })} /></div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Purpose * (5-500 characters)</Label>
+                    <Textarea
+                      placeholder="Enter purpose..."
+                      value={gatePassForm.purpose}
+                      onChange={(e) => setGatePassForm({ ...gatePassForm, purpose: e.target.value })}
+                      rows={3}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground">{gatePassForm.purpose.length}/500 characters</p>
+                  </div>
+                  <Button type="submit" variant="hero" className="w-full">Submit Gate Pass</Button>
+                </form>
+              </CardContent>
+            </Card>
+
             {studyMaterials.length > 0 && (
               <Card className="border-2 border-border">
                 <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
@@ -849,72 +919,6 @@ const StudentDashboard = () => {
               </Card>
             )}
           </div>
-
-          {/* Middle Column - Gate Pass Form */}
-          <Card className="border-2 border-border">
-            <CardHeader className="text-center border-b border-border"><CardTitle className="text-xl flex items-center justify-center gap-2"><Calendar className="w-5 h-5 text-primary" />Gate Pass</CardTitle></CardHeader>
-            <CardContent className="p-6">
-              <form onSubmit={handleGatePassSubmit} className="space-y-4">
-                <div className="space-y-2"><Label>Student Name</Label><Input value={student.student_name} disabled className="bg-muted" /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Roll No</Label><Input value={student.roll_number} disabled className="bg-muted" /></div>
-                  <div className="space-y-2"><Label>Branch</Label><Input value={student.branch?.toUpperCase()} disabled className="bg-muted" title={student.branch?.toUpperCase()} /></div>
-                </div>
-                <div className="space-y-2"><Label>Year</Label><Input value={student.year} disabled className="bg-muted" /></div>
-                <div className="space-y-2">
-                  <Label>Email Address *</Label>
-                  <Input
-                    type="email"
-                    placeholder="Enter your email for notifications"
-                    value={gatePassForm.email || student.email || ""}
-                    onChange={(e) => setGatePassForm({ ...gatePassForm, email: e.target.value })}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">Gate pass status will be sent to this email</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Student Mobile (10 digits)</Label>
-                  <Input
-                    type="tel"
-                    placeholder="Enter 10-digit mobile"
-                    value={gatePassForm.studentMobile}
-                    onChange={(e) => setGatePassForm({ ...gatePassForm, studentMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                    maxLength={10}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Parent Mobile (10 digits)</Label>
-                  <Input
-                    type="tel"
-                    placeholder="Enter parent mobile"
-                    value={gatePassForm.parentMobile}
-                    onChange={(e) => setGatePassForm({ ...gatePassForm, parentMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                    maxLength={10}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Out Date *</Label><Input type="date" value={gatePassForm.outDate} onChange={(e) => setGatePassForm({ ...gatePassForm, outDate: e.target.value })} /></div>
-                  <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />In Date *</Label><Input type="date" value={gatePassForm.inDate} onChange={(e) => setGatePassForm({ ...gatePassForm, inDate: e.target.value })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />Out Time</Label><Input type="time" value={gatePassForm.outTime} onChange={(e) => setGatePassForm({ ...gatePassForm, outTime: e.target.value })} /></div>
-                  <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />In Time</Label><Input type="time" value={gatePassForm.inTime} onChange={(e) => setGatePassForm({ ...gatePassForm, inTime: e.target.value })} /></div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Purpose * (5-500 characters)</Label>
-                  <Textarea
-                    placeholder="Enter purpose..."
-                    value={gatePassForm.purpose}
-                    onChange={(e) => setGatePassForm({ ...gatePassForm, purpose: e.target.value })}
-                    rows={3}
-                    maxLength={500}
-                  />
-                  <p className="text-xs text-muted-foreground">{gatePassForm.purpose.length}/500 characters</p>
-                </div>
-                <Button type="submit" variant="hero" className="w-full">Submit Gate Pass</Button>
-              </form>
-            </CardContent>
-          </Card>
 
           {/* Right Column - Gate Pass Status */}
           <Card className="border-2 border-border">
