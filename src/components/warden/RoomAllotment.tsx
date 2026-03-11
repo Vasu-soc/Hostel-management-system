@@ -238,16 +238,40 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     }
 
     if (newPayment > 0) {
-      const { error: txError } = await supabase.from("fee_transactions").insert({
+      // Create transaction object
+      const txData: any = {
         student_id: selectedStudent.id,
         amount: newPayment,
         remarks: transactionRemark.trim() || `Fee payment added by warden`,
-        academic_year: selectedStudent.year,
-      });
+      };
+
+      // Only add academic_year if it's likely to exist (based on our migrations)
+      // We try to insert it anyway, but we'll catch the specific error if it fails
+      txData.academic_year = selectedStudent.year;
+
+      const { error: txError } = await supabase.from("fee_transactions").insert(txData);
 
       if (txError) {
-        console.error("Transaction Error:", txError);
-        toast({ title: "Warning", description: "Fee updated but failed to save history record", variant: "destructive" });
+        console.error("Transaction Error Details:", txError);
+        
+        // If it was a missing column error, try inserting without academic_year as a fallback
+        if (txError.message?.includes("academic_year")) {
+          console.warn("Retrying transaction without academic_year column...");
+          const { error: retryError } = await supabase.from("fee_transactions").insert({
+            student_id: selectedStudent.id,
+            amount: newPayment,
+            remarks: transactionRemark.trim() || `Fee payment added by warden`,
+          });
+          
+          if (retryError) {
+             window.alert(`FAILED TO SAVE HISTORY: ${retryError.message}\n\nPlease ensure 'fee_transactions' table exists.`);
+          } else {
+             toast({ title: "Note", description: "History saved (Academic Year column missing in DB - please run SQL migration)", variant: "default" });
+          }
+        } else {
+          window.alert(`CRITICAL ERROR SAVING HISTORY: ${txError.message}\n\nPlease check 'fee_transactions' table schema.`);
+          toast({ title: "Warning", description: "Fee updated but failed to save history record", variant: "destructive" });
+        }
       }
     }
 
@@ -255,6 +279,10 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
 
     // Refresh the local students list to reflect changes in the UI
     onRefresh();
+    if (selectedStudent?.id) {
+      console.log("Refreshing transactions for student:", selectedStudent.id);
+      fetchStudentTransactions(selectedStudent.id);
+    }
 
     setShowFeeDialog(false);
     setSelectedStudent(null);
@@ -626,7 +654,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
               <Label className="text-sm font-medium">Previously Paid (₹)</Label>
               <div className="space-y-2">
                 {studentTransactions
-                  .filter(tx => tx.academic_year === selectedStudent?.year)
+                  .filter(tx => !tx.academic_year || tx.academic_year === selectedStudent?.year || (selectedStudent?.year === "1st Year" && tx.academic_year === "1"))
                   .map((tx, idx) => {
                     const getOrdinal = (n: number) => {
                       const s = ["th", "st", "nd", "rd"];

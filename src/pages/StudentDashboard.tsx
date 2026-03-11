@@ -131,6 +131,8 @@ const StudentDashboard = () => {
         }));
         return updated;
       });
+      // Refresh historical data too
+      fetchFeeTransactions(data.id);
     }
     setIsLoading(false);
   };
@@ -150,11 +152,19 @@ const StudentDashboard = () => {
   }, [gender, navigate]);
 
   const fetchFeeTransactions = async (studentId: string) => {
-    const { data } = await supabase
+    console.log(`Attempting to fetch fee transactions for student ID: ${studentId}`);
+    const { data, error } = await supabase
       .from("fee_transactions")
       .select("*")
       .eq("student_id", studentId)
       .order("payment_date", { ascending: false });
+    if (error) {
+      console.error("Fee Transactions Fetch Error:", error.message);
+      setFeeTransactions([]);
+      return;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} transactions for student ${studentId}`);
     if (data) setFeeTransactions(data);
   };
 
@@ -206,6 +216,8 @@ const StudentDashboard = () => {
             sessionStorage.setItem('currentStudent', JSON.stringify(updated));
             return updated;
           });
+          // CRITICAL: Refresh transactions when student record updates!
+          if (payload.new.id) fetchFeeTransactions(payload.new.id);
         }
       )
       .subscribe();
@@ -276,18 +288,22 @@ const StudentDashboard = () => {
     const { data: urlData } = supabase.storage.from("student-photos").getPublicUrl(fileName);
     const photoUrl = urlData.publicUrl;
 
-    const { error: updateError } = await supabase
+    const { error: updateError, data: updatedStudent } = await supabase
       .from("students")
       .update({ photo_url: photoUrl })
-      .eq("id", student.id);
+      .eq("id", student.id)
+      .select()
+      .single();
 
     if (updateError) {
       toast({ title: "Update Failed", description: updateError.message, variant: "destructive" });
     } else {
-      const updated = { ...student, photo_url: photoUrl };
-      setStudent(updated as StudentSession);
-      sessionStorage.setItem("currentStudent", JSON.stringify(updated));
-      toast({ title: "Photo Updated!", description: "Your profile photo has been updated successfully." });
+      if (updatedStudent) {
+        const updated = { ...student, photo_url: photoUrl };
+        setStudent(updated as StudentSession);
+        sessionStorage.setItem("currentStudent", JSON.stringify(updated));
+        toast({ title: "Photo Updated!", description: "Your profile photo has been updated successfully." });
+      }
     }
     setIsUploadingPhoto(false);
     // Reset input so same file can be re-selected
@@ -582,7 +598,9 @@ const StudentDashboard = () => {
                   <div className="p-3 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-4">
                     <div className="flex items-center justify-center gap-2 text-success mb-1">
                       <Check className="w-5 h-5" />
-                      <span className="font-bold text-sm uppercase tracking-wider">{student.year === "1" ? "1st" : student.year === "2" ? "2nd" : student.year === "3" ? "3rd" : student.year === "4" ? "4th" : student.year} Year Fees Completed!</span>
+                      <span className="font-bold text-sm uppercase tracking-wider">
+                        {student.year.includes("1") ? "1st" : student.year.includes("2") ? "2nd" : student.year.includes("3") ? "3rd" : student.year.includes("4") ? "4th" : student.year} Year Fees Completed!
+                      </span>
                     </div>
                     <p className="text-[10px] text-muted-foreground font-medium">Excellent! Your annual dues are cleared. Ready to continue for the {parseInt(student.year) + 1 || "next"} year.</p>
                   </div>
@@ -625,6 +643,7 @@ const StudentDashboard = () => {
                     </DialogHeader>
                     {feeTransactions.length > 0 ? (
                       <div className="space-y-6 pt-4">
+                        {/* Improved grouping: handle null/undefined academic_year */}
                         {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
                           <div key={year} className="space-y-3">
                             <div className="flex items-center gap-2">
@@ -634,7 +653,12 @@ const StudentDashboard = () => {
                             </div>
                             <div className="space-y-2">
                               {feeTransactions
-                                .filter((tx: any) => (tx.academic_year || "Unknown") === year)
+                                .filter((tx: any) => {
+                                  const txYear = tx.academic_year || "Unknown";
+                                  return txYear === year || 
+                                         (year === "1st Year" && txYear === "1") ||
+                                         (year === "Unknown" && !tx.academic_year);
+                                })
                                 .map((tx: any, idx, filteredArr) => {
                                   const paymentIndex = filteredArr.length - idx;
                                   const getOrdinal = (n: number) => {
@@ -683,17 +707,44 @@ const StudentDashboard = () => {
               <CardContent className="pt-0 pb-4">
                 <p className="text-xs text-muted-foreground mb-4">View your full transaction history and payment receipts.</p>
                 {feeTransactions.length > 0 ? (
-                   <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 flex justify-between items-center">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Latest Payment</span>
-                        <span className="font-black text-lg">₹{(feeTransactions[0] as any).amount.toLocaleString()}</span>
-                      </div>
-                      <Badge variant="outline" className="text-[10px] bg-white">
-                        {new Date((feeTransactions[0] as any).payment_date).toLocaleDateString()}
-                      </Badge>
-                   </div>
+                  <div className="space-y-2">
+                    {feeTransactions.slice(0, 5).map((tx: any, idx) => {
+                      const paymentIndex = feeTransactions.length - idx;
+                      const getOrdinal = (n: number) => {
+                        const s = ["th", "st", "nd", "rd"];
+                        const v = n % 100;
+                        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                      };
+                      
+                      return (
+                        <div key={tx.id} className="p-3 bg-primary/5 rounded-xl border-2 border-primary/10 flex justify-between items-center group hover:bg-primary/20 transition-all cursor-pointer" onClick={() => setPaymentHistoryDialogOpen(true)}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                              {paymentIndex}
+                            </div>
+                            <span className="font-bold text-sm text-foreground">
+                              {getOrdinal(paymentIndex)} - ₹{tx.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] bg-white border-primary/20 font-bold">
+                            [{new Date(tx.payment_date).toLocaleDateString()}]
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                    {feeTransactions.length > 5 && (
+                       <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary" onClick={() => setPaymentHistoryDialogOpen(true)}>
+                         View {feeTransactions.length - 5} More Transactions
+                       </Button>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-[10px] italic text-muted-foreground text-center py-2 bg-muted/30 rounded-lg">No payments recorded yet.</p>
+                  <div className="text-center py-6 bg-muted/30 rounded-xl border-2 border-dashed border-border/50">
+                    <p className="text-[10px] italic text-muted-foreground font-bold uppercase tracking-widest">No payments recorded yet</p>
+                    <p className="text-[8px] text-muted-foreground mt-1">History will appear once warden updates fees</p>
+                    {/* Diagnostic: check why list is empty */}
+                    <p className="text-[6px] text-muted-foreground mt-2 opacity-50">ID: {student.id}</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
