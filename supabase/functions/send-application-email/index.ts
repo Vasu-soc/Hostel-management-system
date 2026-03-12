@@ -42,7 +42,7 @@ async function sendEmailWithRetry(
       body: JSON.stringify(emailPayload),
     });
 
-    const emailResponse = await res.json();
+    const emailResponse: any = await res.json();
 
     // Handle rate limiting (429)
     if (res.status === 429 && retryCount < MAX_RETRIES) {
@@ -84,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, studentName, status, roomType, acType, username, password }: ApplicationEmailRequest = await req.json();
+    const { email, studentName, status, roomType, acType, username, password } = await req.json() as ApplicationEmailRequest;
 
     if (!email || !studentName || !status) {
       return new Response(
