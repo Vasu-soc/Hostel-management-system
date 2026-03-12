@@ -520,17 +520,39 @@ const WardenDashboard = () => {
     if (application?.email) {
       console.log('Sending hostel application email to:', application.email);
       const rollOrPhoneForEmail = (application.phone_number || "").toUpperCase().trim();
-      supabase.functions.invoke("send-application-email", {
-        body: {
-          email: application.email,
-          studentName: application.student_name,
-          status: action,
-          roomType: application.room_type,
-          acType: application.ac_type,
-          username: action === "accepted" ? rollOrPhoneForEmail : undefined,
-          password: action === "accepted" ? "Hostel@123" : undefined,
-        },
-      }).catch(err => console.error('Email invoke error:', err));
+      
+      const sendEmail = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("send-application-email", {
+            body: {
+              email: application.email,
+              studentName: application.student_name,
+              status: action,
+              roomType: application.room_type,
+              acType: application.ac_type,
+              username: action === "accepted" ? rollOrPhoneForEmail : undefined,
+              password: action === "accepted" ? "Hostel@123" : undefined,
+            },
+          });
+          
+          if (error) throw error;
+          console.log('Email sent payload response:', data);
+          toast({
+            title: "Email Sent Successfully",
+            description: "The applicant has been notified via email.",
+          });
+        } catch (err: any) {
+          console.error('Email invoke error:', err);
+          toast({
+            title: "Email Failed to Send",
+            description: err.message || JSON.stringify(err),
+            variant: "destructive",
+            duration: 15000,
+          });
+        }
+      };
+      
+      sendEmail();
     }
   };
 
