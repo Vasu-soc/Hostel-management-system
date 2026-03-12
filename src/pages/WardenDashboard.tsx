@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import emailjs from '@emailjs/browser';
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
@@ -523,29 +524,35 @@ const WardenDashboard = () => {
       
       const sendEmail = async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("send-application-email", {
-            body: {
-              email: application.email,
-              studentName: application.student_name,
-              status: action,
-              roomType: application.room_type,
-              acType: application.ac_type,
-              username: action === "accepted" ? rollOrPhoneForEmail : undefined,
-              password: action === "accepted" ? "Hostel@123" : undefined,
-            },
-          });
+          // Note: You need to create a template in EmailJS dashboard with these variables:
+          // to_email, student_name, status, room_type, ac_type, username, password
+          const templateParams = {
+            to_email: application.email,
+            student_name: application.student_name,
+            status: action,
+            room_type: application.room_type,
+            ac_type: application.ac_type,
+            username: action === "accepted" ? rollOrPhoneForEmail : "N/A",
+            password: action === "accepted" ? "Hostel@123" : "N/A",
+          };
+
+          const response = await emailjs.send(
+            'service_w8qbcz2', // Service ID
+            'template_hostel_approval', // PLACEHOLDER: Please replace with your actual Template ID
+            templateParams,
+            'ZIhzsmGmed3t_xC8U' // Public Key
+          );
           
-          if (error) throw error;
-          console.log('Email sent payload response:', data);
+          console.log('EmailJS response:', response);
           toast({
             title: "Email Sent Successfully",
             description: "The applicant has been notified via email.",
           });
         } catch (err: any) {
-          console.error('Email invoke error:', err);
+          console.error('EmailJS error:', err);
           toast({
             title: "Email Failed to Send",
-            description: err.message || JSON.stringify(err),
+            description: "Please check your EmailJS Template ID or daily limits.",
             variant: "destructive",
             duration: 15000,
           });
