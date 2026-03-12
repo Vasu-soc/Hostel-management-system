@@ -443,7 +443,7 @@ const WardenDashboard = () => {
             return;
           }
         }
-        
+
         // Update room occupancy count in database
         const roomStudentsAtThisRoom = students.filter(s => s.hostel_room_number === availableRoom.room_number);
         const newOccupancy = roomStudentsAtThisRoom.length + (existingStudent?.hostel_room_number === availableRoom.room_number ? 0 : 1);
@@ -493,11 +493,11 @@ const WardenDashboard = () => {
 
     if (studentNotif) {
       const isAccepted = action === "accepted";
-      
+
       await (supabase as any).from("notifications").insert({
         student_id: studentNotif.id,
         title: `Hostel Application ${isAccepted ? "Approved" : "Rejected"}`,
-        message: isAccepted 
+        message: isAccepted
           ? `Your hostel application has been approved! Room ${availableRoom?.room_number || "has been assigned"} on floor ${availableRoom?.floor_number || "assigned"} has been blocked for you. You can now login with your roll number (the phone number you used for registration) and default password.`
           : `We regret to inform you that your hostel application has been rejected. ${!availableRoom && initialAction === 'accepted' ? 'This is because no room matching your requirements was available at this time.' : ''}`,
         type: "application"
@@ -521,7 +521,7 @@ const WardenDashboard = () => {
     if (application?.email) {
       console.log('Sending hostel application email to:', application.email);
       const rollOrPhoneForEmail = (application.phone_number || "").toUpperCase().trim();
-      
+
       const sendEmail = async () => {
         try {
           // Note: You need to create a template in EmailJS dashboard with these variables:
@@ -529,6 +529,7 @@ const WardenDashboard = () => {
           const templateParams = {
             to_email: application.email,
             student_name: application.student_name,
+            roll_no: rollOrPhoneForEmail,
             status: action,
             room_type: application.room_type,
             ac_type: application.ac_type,
@@ -538,11 +539,11 @@ const WardenDashboard = () => {
 
           const response = await emailjs.send(
             'service_w8qbcz2', // Service ID
-            'template_hostel_approval', // PLACEHOLDER: Please replace with your actual Template ID
+            'template_88p8g4h', // PLACEHOLDER: Please replace with your actual Template ID
             templateParams,
             'ZIhzsmGmed3t_xC8U' // Public Key
           );
-          
+
           console.log('EmailJS response:', response);
           toast({
             title: "Email Sent Successfully",
@@ -552,13 +553,13 @@ const WardenDashboard = () => {
           console.error('EmailJS error:', err);
           toast({
             title: "Email Failed to Send",
-            description: "Please check your EmailJS Template ID or daily limits.",
+            description: `Error: ${err.text || err.message || "Unknown error"}. Check Your EmailJS Template ID.`,
             variant: "destructive",
             duration: 15000,
           });
         }
       };
-      
+
       sendEmail();
     }
   };
@@ -651,16 +652,17 @@ const WardenDashboard = () => {
 
       if (emailToUse) {
         console.log('Sending gate pass email via EmailJS to:', emailToUse);
-        
+
         const sendGatePassEmail = async () => {
           try {
             const templateParams = {
               to_email: emailToUse,
               student_name: gatePass.student_name,
+              roll_no: gatePass.roll_number,
+              from_date: gatePass.out_date,
+              to_date: gatePass.in_date,
+              reason: gatePass.purpose,
               status: action,
-              out_date: gatePass.out_date,
-              in_date: gatePass.in_date,
-              purpose: gatePass.purpose,
             };
 
             await emailjs.send(
@@ -670,8 +672,13 @@ const WardenDashboard = () => {
               'ZIhzsmGmed3t_xC8U' // Public Key
             );
             console.log('Gate pass email sent successfully');
-          } catch (err) {
+          } catch (err: any) {
             console.error('Gate pass EmailJS error:', err);
+            toast({
+              title: "Gate Pass Email Failed",
+              description: `Error: ${err.text || err.message || "Unknown error"}. Check Template ID.`,
+              variant: "destructive",
+            });
           }
         };
 
@@ -897,13 +904,13 @@ const WardenDashboard = () => {
               const totalAllotted = students.filter(s => s.room_allotted).length;
               const now = new Date();
               const outRolls = new Set();
-              
+
               gatePasses.forEach(gp => {
                 if (gp.status === 'approved' && gp.out_date && gp.in_date) {
                   try {
                     const outDate = new Date(`${gp.out_date}T${gp.out_time || '00:00:00'}`);
                     const inDate = new Date(`${gp.in_date}T${gp.in_time || '23:59:59'}`);
-                    
+
                     if (!isNaN(outDate.getTime()) && !isNaN(inDate.getTime())) {
                       if (now >= outDate && now <= inDate) {
                         outRolls.add(gp.roll_number);
@@ -1016,7 +1023,7 @@ const WardenDashboard = () => {
                     </Card>
                   );
                 })}
-              
+
               {students.filter(s => (s.pending_fee || 100000) <= 0 && s.room_allotted).length === 0 && (
                 <div className="col-span-full py-20 text-center bg-muted/30 rounded-3xl border-2 border-dashed border-border">
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
