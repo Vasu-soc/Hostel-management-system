@@ -421,6 +421,65 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_submissions: {
+        Row: {
+          id: string
+          student_id: string
+          student_name: string
+          roll_number: string
+          branch: string
+          year: string
+          hostel_fee: number
+          amount_paid: number
+          payment_date: string
+          payment_method: string
+          transaction_id: string
+          receipt_url: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          student_name: string
+          roll_number: string
+          branch: string
+          year: string
+          hostel_fee: number
+          amount_paid: number
+          payment_date: string
+          payment_method: string
+          transaction_id: string
+          receipt_url: string
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          student_name?: string
+          roll_number?: string
+          branch?: string
+          year?: string
+          hostel_fee?: number
+          amount_paid?: number
+          payment_date?: string
+          payment_method?: string
+          transaction_id?: string
+          receipt_url?: string
+          status?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
