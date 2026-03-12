@@ -493,7 +493,7 @@ const WardenDashboard = () => {
     if (studentNotif) {
       const isAccepted = action === "accepted";
       
-      await supabase.from("notifications").insert({
+      await (supabase as any).from("notifications").insert({
         student_id: studentNotif.id,
         title: `Hostel Application ${isAccepted ? "Approved" : "Rejected"}`,
         message: isAccepted 
@@ -605,7 +605,7 @@ const WardenDashboard = () => {
     if (gatePass) {
       const student = students.find(s => s.roll_number === gatePass.roll_number);
       if (student) {
-        await supabase.from("notifications").insert({
+        await (supabase as any).from("notifications").insert({
           student_id: student.id,
           title: `Gate Pass ${action === "approved" ? "Approved" : "Rejected"}`,
           message: `Your gate pass request for ${gatePass.out_date} has been ${action === "approved" ? "approved" : "rejected"} by the warden.`,
@@ -910,6 +910,13 @@ const WardenDashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Payment Submissions Tab */}
+        {activeTab === "paymentSubmissions" && (
+          <div className="space-y-6">
+            <PaymentSubmissionsDashboard />
           </div>
         )}
 
