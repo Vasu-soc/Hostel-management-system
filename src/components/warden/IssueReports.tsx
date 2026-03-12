@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ElectricalIssue {
   id: string;
+  student_id: string;
   student_name: string;
   roll_number: string;
   room_number: string;
@@ -20,6 +21,7 @@ interface ElectricalIssue {
 
 interface FoodIssue {
   id: string;
+  student_id: string;
   student_name: string;
   roll_number: string;
   description: string;
@@ -29,6 +31,7 @@ interface FoodIssue {
 
 interface MedicalAlert {
   id: string;
+  student_id: string;
   student_name: string;
   roll_number: string;
   room_number: string;
@@ -69,6 +72,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
 
   const handleElectricalAction = async (id: string, status: "resolved" | "rejected") => {
     setIsProcessing(true);
+    const issue = localElectrical.find(i => i.id === id);
 
     const { error } = await supabase
       .from("electrical_issues")
@@ -83,6 +87,16 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
       });
       setIsProcessing(false);
       return;
+    }
+
+    // Insert notification
+    if (issue?.student_id) {
+      await supabase.from("notifications").insert({
+        student_id: issue.student_id,
+        title: `Electrical Issue ${status === "resolved" ? "Solved" : "Rejected"}`,
+        message: `Your electrical issue "${issue.description}" has been ${status === "resolved" ? "solved" : "rejected"} by the warden.`,
+        type: "electrical"
+      });
     }
 
     // Show green/red instantly
@@ -110,6 +124,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
 
   const handleFoodAction = async (id: string, status: "resolved" | "rejected") => {
     setIsProcessing(true);
+    const issue = localFood.find(i => i.id === id);
 
     const { error } = await supabase
       .from("food_issues")
@@ -124,6 +139,16 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
       });
       setIsProcessing(false);
       return;
+    }
+
+    // Insert notification
+    if (issue?.student_id) {
+      await supabase.from("notifications").insert({
+        student_id: issue.student_id,
+        title: `Food Issue ${status === "resolved" ? "Solved" : "Rejected"}`,
+        message: `Your food issue "${issue.description}" has been ${status === "resolved" ? "solved" : "rejected"} by the warden.`,
+        type: "food"
+      });
     }
 
     setLocalFood((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
@@ -148,6 +173,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
 
   const handleMedicalAction = async (id: string, status: "resolved" | "rejected") => {
     setIsProcessing(true);
+    const alert = localMedical.find(i => i.id === id);
 
     const { error } = await supabase
       .from("medical_alerts")
@@ -162,6 +188,16 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
       });
       setIsProcessing(false);
       return;
+    }
+
+    // Insert notification
+    if (alert?.student_id) {
+      await supabase.from("notifications").insert({
+        student_id: alert.student_id,
+        title: `Medical Alert ${status === "resolved" ? "Resolved" : "Rejected"}`,
+        message: `Your medical alert for "${alert.issue_type}" has been ${status === "resolved" ? "resolved" : "rejected"} by the warden.`,
+        type: "medical"
+      });
     }
 
     setLocalMedical((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));

@@ -102,6 +102,25 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
 
       if (insertError) throw insertError;
 
+      // Fetch students of the selected branch and year to notify them
+      const { data: studentsToNotify } = await supabase
+        .from("students")
+        .select("id")
+        .eq("branch", selectedBranch)
+        .eq("year", selectedYear);
+
+      if (studentsToNotify && studentsToNotify.length > 0) {
+        const notifications = studentsToNotify.map(s => ({
+          student_id: s.id,
+          title: "New Study Material",
+          message: `New study material has been uploaded for ${subjectName}.`,
+          type: "study_material"
+        }));
+
+        const { error: notifError } = await supabase.from("notifications").insert(notifications);
+        if (notifError) console.error("Failed to send notifications:", notifError);
+      }
+
       toast({ title: "Success", description: "Study material processed successfully!" });
       setSelectedBranch("");
       setSelectedYear("");

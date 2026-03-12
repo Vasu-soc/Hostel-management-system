@@ -36,6 +36,7 @@ import {
   Loader2,
   PieChart as PieChartIcon,
   Table as TableIcon,
+  CreditCard,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +49,7 @@ import StudyMaterialUpload from "@/components/warden/StudyMaterialUpload";
 import IssueReports from "@/components/warden/IssueReports";
 import MedicineManagement from "@/components/warden/MedicineManagement";
 import FoodSelectionChart from "@/components/warden/FoodSelectionChart";
+import PaymentSubmissionsDashboard from "@/components/warden/PaymentSubmissionsDashboard";
 import { getWardenSession, clearWardenSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 
@@ -59,7 +61,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -144,7 +146,7 @@ const WardenDashboard = () => {
 
   const fetchApplications = async (gender: string | null) => {
     // Omit large base64 string columns (photo_url, signature_url) for initial fast loading
-    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price").order("created_at", { ascending: false });
+    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price, floor_preference").order("created_at", { ascending: false });
     if (gender) query = query.ilike("gender", gender);
     const { data } = await query;
     if (data) setApplications(data as any[]);
@@ -345,12 +347,15 @@ const WardenDashboard = () => {
     // Get the application details for email
     const application = applications.find(app => app.id === applicationId);
     let action = initialAction;
+    let availableRoom: any = null;
 
     if (action === "accepted" && application) {
       const isBoys = warden?.warden_type === "boys";
       const isGirls = warden?.warden_type === "girls";
 
-      let availableRoom = null;
+      const floorPref = application.floor_preference;
+
+      // First pass: Seek room matching ALL requirements INCLUDING floor preference if specific
       for (const room of rooms) {
         const roomNum = (room.room_number || "").toUpperCase().trim();
         const isGirlsRoom = roomNum.startsWith("GA") || roomNum.startsWith("GN");
@@ -358,8 +363,10 @@ const WardenDashboard = () => {
 
         if ((isBoys && !isBoysRoom) || (isGirls && !isGirlsRoom)) continue;
 
+        // Check if floor matches preference (if preference is specific)
+        if (floorPref && floorPref !== "any" && room.floor_number !== floorPref) continue;
+
         if (room.room_type === application.room_type && room.ac_type === application.ac_type) {
-          // Count ALL students holding a spot in this room (both allotted and blocked/pending)
           const roomStudents = students.filter(s => s.hostel_room_number === room.room_number);
           const actualOccupied = roomStudents.length;
           const closedBeds = room.closed_beds || 0;
@@ -371,6 +378,12 @@ const WardenDashboard = () => {
           }
         }
       }
+
+      // Second pass: If specific floor pref failed, we ONLY fallback if preference was "any" or not specified
+      // BUT according to user requirement "if that Ac single bed is Empty block that room... if room is not available Automatically Reject"
+      // This implies floor preference might be strict. Let's make it strict if specified.
+      // If the user wants ANY floor, floorPref will be "any".
+
 
       if (!availableRoom) {
         alert("There are no available rooms matching this application's requirements.");
@@ -429,6 +442,16 @@ const WardenDashboard = () => {
             return;
           }
         }
+        
+        // Update room occupancy count in database
+        const roomStudentsAtThisRoom = students.filter(s => s.hostel_room_number === availableRoom.room_number);
+        const newOccupancy = roomStudentsAtThisRoom.length + (existingStudent?.hostel_room_number === availableRoom.room_number ? 0 : 1);
+
+        await supabase
+          .from("rooms")
+          .update({ occupied_beds: newOccupancy })
+          .eq("id", availableRoom.id);
+
 
         // This `txError` block seems to be for a fee transaction history, which is not directly part of application action.
         // Pre-fetch immediately to update the UI
@@ -455,6 +478,29 @@ const WardenDashboard = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       logger.error("room_allocation", applicationId, "failure");
       return;
+    }
+
+    if (!application) return;
+
+    // Insert notification for the student
+    const rollOrPhoneForNotif = (application.phone_number || "").toUpperCase().trim();
+    const { data: studentNotif } = await supabase
+      .from("students")
+      .select("id")
+      .or(`roll_number.eq.${rollOrPhoneForNotif},email.eq.${application.email}`)
+      .single();
+
+    if (studentNotif) {
+      const isAccepted = action === "accepted";
+      
+      await supabase.from("notifications").insert({
+        student_id: studentNotif.id,
+        title: `Hostel Application ${isAccepted ? "Approved" : "Rejected"}`,
+        message: isAccepted 
+          ? `Your hostel application has been approved! Room ${availableRoom?.room_number || "has been assigned"} on floor ${availableRoom?.floor_number || "assigned"} has been blocked for you. You can now login with your roll number (the phone number you used for registration) and default password.`
+          : `We regret to inform you that your hostel application has been rejected. ${!availableRoom && initialAction === 'accepted' ? 'This is because no room matching your requirements was available at this time.' : ''}`,
+        type: "application"
+      });
     }
 
     logger.info(action === "accepted" ? "room_allocation_approved" : "room_allocation_rejected", applicationId, "success");
@@ -555,10 +601,20 @@ const WardenDashboard = () => {
     setGatePasses(prev => prev.map(gp => gp.id === gatePassId ? { ...gp, status: action } : gp));
     setSelectedGatePass(null);
 
-    // Send email in background
+    // Insert notification for the student
     if (gatePass) {
-      const gatePassEmail = gatePass.student_email;
       const student = students.find(s => s.roll_number === gatePass.roll_number);
+      if (student) {
+        await supabase.from("notifications").insert({
+          student_id: student.id,
+          title: `Gate Pass ${action === "approved" ? "Approved" : "Rejected"}`,
+          message: `Your gate pass request for ${gatePass.out_date} has been ${action === "approved" ? "approved" : "rejected"} by the warden.`,
+          type: "gate_pass"
+        });
+      }
+
+      // Send email in background
+      const gatePassEmail = gatePass.student_email;
       const emailToUse = gatePassEmail || student?.email;
 
       if (emailToUse) {
@@ -744,6 +800,7 @@ const WardenDashboard = () => {
     { id: "foodSelection" as TabType, label: "Food Selection", icon: Utensils },
     { id: "medicines" as TabType, label: "Medicines", icon: Pill },
     { id: "completedFees" as TabType, label: "Fees Completed", icon: Check, count: students.filter(s => s.pending_fee <= 0 && s.room_allotted).length },
+    { id: "paymentSubmissions" as TabType, label: "Student Payments", icon: CreditCard },
   ];
 
   if (!warden) {
@@ -853,6 +910,13 @@ const WardenDashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Payment Submissions Tab */}
+        {activeTab === "paymentSubmissions" && (
+          <div className="space-y-6">
+            <PaymentSubmissionsDashboard />
           </div>
         )}
 
@@ -1087,7 +1151,7 @@ const WardenDashboard = () => {
         {activeTab === "rooms" && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">Hostel Room Details</h2>
-            <HostelRoomDetails students={allottedStudents} onRefresh={fetchAllData} wardenType={warden.warden_type} />
+            <HostelRoomDetails students={students} onRefresh={fetchAllData} wardenType={warden.warden_type} />
           </div>
         )}
 
@@ -1220,6 +1284,21 @@ const WardenDashboard = () => {
           </DialogHeader>
           {selectedApplication && (
             <div ref={printRef} className="space-y-4 pt-4">
+              {(() => {
+                const matchedStudent = students.find(s => s.roll_number === (selectedApplication.phone_number || "").toUpperCase().trim() || (s.email && s.email === selectedApplication.email));
+                const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved" || selectedApplication.status === "allotted") && matchedStudent?.hostel_room_number ? matchedStudent.hostel_room_number : null;
+                if (allocatedRoom) {
+                  return (
+                    <div className="bg-primary/10 border-2 border-primary/30 p-4 rounded-xl text-center animate-in fade-in slide-in-from-top-4 duration-500">
+                      <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">Assigned Room</p>
+                      <p className="text-3xl font-black text-primary tracking-tight">{allocatedRoom}</p>
+                      <p className="text-[10px] text-primary/60 mt-1 uppercase font-semibold italic">Room blocked until final allotment</p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Passport Photo and Signature */}
               <div className="photos-section flex justify-between items-start gap-4 pb-4 border-b border-border">
                 <div className="photo-box flex-1">
@@ -1300,24 +1379,19 @@ const WardenDashboard = () => {
                   <p className="detail-value font-medium">{selectedApplication.ac_type === "ac" ? "AC" : "Non-AC"}</p>
                 </div>
                 <div className="detail-item">
+                  <p className="detail-label text-sm text-muted-foreground">Floor Preference</p>
+                  <p className="detail-value font-medium">
+                    {selectedApplication.floor_preference === "any" || !selectedApplication.floor_preference
+                      ? "Any Floor"
+                      : `${selectedApplication.floor_preference}${selectedApplication.floor_preference === '1' ? 'st' : selectedApplication.floor_preference === '2' ? 'nd' : 'rd'} Floor`}
+                  </p>
+                </div>
+                <div className="detail-item">
                   <p className="detail-label text-sm text-muted-foreground">Status</p>
                   <p className={`detail-value font-medium capitalize status-badge status-${selectedApplication.status}`}>
                     {selectedApplication.status}
                   </p>
                 </div>
-                {(() => {
-                  const matchedStudent = students.find(s => s.roll_number === (selectedApplication.phone_number || "").toUpperCase().trim() || (s.email && s.email === selectedApplication.email));
-                  const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved") && matchedStudent?.hostel_room_number ? matchedStudent.hostel_room_number : null;
-                  if (allocatedRoom) {
-                    return (
-                      <div className="detail-item">
-                        <p className="detail-label text-sm text-primary font-semibold">Allocated Room</p>
-                        <p className="detail-value font-bold text-primary">{allocatedRoom}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
                 <div className="detail-item col-span-2 fee-section">
                   <p className="detail-label text-sm text-muted-foreground">Total Fee</p>
                   <p className="detail-value font-semibold text-primary text-lg">

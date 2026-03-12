@@ -101,7 +101,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     }
 
     const roomDetails = allStudents.filter(
-      (s) => s.hostel_room_number === selectedRoom.room_number && s.room_allotted
+      (s) => s.hostel_room_number === selectedRoom.room_number
     );
 
     // Deduplicate by student id just in case

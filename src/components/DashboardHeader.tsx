@@ -3,6 +3,7 @@ import { LogOut, User, Camera, Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
+import NotificationBell from "./NotificationBell";
 
 interface DashboardHeaderProps {
   title: string;
@@ -14,6 +15,7 @@ interface DashboardHeaderProps {
   showPhoto?: boolean;
   onPhotoUpload?: () => void; // optional: student profile photo upload trigger
   onSettingsClick?: () => void;
+  studentId?: string;
 }
 
 const DashboardHeader = ({
@@ -26,6 +28,7 @@ const DashboardHeader = ({
   showPhoto = true,
   onPhotoUpload,
   onSettingsClick,
+  studentId,
 }: DashboardHeaderProps) => {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
 
@@ -70,16 +73,17 @@ const DashboardHeader = ({
             <div>
               <p className="font-bold text-lg text-foreground">{userName}</p>
               {userSubtitle && (
-                <p className="text-sm font-medium text-muted-foreground">{userSubtitle}</p>
+                <div className="text-sm font-medium text-muted-foreground">{userSubtitle}</div>
               )}
             </div>
           </div>
 
-          <h1 className="hidden md:block text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
+          <h1 className="hidden md:block text-2xl lg:text-3xl font-bold text-foreground tracking-tight text-center flex-1 mx-4">
             <span className={titleColor}>{title}</span>
           </h1>
 
           <div className="flex items-center gap-2">
+            {studentId && <NotificationBell studentId={studentId} />}
             {onSettingsClick && (
               <Button variant="ghost" size="icon" onClick={onSettingsClick} className="text-muted-foreground hover:text-primary transition-colors">
                 <Settings className="w-5 h-5" />

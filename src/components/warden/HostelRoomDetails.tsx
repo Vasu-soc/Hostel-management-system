@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Search, Trash2, IndianRupee, MessageSquare, User, Building2, ChevronRight, Bed, X, Check } from "lucide-react";
+import { Search, Trash2, IndianRupee, MessageSquare, User, Building2, ChevronRight, Bed, X, Check, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { localApi } from "@/lib/localStudentApi";
@@ -538,8 +538,9 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
   }
 
   // Render room detail with bed control
-  const roomStudents = getRoomStudents(selectedRoom.room_number);
-  const actualOccupiedBeds = roomStudents.length; // Source of truth: actual students in room
+  const roomStudents = getRoomStudents(selectedRoom.room_number)
+    .sort((a, b) => (a.room_allotted === b.room_allotted ? 0 : a.room_allotted ? -1 : 1));
+  const actualOccupiedBeds = roomStudents.length; // Source of truth: actual students in room (blocked or allotted)
   const closedBeds = selectedRoom.closed_beds || 0;
   const availableBeds = Math.max(0, selectedRoom.total_beds - actualOccupiedBeds - closedBeds);
 
@@ -564,28 +565,33 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
 
       {/* Bed Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="border-2 border-border">
+        <Card className="border-2 border-border shadow-sm">
           <CardContent className="py-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{selectedRoom.total_beds}</p>
-            <p className="text-sm text-muted-foreground">Total Beds</p>
+            <p className="text-2xl font-black text-foreground">{selectedRoom.total_beds}</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Total Beds</p>
           </CardContent>
         </Card>
-        <Card className="border-2 border-success/20 bg-success/5">
+        <Card className="border-2 border-success/30 bg-success/5 shadow-sm">
           <CardContent className="py-4 text-center">
-            <p className="text-2xl font-bold text-success">{actualOccupiedBeds}</p>
-            <p className="text-sm text-muted-foreground">Filled</p>
+            <div className="flex items-baseline justify-center gap-1">
+              <p className="text-2xl font-black text-success">{roomStudents.filter(s => s.room_allotted).length}</p>
+              {roomStudents.filter(s => !s.room_allotted).length > 0 && (
+                <p className="text-sm font-bold text-amber-500">+{roomStudents.filter(s => !s.room_allotted).length}</p>
+              )}
+            </div>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Allotted + Blocked</p>
           </CardContent>
         </Card>
-        <Card className="border-2 border-primary/20 bg-primary/5">
+        <Card className="border-2 border-primary/30 bg-primary/5 shadow-sm">
           <CardContent className="py-4 text-center">
-            <p className="text-2xl font-bold text-primary">{availableBeds}</p>
-            <p className="text-sm text-muted-foreground">Available</p>
+            <p className="text-2xl font-black text-primary">{availableBeds}</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Available</p>
           </CardContent>
         </Card>
-        <Card className="border-2 border-destructive/20 bg-destructive/5">
+        <Card className="border-2 border-destructive/30 bg-destructive/5 shadow-sm">
           <CardContent className="py-4 text-center">
-            <p className="text-2xl font-bold text-destructive">{closedBeds}</p>
-            <p className="text-sm text-muted-foreground">Closed</p>
+            <p className="text-2xl font-black text-destructive">{closedBeds}</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Closed</p>
           </CardContent>
         </Card>
       </div>
@@ -601,17 +607,29 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {bedStatuses.map((isAvailable, index) => {
-              const isOccupied = index < actualOccupiedBeds; // Use actual count from students
+              const studentAtBed = roomStudents[index];
+              const isOccupied = !!studentAtBed;
+              const isBlocked = isOccupied && !studentAtBed.room_allotted;
+              const isFullyAllotted = isOccupied && studentAtBed.room_allotted;
 
               return (
-                <div key={index} className={`p-4 rounded-lg border-2 ${isOccupied ? 'bg-success/10 border-success/30' : isAvailable ? 'bg-muted border-border' : 'bg-destructive/10 border-destructive/30'}`}>
+                <div key={index} className={`p-4 rounded-lg border-2 ${
+                  isFullyAllotted 
+                    ? 'bg-success/10 border-success/30' 
+                    : isBlocked 
+                      ? 'bg-amber-500/10 border-amber-500/30' 
+                      : isAvailable 
+                        ? 'bg-muted border-border' 
+                        : 'bg-destructive/10 border-destructive/30'
+                }`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">Bed {index + 1}</span>
-                    {isOccupied && <User className="w-4 h-4 text-success" />}
+                    {isFullyAllotted && <User className="w-4 h-4 text-success" />}
+                    {isBlocked && <AlertTriangle className="w-4 h-4 text-amber-500" />}
                     {!isOccupied && !isAvailable && <X className="w-4 h-4 text-destructive" />}
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">
-                    {isOccupied ? "Occupied" : isAvailable ? "Available" : "Closed"}
+                    {isFullyAllotted ? "Occupied" : isBlocked ? "Blocked" : isAvailable ? "Available" : "Closed"}
                   </p>
                   {!isOccupied && (
                     <div className="flex items-center gap-2">

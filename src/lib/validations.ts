@@ -188,6 +188,9 @@ export const hostelApplicationSchema = z.object({
   months: z.number()
     .min(1, "Minimum 1 month")
     .max(12, "Maximum 12 months"),
+  floorPreference: z.enum(["1", "2", "3", "any"], {
+    errorMap: () => ({ message: "Please select a floor preference" })
+  }).optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the terms and conditions" })
   }),

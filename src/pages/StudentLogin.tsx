@@ -166,7 +166,8 @@ const StudentLogin = () => {
 
       if (studentsData) {
         studentsData.forEach(student => {
-          if (student.hostel_room_number && student.room_allotted && !deletedIds.includes(student.id)) {
+          // Count student if they have room number, whether allotted or just pending (blocked)
+          if (student.hostel_room_number && !deletedIds.includes(student.id)) {
             actualOccupiedCounts[student.hostel_room_number] = (actualOccupiedCounts[student.hostel_room_number] || 0) + 1;
           }
         });

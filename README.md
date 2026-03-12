@@ -925,4 +925,4 @@ CSE · AIML · DS · ECE · EEE · MECH · CIVIL · IT · CSM · CSD · DME · D
 
 > Built with ❤️ for **Geethanjali Institute of Science & Technology** — *Championing Digital Hostel Management*
 
-© 2024 Geethanjali Institute of Science & Technology. All rights reserved.
+© 2026 Geethanjali Institute of Science & Technology. All rights reserved.

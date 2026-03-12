@@ -142,7 +142,8 @@ const AdminDashboard = () => {
 
   // Calculate actual occupied counts from students
   const getActualOccupied = (roomNumber: string) => {
-    return allStudents.filter(s => s.hostel_room_number === roomNumber && s.room_allotted).length;
+    // Count both allotted and blocked students for room occupancy
+    return allStudents.filter(s => s.hostel_room_number === roomNumber).length;
   };
 
   const fetchRooms = async () => {

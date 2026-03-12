@@ -104,6 +104,40 @@ const HostelApplication = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
 
+  const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const [searchParams] = useSearchParams();
   const initialGender = searchParams.get("gender") || "";
 
@@ -118,6 +152,7 @@ const HostelApplication = () => {
     roomType: "",
     acType: "",
     months: 12,
+    floorPreference: "any",
     termsAccepted: false,
   });
   const [selectedRoomType, setSelectedRoomType] = useState<string>("");
@@ -131,7 +166,7 @@ const HostelApplication = () => {
     handleInputChange("roomType", roomId);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 3 * 1024 * 1024) {
@@ -143,15 +178,12 @@ const HostelApplication = () => {
         e.target.value = "";
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const compressedData = await compressImage(file, 800, 800, 0.6);
+      setPhotoPreview(compressedData);
     }
   };
 
-  const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignatureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
@@ -163,11 +195,8 @@ const HostelApplication = () => {
         e.target.value = "";
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSignaturePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const compressedData = await compressImage(file, 400, 200, 0.5);
+      setSignaturePreview(compressedData);
     }
   };
 
@@ -220,6 +249,7 @@ const HostelApplication = () => {
         room_type: formData.roomType,
         ac_type: formData.acType,
         months: formData.months,
+        floor_preference: formData.floorPreference,
         price: getPrice(),
         photo_url: photoPreview,
         signature_url: signaturePreview,
@@ -249,7 +279,7 @@ const HostelApplication = () => {
       // Navigate back to home after successful submission
       setTimeout(() => {
         navigate("/");
-      }, 1500);
+      }, 300);
     } catch (error: any) {
       logger.error("hostel_application", formData.studentName || "unknown", "failure");
       toast({
@@ -536,23 +566,43 @@ const HostelApplication = () => {
 
                   {formData.acType && (
                     <div className="space-y-4 animate-fade-in">
-                      <div className="space-y-2">
-                        <Label>Number of Months</Label>
-                        <Select
-                          value={formData.months.toString()}
-                          onValueChange={(value) => handleInputChange("months", parseInt(value))}
-                        >
-                          <SelectTrigger className="h-12 bg-background">
-                            <SelectValue placeholder="Select duration..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-2 border-border z-50">
-                            {monthOptions.map((month) => (
-                              <SelectItem key={month} value={month.toString()}>
-                                {month} {month === 1 ? "Month" : "Months"}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Number of Months</Label>
+                          <Select
+                            value={formData.months.toString()}
+                            onValueChange={(value) => handleInputChange("months", parseInt(value))}
+                          >
+                            <SelectTrigger className="h-12 bg-background">
+                              <SelectValue placeholder="Select duration..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover border-2 border-border z-50">
+                              {monthOptions.map((month) => (
+                                <SelectItem key={month} value={month.toString()}>
+                                  {month} {month === 1 ? "Month" : "Months"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Floor Preference</Label>
+                          <Select
+                            value={formData.floorPreference}
+                            onValueChange={(value) => handleInputChange("floorPreference", value)}
+                          >
+                            <SelectTrigger className="h-12 bg-background">
+                              <SelectValue placeholder="Select floor preference..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover border-2 border-border z-50">
+                              <SelectItem value="any">Any Floor</SelectItem>
+                              <SelectItem value="1">1st Floor</SelectItem>
+                              <SelectItem value="2">2nd Floor</SelectItem>
+                              <SelectItem value="3">3rd Floor</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="p-4 rounded-lg bg-accent/20 border border-accent/30">

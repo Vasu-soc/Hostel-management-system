@@ -9,10 +9,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import PaymentSubmissionForm from "@/components/student/PaymentSubmissionForm";
+import { StudentSession } from "@/lib/session";
 
 import qrCodeImg from "@/assets/qrcode.jpg";
 
-const PaymentPortal = () => {
+interface PaymentPortalProps {
+  student?: StudentSession;
+}
+
+const PaymentPortal = ({ student }: PaymentPortalProps) => {
   const { toast } = useToast();
 
   const handleCopy = (text: string, label: string) => {
@@ -124,15 +130,19 @@ const PaymentPortal = () => {
           </div>
         </div>
 
-        {/* Google Form Link */}
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => window.open("https://forms.gle/obPGXkBNG4gZwyFV9", "_blank")}
-        >
-          <ExternalLink className="w-4 h-4 mr-2" />
-          Payment Confirmation Form
-        </Button>
+        {/* Payment Submission / Google Form Link */}
+        {student ? (
+          <PaymentSubmissionForm student={student} />
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.open("https://forms.gle/obPGXkBNG4gZwyFV9", "_blank")}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Payment Confirmation Form
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

@@ -586,6 +586,7 @@ const StudentDashboard = () => {
         onLogout={handleLogout}
         onPhotoUpload={() => photoInputRef.current?.click()}
         onSettingsClick={() => setSettingsDialogOpen(true)}
+        studentId={student.id}
       />
 
       <main className="container mx-auto px-4 py-6">
@@ -761,7 +762,7 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
-            <PaymentPortal />
+            <PaymentPortal student={student} />
 
             <div className="space-y-3">
               <Dialog open={resourcesDialogOpen} onOpenChange={setResourcesDialogOpen}>
