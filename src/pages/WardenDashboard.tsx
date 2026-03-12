@@ -920,13 +920,6 @@ const WardenDashboard = () => {
           </div>
         )}
 
-        {/* Payment Submissions Tab */}
-        {activeTab === "paymentSubmissions" && (
-          <div className="space-y-6">
-            <PaymentSubmissionsDashboard />
-          </div>
-        )}
-
         {/* Applications Tab */}
         {activeTab === "applications" && (
           <div className="space-y-4">
