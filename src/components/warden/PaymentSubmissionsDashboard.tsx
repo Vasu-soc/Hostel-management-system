@@ -67,6 +67,52 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
 
   const handleAction = async (submission: any, action: "approved" | "rejected") => {
     setIsLoading(true);
+
+    let currentAction = action;
+    let studentData: any = null;
+
+    if (action === "approved") {
+      // Fetch student to check current fee balance first
+      const { data, error } = await supabase
+        .from("students")
+        .select("paid_fee, pending_fee, id")
+        .eq("id", submission.student_id)
+        .single();
+        
+      if (!error && data) {
+        studentData = data;
+        const currentPending = Number(data.pending_fee || submission.hostel_fee);
+        if (currentPending <= 0) {
+          currentAction = "rejected";
+        }
+      }
+    }
+
+    if (currentAction === "rejected" && action === "approved") {
+        // This means it was auto-rejected because fees are already paid
+        await (supabase as any)
+          .from("payment_submissions")
+          .update({ status: "rejected" })
+          .eq("id", submission.id);
+
+        toast({
+          title: "Payment Rejected",
+          description: "Student's fees are already fully paid. Cannot approve extra payment.",
+          variant: "destructive"
+        });
+
+        await (supabase as any).from("notifications").insert({
+            student_id: submission.student_id,
+            title: "Payment Rejected (Fee Completed)",
+            message: "This year Your fees is completed you can again pay extra go and contact the concern Hostel Deen and resolve your payment issue.",
+            type: "payment"
+        });
+
+        setIsLoading(false);
+        setSelectedSubmission(null);
+        fetchSubmissions();
+        return;
+    }
     
     // Begin transaction-like operations
     // 1. Update submission status
@@ -81,37 +127,28 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
       return;
     }
 
-    if (action === "approved") {
-      // 2. Fetch student to check current fee balance
-      const { data: studentData, error: studentError } = await supabase
-        .from("students")
-        .select("paid_fee, pending_fee, id")
-        .eq("id", submission.student_id)
-        .single();
-        
-      if (!studentError && studentData) {
-        // 3. Add to fee transactions
-        const { error: txError } = await supabase.from("fee_transactions").insert({
-            student_id: submission.student_id,
-            amount: submission.amount_paid,
-            payment_date: submission.payment_date,
-            remarks: `Payment Ref: ${submission.transaction_id} (${submission.payment_method})`,
-            academic_year: submission.year?.replace(/[^0-9]/g, '') || "1",
-        });
+    if (action === "approved" && studentData) {
+      // 3. Add to fee transactions
+      const { error: txError } = await supabase.from("fee_transactions").insert({
+          student_id: submission.student_id,
+          amount: submission.amount_paid,
+          payment_date: submission.payment_date,
+          remarks: `Payment Ref: ${submission.transaction_id} (${submission.payment_method})`,
+          academic_year: submission.year?.replace(/[^0-9]/g, '') || "1",
+      });
 
-        if (!txError) {
-          // 4. Update student paid and pending fees
-          const newPaid = Number(studentData.paid_fee || 0) + Number(submission.amount_paid);
-          const newPending = Number(studentData.pending_fee || submission.hostel_fee) - Number(submission.amount_paid);
+      if (!txError) {
+        // 4. Update student paid and pending fees
+        const newPaid = Number(studentData.paid_fee || 0) + Number(submission.amount_paid);
+        const newPending = Number(studentData.pending_fee || submission.hostel_fee) - Number(submission.amount_paid);
 
-          await supabase
-            .from("students")
-            .update({
-                paid_fee: newPaid,
-                pending_fee: Math.max(0, newPending),
-            })
-            .eq("id", submission.student_id);
-        }
+        await supabase
+          .from("students")
+          .update({
+              paid_fee: newPaid,
+              pending_fee: Math.max(0, newPending),
+          })
+          .eq("id", submission.student_id);
       }
     }
 

@@ -223,7 +223,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email with retry logic
     const result = await sendEmailWithRetry({
-      from: "Hostel Management <hostelgist@gist.edu.in>",
+      from: "Hostel Management <onboarding@resend.dev>",
       to: [email],
       subject,
       html: htmlContent,
