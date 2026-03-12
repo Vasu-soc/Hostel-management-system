@@ -130,8 +130,9 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
       const fileInput = document.getElementById('fileUpload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       onRefresh();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to organize material", variant: "destructive" });
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast({ title: "Error", description: err.message || "Failed to organize material", variant: "destructive" });
     } finally {
       setIsUploading(false);
     }
@@ -145,8 +146,9 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
       if (deleteError) {
         throw deleteError;
       }
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to delete material", variant: "destructive" });
+    } catch (e: unknown) {
+      const err = e as Error;
+      toast({ title: "Error", description: err.message || "Failed to delete material", variant: "destructive" });
       return;
     }
 

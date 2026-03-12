@@ -8,7 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
 import { CreditCard, Check, X, Clock, ExternalLink, Download } from "lucide-react";
 
-const PaymentSubmissionsDashboard = () => {
+interface PaymentSubmissionsDashboardProps {
+  wardenType?: string;
+}
+
+const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboardProps) => {
   const { toast } = useToast();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null);
@@ -28,13 +32,21 @@ const PaymentSubmissionsDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [wardenType]);
 
   const fetchSubmissions = async () => {
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from('payment_submissions')
-      .select('*')
+      .select('*, students!inner(gender)')
       .order('created_at', { ascending: false });
+
+    if (wardenType === 'girls') {
+      query = query.in('students.gender', ['girl', 'female']);
+    } else if (wardenType === 'boys') {
+      query = query.in('students.gender', ['boy', 'male']);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Failed to fetch payment submissions:", error);

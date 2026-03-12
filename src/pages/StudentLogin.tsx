@@ -305,6 +305,17 @@ const StudentLogin = () => {
         setIsLoading(false);
         return;
       }
+
+      if (student.password === "hostel@123" || student.password === "Hostel@123") {
+        setStudentForPassword(student as Record<string, unknown>);
+        setIsFirstTimeLogin(true);
+        toast({
+          title: "First Time Login",
+          description: "Please change your one-time default password to continue",
+        });
+        setIsLoading(false);
+        return;
+      }
       
       // Check if student is approved (room_allotted is our approval flag)
       if (!student.room_allotted) {
@@ -677,25 +688,7 @@ const StudentLogin = () => {
                 </Button>
               </form>
             ) : (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50 rounded-2xl border border-border mb-8">
-                  <TabsTrigger
-                    value="login"
-                    className={`rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 font-bold text-base gap-2`}
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Login
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="register"
-                    className={`rounded-xl data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg transition-all duration-300 font-bold text-base gap-2`}
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Register
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="login" className="space-y-6">
+              <div className="space-y-6">
                   <div className="flex items-center justify-between border-b-2 border-primary/10 pb-4">
                     <h2 className={`text-xl font-bold ${genderColor} flex items-center gap-2`}>
                       <LogIn className="w-5 h-5" />
@@ -792,189 +785,12 @@ const StudentLogin = () => {
                       </Card>
                     </div>
                   )}
-                </TabsContent>
-
-                <TabsContent value="register" className="space-y-6">
-                  <div className="flex items-center justify-between border-b-2 border-accent/10 pb-4">
-                    <h2 className="text-xl font-bold text-accent flex items-center gap-2">
-                      <UserPlus className="w-5 h-5" />
-                      Student Registration
-                    </h2>
-                    <div className="bg-accent/10 text-accent text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
-                      New Account
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleRegister} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="studentName">Full Name *</Label>
-                        <Input
-                          id="studentName"
-                          placeholder="Your full name"
-                          value={registerData.studentName}
-                          onChange={(e) => setRegisterData({ ...registerData, studentName: e.target.value })}
-                          className="h-12"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="regRollNumber">Roll Number / Mobile Number *</Label>
-                        <Input
-                          id="regRollNumber"
-                          placeholder="e.g. 21GK1A0501 or Mobile No."
-                          value={registerData.rollNumber}
-                          onChange={(e) => setRegisterData({ ...registerData, rollNumber: e.target.value.toUpperCase() })}
-                          className="h-12"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="regEmail">Email Address</Label>
-                        <Input
-                          id="regEmail"
-                          type="email"
-                          placeholder="your@email.com"
-                          value={registerData.email}
-                          onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                          className="h-12"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="branch">Branch *</Label>
-                        <Select value={registerData.branch} onValueChange={(v) => setRegisterData({ ...registerData, branch: v })}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select Branch" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-2 border-border z-[100]">
-                            {branches.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="year">Current Year *</Label>
-                        <Select value={registerData.year} onValueChange={(v) => setRegisterData({ ...registerData, year: v })}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select Year" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-2 border-border z-[100]">
-                            {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="floor">Floor Number *</Label>
-                        <Select value={registerData.floorNumber} onValueChange={(v) => setRegisterData({ ...registerData, floorNumber: v })}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select Floor" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-2 border-border z-[100]">
-                            {floors.map(f => <SelectItem key={f} value={f}>Floor {f}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="blockType">Hostel Block *</Label>
-                        <Select value={registerData.hostelBlockType} onValueChange={(v) => setRegisterData({ ...registerData, hostelBlockType: v })}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select Block" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-2 border-border z-[100]">
-                            <SelectItem value="ac">AC Block</SelectItem>
-                            <SelectItem value="normal">Non-AC Block</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="roomNumber">Preferred Room *</Label>
-                        <Select value={registerData.roomNumber} onValueChange={(v) => setRegisterData({ ...registerData, roomNumber: v })}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder={availableRooms.length > 0 ? "Select Room" : "No rooms available"} />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-2 border-border z-[100]">
-                            {availableRooms.map(r => (
-                              <SelectItem key={r.room_number} value={r.room_number}>
-                                Room {r.room_number} ({r.total_beds - (r.occupied_beds || 0) - (r.closed_beds || 0)} free) - ₹{getRoomFee(r).toLocaleString()}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="photo">Profile Photo</Label>
-                      <div className="flex items-center gap-4 p-4 border-2 border-dashed border-border rounded-xl bg-muted/30">
-                        <div className="w-16 h-16 rounded-full bg-background border flex items-center justify-center overflow-hidden">
-                          {photoPreview ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-muted-foreground" />}
-                        </div>
-                        <div className="flex-1">
-                          <Label htmlFor="photo-upload" className="cursor-pointer">
-                            <div className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                              <Upload className="w-4 h-4" />
-                              {photoFile ? photoFile.name : "Upload photo"}
-                            </div>
-                          </Label>
-                          <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                            Max file size: 3MB (JPEG/PNG)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="regPass">Password *</Label>
-                        <div className="relative">
-                          <Input
-                            id="regPass"
-                            type={showPassword ? "text" : "password"}
-                            value={registerData.password}
-                            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                            className="h-12 pr-10"
-                          />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPass">Confirm Password *</Label>
-                        <div className="relative">
-                          <Input
-                            id="confirmPass"
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={registerData.confirmPassword}
-                            onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                            className="h-12 pr-10"
-                          />
-                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
-                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading || isUploadingPhoto}>
-                      {isLoading ? "Processing..." : "Register Now"}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-
+              </div>
             )}
           </CardContent>
         </Card>
       </main>
-    </div >
+    </div>
   );
 };
 

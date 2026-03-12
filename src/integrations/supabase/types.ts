@@ -394,6 +394,44 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          id: string
+          student_id: string
+          title: string
+          message: string
+          type: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          title: string
+          message: string
+          type: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          title?: string
+          message?: string
+          type?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       parents: {
         Row: {
           created_at: string

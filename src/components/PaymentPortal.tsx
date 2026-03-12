@@ -131,18 +131,19 @@ const PaymentPortal = ({ student }: PaymentPortalProps) => {
         </div>
 
         {/* Payment Submission / Google Form Link */}
-        {student ? (
-          <PaymentSubmissionForm student={student} />
-        ) : (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => window.open("https://forms.gle/obPGXkBNG4gZwyFV9", "_blank")}
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Payment Confirmation Form
-          </Button>
+        {student && (
+          <div className="mb-4">
+            <PaymentSubmissionForm student={student} />
+          </div>
         )}
+        <Button
+          variant="outline"
+          className="w-full border-primary/30 hover:bg-primary/5"
+          onClick={() => window.open("https://forms.gle/obPGXkBNG4gZwyFV9", "_blank")}
+        >
+          <ExternalLink className="w-4 h-4 mr-2 text-primary" />
+          Fees Submition Google form
+        </Button>
       </CardContent>
     </Card>
   );

@@ -385,7 +385,7 @@ const ParentDashboard = () => {
               </CardContent>
             </Card>
 
-            <PaymentPortal />
+            <PaymentPortal student={student} />
 
 
           </div>

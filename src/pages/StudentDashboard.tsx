@@ -506,6 +506,25 @@ const StudentDashboard = () => {
     if (!student || !selectedFoodItem) return;
 
     try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentSelections, error: countError } = await supabase
+        .from('food_selections')
+        .select('id')
+        .eq('student_id', student.id)
+        .gte('created_at', twentyFourHoursAgo);
+
+      if (countError) throw countError;
+
+      if (recentSelections && recentSelections.length >= 3) {
+        toast({ 
+          title: "Limit Exceeded", 
+          description: "You can only make 3 food selections per 24 hours. Please try again later.", 
+          variant: "destructive" 
+        });
+        setFoodSelectionDialogOpen(false);
+        return;
+      }
+
       const { error } = await supabase.from('food_selections').insert({
         student_id: student.id,
         student_name: student.student_name,
@@ -782,6 +801,10 @@ const StudentDashboard = () => {
                   <div className="space-y-3 pt-4">
                     <p className="text-sm text-muted-foreground">Useful links for your learning and development:</p>
                     <div className="grid grid-cols-1 gap-3">
+                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5 border-primary/30" onClick={() => window.open('https://forms.gle/obPGXkBNG4gZwyFV9', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
+                        Fees Submition Google form
+                      </Button>
                       <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.w3schools.com/python/', '_blank')}>
                         <ExternalLink className="w-4 h-4 mr-3 text-primary" />
                         Python Tutorial (W3Schools)

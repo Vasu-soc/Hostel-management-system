@@ -16,7 +16,11 @@ import {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-export default function FoodSelectionChart() {
+interface FoodSelectionChartProps {
+    wardenType?: string;
+}
+
+export default function FoodSelectionChart({ wardenType }: FoodSelectionChartProps) {
     const { toast } = useToast();
     const [data, setData] = useState<{ name: string; count: number }[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -24,14 +28,30 @@ export default function FoodSelectionChart() {
 
     useEffect(() => {
         fetchFoodSelections();
-    }, []);
+    }, [wardenType]);
 
     const handleRemoveData = async () => {
         if (!confirm("Are you sure you want to clear all food selection data? This cannot be undone.")) return;
 
         try {
-            const { error } = await supabase.from('food_selections').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-            if (error) throw error;
+            let myError = null;
+            if (wardenType === 'girls' || wardenType === 'boys') {
+                let q = supabase.from('food_selections').select('id, students!inner(gender)');
+                if (wardenType === 'girls') q = q.in('students.gender', ['girl', 'female']);
+                if (wardenType === 'boys') q = q.in('students.gender', ['boy', 'male']);
+                
+                const { data: toDelete } = await q;
+                if (toDelete && toDelete.length > 0) {
+                    const ids = toDelete.map((item: any) => item.id);
+                    const { error } = await supabase.from('food_selections').delete().in('id', ids);
+                    myError = error;
+                }
+            } else {
+                const { error } = await supabase.from('food_selections').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+                myError = error;
+            }
+
+            if (myError) throw myError;
 
             toast({
                 title: "Data Cleared",
@@ -52,7 +72,15 @@ export default function FoodSelectionChart() {
     const fetchFoodSelections = async () => {
         setIsLoading(true);
         try {
-            const { data: selections, error } = await supabase.from('food_selections').select('*');
+            let query = (supabase as any).from('food_selections').select('*, students!inner(gender)');
+            
+            if (wardenType === 'girls') {
+                query = query.in('students.gender', ['girl', 'female']);
+            } else if (wardenType === 'boys') {
+                query = query.in('students.gender', ['boy', 'male']);
+            }
+
+            const { data: selections, error } = await query;
             if (error) throw error;
 
             if (selections) {

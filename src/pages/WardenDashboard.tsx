@@ -519,13 +519,16 @@ const WardenDashboard = () => {
     // Send email in background
     if (application?.email) {
       console.log('Sending hostel application email to:', application.email);
+      const rollOrPhoneForEmail = (application.phone_number || "").toUpperCase().trim();
       supabase.functions.invoke("send-application-email", {
         body: {
           email: application.email,
           studentName: application.student_name,
           status: action,
           roomType: application.room_type,
-          ac_type: application.ac_type,
+          acType: application.ac_type,
+          username: action === "accepted" ? rollOrPhoneForEmail : undefined,
+          password: action === "accepted" ? "Hostel@123" : undefined,
         },
       }).catch(err => console.error('Email invoke error:', err));
     }
@@ -916,9 +919,11 @@ const WardenDashboard = () => {
         {/* Payment Submissions Tab */}
         {activeTab === "paymentSubmissions" && (
           <div className="space-y-6">
-            <PaymentSubmissionsDashboard />
+            <PaymentSubmissionsDashboard wardenType={warden?.warden_type} />
           </div>
         )}
+
+
 
         {/* Applications Tab */}
         {activeTab === "applications" && (
@@ -1245,10 +1250,8 @@ const WardenDashboard = () => {
 
         {/* Food Selection Tab */}
         {activeTab === "foodSelection" && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Food Selection Overview</h2>
-            <p className="text-muted-foreground">View the most preferred food items selected by students.</p>
-            <FoodSelectionChart />
+          <div className="space-y-6">
+            <FoodSelectionChart wardenType={warden?.warden_type} />
           </div>
         )}
 

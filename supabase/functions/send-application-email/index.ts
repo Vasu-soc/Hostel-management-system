@@ -14,6 +14,8 @@ interface ApplicationEmailRequest {
   status: "accepted" | "rejected";
   roomType?: string;
   acType?: string;
+  username?: string;
+  password?: string;
 }
 
 // Retry configuration
@@ -80,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, studentName, status, roomType, acType }: ApplicationEmailRequest = await req.json();
+    const { email, studentName, status, roomType, acType, username, password }: ApplicationEmailRequest = await req.json();
 
     if (!email || !studentName || !status) {
       return new Response(
@@ -122,6 +124,16 @@ const handler = async (req: Request): Promise<Response> => {
                 <p><strong>Room Type:</strong> ${roomType || "As per your selection"}</p>
                 <p><strong>AC/Non-AC:</strong> ${acType === "ac" ? "AC Room" : "Non-AC Room"}</p>
               </div>
+
+              ${username && password ? `
+              <div class="highlight" style="background: #e0f2fe; border: 1px solid #bae6fd;">
+                <h3>🔐 Login Credentials:</h3>
+                <p>You can now login to the student portal using these credentials:</p>
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Password:</strong> ${password}</p>
+                <p><i>Note: You will be prompted to change your password upon your first login.</i></p>
+              </div>
+              ` : ''}
               
               <h3>📌 Next Steps:</h3>
               <ol>

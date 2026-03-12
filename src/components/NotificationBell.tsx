@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell, Check, Trash2, Info, AlertTriangle, Zap, UtensilsCrossed, FileText, Pill, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ const NotificationBell = ({ studentId }: NotificationBellProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!studentId) return;
 
     const { data, error } = await supabase
@@ -48,7 +48,7 @@ const NotificationBell = ({ studentId }: NotificationBellProps) => {
       setNotifications(data as Notification[]);
       setUnreadCount(data.filter((n) => !n.is_read).length);
     }
-  };
+  }, [studentId]);
 
   useEffect(() => {
     fetchNotifications();
@@ -73,7 +73,7 @@ const NotificationBell = ({ studentId }: NotificationBellProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [studentId]);
+  }, [studentId, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     const { error } = await supabase
