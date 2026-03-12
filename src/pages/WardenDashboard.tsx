@@ -477,7 +477,7 @@ const WardenDashboard = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       logger.error("room_allocation", applicationId, "failure");
-      return;
+      // Don't return early here, allow the rest of the flow (including email) to execute
     }
 
     if (!application) return;
