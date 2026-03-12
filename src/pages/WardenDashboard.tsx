@@ -650,17 +650,32 @@ const WardenDashboard = () => {
       const emailToUse = gatePassEmail || student?.email;
 
       if (emailToUse) {
-        console.log('Sending gate pass email via Resend to:', emailToUse);
-        supabase.functions.invoke("send-gate-pass-email", {
-          body: {
-            email: emailToUse,
-            studentName: gatePass.student_name,
-            status: action,
-            outDate: gatePass.out_date,
-            inDate: gatePass.in_date,
-            purpose: gatePass.purpose,
-          },
-        }).catch(err => console.error('Email invoke error:', err));
+        console.log('Sending gate pass email via EmailJS to:', emailToUse);
+        
+        const sendGatePassEmail = async () => {
+          try {
+            const templateParams = {
+              to_email: emailToUse,
+              student_name: gatePass.student_name,
+              status: action,
+              out_date: gatePass.out_date,
+              in_date: gatePass.in_date,
+              purpose: gatePass.purpose,
+            };
+
+            await emailjs.send(
+              'service_w8qbcz2', // Service ID
+              'template_gate_pass', // PLACEHOLDER: Create a separate template for gate passes
+              templateParams,
+              'ZIhzsmGmed3t_xC8U' // Public Key
+            );
+            console.log('Gate pass email sent successfully');
+          } catch (err) {
+            console.error('Gate pass EmailJS error:', err);
+          }
+        };
+
+        sendGatePassEmail();
       }
     }
   };
