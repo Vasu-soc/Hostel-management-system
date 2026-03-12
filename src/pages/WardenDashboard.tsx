@@ -849,6 +849,76 @@ const WardenDashboard = () => {
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
           <div className="space-y-6">
+            {(() => {
+              const totalAllotted = students.filter(s => s.room_allotted).length;
+              const now = new Date();
+              const outRolls = new Set();
+              
+              gatePasses.forEach(gp => {
+                if (gp.status === 'approved' && gp.out_date && gp.in_date) {
+                  try {
+                    const outDate = new Date(`${gp.out_date}T${gp.out_time || '00:00:00'}`);
+                    const inDate = new Date(`${gp.in_date}T${gp.in_time || '23:59:59'}`);
+                    
+                    if (!isNaN(outDate.getTime()) && !isNaN(inDate.getTime())) {
+                      if (now >= outDate && now <= inDate) {
+                        outRolls.add(gp.roll_number);
+                      }
+                    }
+                  } catch (e) {
+                    // Ignore date parsing errors
+                  }
+                }
+              });
+
+              const leaveCount = outRolls.size;
+              const presentCount = Math.max(0, totalAllotted - leaveCount);
+              const isBoys = warden?.warden_type === "boys";
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-2 animate-fade-in">
+                  <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg border-0 hover:shadow-indigo-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-indigo-100 flex items-center justify-between font-medium">
+                        Total {isBoys ? 'Boys' : 'Girls'}
+                        <Users className="w-5 h-5 text-indigo-200" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-black">{totalAllotted}</div>
+                      <p className="text-indigo-100/80 text-sm mt-1">Total allotted students in hostel</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg border-0 hover:shadow-emerald-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-emerald-100 flex items-center justify-between font-medium">
+                        Currently Present
+                        <Home className="w-5 h-5 text-emerald-200" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-black">{presentCount}</div>
+                      <p className="text-emerald-100/80 text-sm mt-1">Students inside hostel</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg border-0 hover:shadow-amber-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-amber-100 flex items-center justify-between font-medium">
+                        On Leave (Outing)
+                        <DoorOpen className="w-5 h-5 text-amber-200" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-black">{leaveCount}</div>
+                      <p className="text-amber-100/80 text-sm mt-1">Currently out on gate pass</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+
             <h2 className="text-2xl font-bold text-foreground">Pending Room Details</h2>
             <PendingRoomsDashboard rooms={rooms} students={students} />
           </div>
