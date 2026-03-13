@@ -9,7 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn, FileText } from "lucide-react";
+import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn, FileText, Pill } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import HostelAlbumGallery from "./HostelAlbumGallery";
 import gisteduLogo from "@/assets/gistedu-logo.png";
@@ -82,9 +82,25 @@ const CollegeHeader = () => {
               </p>
               <div className="h-[1.5px] w-6 sm:w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent hidden sm:block transition-all duration-500 group-hover:w-16"></div>
             </div>
-            <p className="text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed max-w-[95%] sm:max-w-[85%] font-semibold tracking-wide border-t border-primary/10 pt-1">
+            <p className="text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed max-w-[95%] sm:max-w-[85%] font-semibold tracking-wide border-t border-primary/10 pt-1 uppercase">
               3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt. Andhra Pradesh, India - 524137.
             </p>
+            
+            {/* Quick Navigation Links */}
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 sm:mt-3 border-t border-primary/5 pt-2">
+              <Link to="/" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group">
+                <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                <span>CHOOSE LOGINS</span>
+              </Link>
+              <Link to="/hostel-application" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
+                <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                <span>HOSTEL APPLICATION FORM</span>
+              </Link>
+              <Link to="/" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group">
+                <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                <span>MEDICINE AVAILABILITY</span>
+              </Link>
+            </div>
           </div>
 
           {/* Menu Button + Theme Toggle - Only on home page */}
