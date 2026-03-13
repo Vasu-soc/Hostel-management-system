@@ -524,6 +524,66 @@ export type Database = {
           }
         ]
       }
+      recycle_bin: {
+        Row: {
+          id: string
+          table_name: string
+          original_id: string
+          data: Json
+          deleted_at: string
+          warden_type: string | null
+        }
+        Insert: {
+          id?: string
+          table_name: string
+          original_id: string
+          data: Json
+          deleted_at?: string
+          warden_type?: string | null
+        }
+        Update: {
+          id?: string
+          table_name?: string
+          original_id?: string
+          data?: Json
+          deleted_at?: string
+          warden_type?: string | null
+        }
+        Relationships: []
+      }
+      hostel_albums: {
+        Row: {
+          id: string
+          event_name: string
+          event_date: string
+          image_urls: string[]
+          description: string | null
+          created_at: string
+          created_by: string | null
+          warden_type: string | null
+        }
+        Insert: {
+          id?: string
+          event_name: string
+          event_date: string
+          image_urls: string[]
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          warden_type?: string | null
+        }
+        Update: {
+          id?: string
+          event_name?: string
+          event_date?: string
+          image_urls?: string[]
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          warden_type?: string | null
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string

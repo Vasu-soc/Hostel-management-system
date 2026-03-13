@@ -16,6 +16,8 @@ interface DashboardHeaderProps {
   onPhotoUpload?: () => void; // optional: student profile photo upload trigger
   onSettingsClick?: () => void;
   studentId?: string;
+  extraActions?: React.ReactNode;
+  beforeTitleAction?: React.ReactNode;
 }
 
 const DashboardHeader = ({
@@ -29,6 +31,8 @@ const DashboardHeader = ({
   onPhotoUpload,
   onSettingsClick,
   studentId,
+  extraActions,
+  beforeTitleAction,
 }: DashboardHeaderProps) => {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
 
@@ -79,7 +83,10 @@ const DashboardHeader = ({
           </div>
 
           <h1 className="hidden md:block text-2xl lg:text-3xl font-bold text-foreground tracking-tight text-center flex-1 mx-4">
-            <span className={titleColor}>{title}</span>
+            <div className="flex items-center justify-center gap-3">
+              {beforeTitleAction}
+              <span className={titleColor}>{title}</span>
+            </div>
           </h1>
 
           <div className="flex items-center gap-2">
@@ -89,6 +96,7 @@ const DashboardHeader = ({
                 <Settings className="w-5 h-5" />
               </Button>
             )}
+            {extraActions}
             <ThemeToggle />
             <Button variant="outline" onClick={onLogout} className="h-11 px-4 text-base font-medium">
               <LogOut className="w-5 h-5 mr-2" />

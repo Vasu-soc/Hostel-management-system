@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn, FileText } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import HostelAlbumGallery from "./HostelAlbumGallery";
 import gisteduLogo from "@/assets/gistedu-logo.png";
 
 const loginOptions = [
@@ -89,6 +90,11 @@ const CollegeHeader = () => {
           {/* Menu Button + Theme Toggle - Only on home page */}
           {isHomePage && (
             <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              {/* Album Gallery Icon */}
+              <div className="animate-in slide-in-from-right duration-700 delay-300">
+                <HostelAlbumGallery />
+              </div>
+
               {/* Theme Toggle Button Style */}
               <div className="bg-muted/50 p-1 rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner">
                 <ThemeToggle />

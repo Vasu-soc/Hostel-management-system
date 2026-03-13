@@ -46,9 +46,10 @@ interface RoomAllotmentProps {
   pendingStudents: Student[];
   allStudents?: Student[];
   onRefresh: () => void;
+  wardenType?: string;
 }
 
-const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: RoomAllotmentProps) => {
+const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh, wardenType }: RoomAllotmentProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -153,20 +154,27 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   };
 
   const handleDeleteStudent = async (student: Student) => {
-    if (!confirm(`Are you sure you want to permanently delete ${student.student_name}? This cannot be undone.`)) return;
+    if (!confirm(`Are you sure you want to move ${student.student_name} to the Recycle Bin? All linked data (Gate Passes, Issues) will be permanently deleted, but the student profile can be restored within 30 days.`)) return;
 
     try {
-      // First try the local file API (no database, no RLS, always works)
-      const localResult = await localApi.deleteStudent(student.id);
+      // 1. Get current data for recycle bin (Student Profile)
+      const { data: studentData } = await supabase
+        .from("students")
+        .select("*")
+        .eq("id", student.id)
+        .single();
 
-      if (localResult.success) {
-        toast({ title: "Deleted", description: `${student.student_name} permanently removed.` });
-        onRefresh();
-        return;
+      if (studentData) {
+        // 2. Move to recycle bin
+        await supabase.from("recycle_bin").insert({
+          table_name: "students",
+          original_id: student.id,
+          data: studentData,
+          warden_type: wardenType
+        });
       }
 
-      // If not in local storage, fall back to Supabase
-      // Delete related records first
+      // 3. Delete related records (Gate Passes, Issues, etc.)
       const rollNumber = student.roll_number.toUpperCase().trim();
       await Promise.all([
         supabase.from("gate_passes").delete().eq("roll_number", rollNumber),
@@ -179,25 +187,17 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
         supabase.from("medical_alerts").delete().eq("student_id", student.id),
         supabase.from("parents").delete().eq("student_roll_number", rollNumber),
         supabase.from("password_reset_tokens").delete().eq("user_identifier", rollNumber),
+        localApi.markDeleted(student.id)
       ]);
 
-      const { data: deletedData, error } = await supabase
+      // 4. Delete the student from active table
+      const { error } = await supabase
         .from("students")
         .delete()
-        .eq("id", student.id)
-        .select();
+        .eq("id", student.id);
 
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
-        return;
-      }
-
-      if (!deletedData || deletedData.length === 0) {
-        toast({
-          title: "Blocked by Database",
-          description: "Supabase RLS is blocking this delete. Go to Supabase → Authentication → Policies → students table → Add DELETE policy with USING (true).",
-          variant: "destructive",
-        });
         return;
       }
 
@@ -208,7 +208,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
         if (room) await supabase.from("rooms").update({ occupied_beds: inRoom?.length || 0 }).eq("id", room.id);
       }
 
-      toast({ title: "Deleted", description: `${student.student_name} permanently removed.` });
+      toast({ title: "Moved to Recycle Bin", description: `${student.student_name} profile moved to Recycle Bin.` });
       onRefresh();
     } catch (err: any) {
       toast({ title: "Error", description: "Unexpected error during deletion", variant: "destructive" });

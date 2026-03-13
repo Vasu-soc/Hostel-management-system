@@ -39,6 +39,7 @@ import {
   Table as TableIcon,
   CreditCard,
   Bell,
+  LayoutGrid,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +56,14 @@ import PaymentSubmissionsDashboard from "@/components/warden/PaymentSubmissionsD
 import { getWardenSession, clearWardenSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import UpdatesManagement from "@/components/UpdatesManagement";
+import RecycleBin from "@/components/warden/RecycleBin";
+import AlbumManagement from "@/components/warden/AlbumManagement";
+import { Camera, LayoutGrid } from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface Warden {
   id: string;
@@ -64,7 +73,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -93,6 +102,7 @@ const WardenDashboard = () => {
   const [signaturePreview, setSignaturePreview] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState<string | null>(null);
+  const [isFeatureVisionOpen, setIsFeatureVisionOpen] = useState(false);
   const signatureInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -835,38 +845,82 @@ const WardenDashboard = () => {
   // Delete handlers
   const handleDeleteApplication = async (applicationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this application?")) return;
+    if (!confirm("Are you sure you want to move this application to the Recycle Bin? It will be stored there for 30 days.")) return;
 
-    const { error } = await supabase
-      .from("hostel_applications")
-      .delete()
-      .eq("id", applicationId);
+    try {
+      // 1. Get current data for recycle bin
+      const { data: applicationData } = await supabase
+        .from("hostel_applications")
+        .select("*")
+        .eq("id", applicationId)
+        .single();
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to delete application", variant: "destructive" });
-      return;
+      if (applicationData) {
+        // 2. Move to recycle bin
+        await supabase.from("recycle_bin").insert({
+          table_name: "hostel_applications",
+          original_id: applicationId,
+          data: applicationData,
+          warden_type: warden?.warden_type
+        });
+      }
+
+      // 3. Delete from original table
+      const { error } = await supabase
+        .from("hostel_applications")
+        .delete()
+        .eq("id", applicationId);
+
+      if (error) {
+        toast({ title: "Error", description: "Failed to delete application", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Moved to Recycle Bin", description: "Application moved successfully" });
+      fetchAllData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-
-    toast({ title: "Deleted", description: "Application deleted successfully" });
-    fetchAllData();
   };
 
   const handleDeleteGatePass = async (gatePassId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this gate pass?")) return;
+    if (!confirm("Are you sure you want to move this gate pass to the Recycle Bin? It will be stored there for 30 days.")) return;
 
-    const { error } = await supabase
-      .from("gate_passes")
-      .delete()
-      .eq("id", gatePassId);
+    try {
+      // 1. Get current data for recycle bin
+      const { data: gatePassData } = await supabase
+        .from("gate_passes")
+        .select("*")
+        .eq("id", gatePassId)
+        .single();
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to delete gate pass", variant: "destructive" });
-      return;
+      if (gatePassData) {
+        // 2. Move to recycle bin
+        await supabase.from("recycle_bin").insert({
+          table_name: "gate_passes",
+          original_id: gatePassId,
+          data: gatePassData,
+          warden_type: warden?.warden_type
+        });
+      }
+
+      // 3. Delete from original table
+      const { error } = await supabase
+        .from("gate_passes")
+        .delete()
+        .eq("id", gatePassId);
+
+      if (error) {
+        toast({ title: "Error", description: "Failed to delete gate pass", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Moved to Recycle Bin", description: "Gate pass moved successfully" });
+      fetchAllData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-
-    toast({ title: "Deleted", description: "Gate pass deleted successfully" });
-    fetchAllData();
   };
 
   // Signature handlers
@@ -991,9 +1045,11 @@ const WardenDashboard = () => {
     { id: "issues" as TabType, label: "Issues", icon: AlertTriangle, count: pendingElectrical.length + pendingFood.length },
     { id: "foodSelection" as TabType, label: "Food Selection", icon: Utensils },
     { id: "medicines" as TabType, label: "Medicines", icon: Pill },
-    { id: "completedFees" as TabType, label: "Fees Completed", icon: Check, count: students.filter(s => s.pending_fee <= 0 && s.room_allotted).length },
+    { id: "completedFees" as TabType, label: "Fees Completed", icon: Check, count: students.filter(s => s.pending_fee !== null && Number(s.pending_fee) <= 0 && s.room_allotted).length },
     { id: "paymentSubmissions" as TabType, label: "Student Payments", icon: CreditCard },
     { id: "updates" as TabType, label: "Hostel Updates", icon: Bell },
+    { id: "albumUpdate" as TabType, label: "Album Update", icon: Camera },
+    { id: "recycleBin" as TabType, label: "Recycle Bin", icon: Trash2 },
   ];
 
   if (!warden) {
@@ -1013,11 +1069,64 @@ const WardenDashboard = () => {
         userSubtitle={`${warden.warden_type === "boys" ? "Boys" : "Girls"} Hostel Warden`}
         onLogout={handleLogout}
         showPhoto={false}
+        extraActions={
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFeatureVisionOpen(true)}
+            className="text-primary hover:bg-primary/10 transition-all hover:scale-110 active:scale-95"
+            title="Warden Feature Vision"
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </Button>
+        }
       />
 
       {/* Tab Navigation */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 items-center">
+          {/* Master "All Features" Toggle with Hover Vision Preview */}
+          <HoverCard openDelay={200}>
+            <HoverCardTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => setIsFeatureVisionOpen(true)}
+                className="flex items-center gap-2 font-black italic border-2 border-primary/30 text-primary hover:bg-primary/10 rounded-xl transition-all h-10 px-4 group shadow-lg shadow-primary/10 shrink-0"
+              >
+                <LayoutGrid className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                <span className="hidden sm:inline">ALL FEATURES</span>
+              </Button>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-[450px] p-4 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl shadow-2xl z-50">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
+                  <LayoutGrid className="w-5 h-5 text-primary" />
+                  <h4 className="font-black italic text-sm text-primary">FEATURE VISION PREVIEW</h4>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {tabs.map((tab) => (
+                    <div 
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-primary/10 cursor-pointer transition-all border border-transparent hover:border-primary/20"
+                    >
+                      <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className="text-[9px] font-bold text-center truncate w-full uppercase tracking-tighter">
+                        {tab.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground italic text-center pt-2 border-t border-primary/5">Click any icon to jump, or button for full view</p>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+
+          <div className="h-8 w-[2px] bg-border mx-1 shrink-0" />
+
           {tabs.map((tab) => (
             <Button
               key={tab.id}
@@ -1483,7 +1592,7 @@ const WardenDashboard = () => {
                 </Button>
               )}
             </div>
-            <RoomAllotment rooms={rooms} pendingStudents={pendingStudents} allStudents={students} onRefresh={fetchAllData} />
+            <RoomAllotment rooms={rooms} pendingStudents={pendingStudents} allStudents={students} onRefresh={fetchAllData} wardenType={warden.warden_type} />
           </div>
         )}
 
@@ -1532,7 +1641,78 @@ const WardenDashboard = () => {
             <UpdatesManagement authorName={warden.name} role="warden" />
           </div>
         )}
+
+        {/* Recycle Bin Tab */}
+        {activeTab === "recycleBin" && (
+          <div className="animate-in fade-in duration-500">
+            <RecycleBin wardenType={warden.warden_type} />
+          </div>
+        )}
+
+        {/* Album Update Tab */}
+        {activeTab === "albumUpdate" && (
+          <div className="animate-in fade-in duration-500">
+            <AlbumManagement wardenId={warden.id} wardenType={warden.warden_type} />
+          </div>
+        )}
       </div>
+
+      {/* Feature Vision Overlay */}
+      <Dialog open={isFeatureVisionOpen} onOpenChange={setIsFeatureVisionOpen}>
+        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-hidden bg-card/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl rounded-3xl">
+          <DialogHeader className="p-8 border-b border-primary/10 bg-muted/30">
+            <DialogTitle className="flex items-center gap-4 text-3xl font-black italic text-primary">
+              <div className="p-3 bg-primary rounded-2xl text-primary-foreground shadow-lg shadow-primary/20">
+                <LayoutGrid className="w-8 h-8" />
+              </div>
+              WARDEN FEATURE VISION
+            </DialogTitle>
+            <p className="text-muted-foreground font-medium mt-1">Access all management tools from a single point.</p>
+          </DialogHeader>
+
+          <div className="p-8 overflow-y-auto h-full scrollbar-hide">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-20">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsFeatureVisionOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`group relative flex flex-col items-center justify-center p-8 rounded-3xl border-2 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
+                    activeTab === tab.id 
+                    ? "border-primary bg-primary/5 shadow-xl shadow-primary/10" 
+                    : "border-border bg-muted/20 hover:border-primary/40 hover:bg-card"
+                  }`}
+                >
+                  <div className={`p-5 rounded-2xl transition-all duration-500 mb-4 ${
+                    activeTab === tab.id 
+                    ? "bg-primary text-primary-foreground scale-110 rotate-3 shadow-lg" 
+                    : "bg-background text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:rotate-6 shadow-md"
+                  }`}>
+                    <tab.icon className="w-8 h-8" />
+                  </div>
+                  
+                  <span className={`font-black italic text-center text-sm transition-colors duration-300 ${
+                    activeTab === tab.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  }`}>
+                    {tab.label.toUpperCase()}
+                  </span>
+
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className="absolute top-4 right-4 bg-success text-success-foreground w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shadow-lg animate-bounce">
+                      {tab.count}
+                    </span>
+                  )}
+                  
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Application Detail Dialog */}
       <Dialog open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}>

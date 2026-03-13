@@ -21,8 +21,17 @@ interface Update {
 }
 
 const UpdatesDisplay = () => {
-  const [updates, setUpdates] = useState<Update[]>([]);
+  const [updates, setUpdates] = useState<Update[]>([{
+    id: "sample-1",
+    title: "Welcome to our New Hostel Management System!",
+    content: "We have launched our new streamlined hostel administration portal. Students can now apply for rooms, request gate passes, and track their fee payments all in one place. Stay tuned for more updates!",
+    image_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop",
+    created_at: new Date().toISOString(),
+    author_name: "Administration",
+    created_by_role: "admin"
+  }]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchUpdates();
@@ -42,30 +51,35 @@ const UpdatesDisplay = () => {
   }, []);
 
   const fetchUpdates = async () => {
-    const { data, error } = await (supabase as any)
-      .from("updates")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(5); // Only show top 5 latest updates
+    setIsLoading(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("updates")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5);
 
-    if (error) {
-      console.error("Error fetching updates:", error);
-      return;
-    }
+      if (error) {
+        console.error("Error fetching updates:", error);
+        return;
+      }
 
-    if (data && data.length > 0) {
-      setUpdates(data as Update[]);
-    } else {
-      // Sample update as requested by user
-      setUpdates([{
-        id: "sample-1",
-        title: "Welcome to our New Hostel Management System!",
-        content: "We have launched our new streamlined hostel administration portal. Students can now apply for rooms, request gate passes, and track their fee payments all in one place. Stay tuned for more updates!",
-        image_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop",
-        created_at: new Date().toISOString(),
-        author_name: "Administration",
-        created_by_role: "admin"
-      }]);
+      if (data && data.length > 0) {
+        setUpdates(data as Update[]);
+      } else {
+        // Sample update as requested by user
+        setUpdates([{
+          id: "sample-1",
+          title: "Welcome to our New Hostel Management System!",
+          content: "We have launched our new streamlined hostel administration portal. Students can now apply for rooms, request gate passes, and track their fee payments all in one place. Stay tuned for more updates!",
+          image_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop",
+          created_at: new Date().toISOString(),
+          author_name: "Administration",
+          created_by_role: "admin"
+        }]);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,15 +91,18 @@ const UpdatesDisplay = () => {
     setActiveIndex((prev) => (prev - 1 + updates.length) % updates.length);
   };
 
+  // No longer returning null or skeleton here as we have initial sample data
+  // which makes it visible in milliseconds as requested.
+
   if (updates.length === 0) return null;
 
   const currentUpdate = updates[activeIndex];
 
   return (
-    <div className="w-full max-w-4xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+    <div className="w-full max-w-4xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <div className="relative group">
         {/* Background Glow */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-secondary/30 to-primary/30 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-secondary/30 to-primary/30 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-300 group-hover:duration-200"></div>
         
         <Card className="relative overflow-hidden border-2 border-primary/20 bg-card/60 backdrop-blur-md shadow-2xl rounded-2xl">
           <CardContent className="p-0">
@@ -97,7 +114,7 @@ const UpdatesDisplay = () => {
                     key={currentUpdate.id + "_img"}
                     src={currentUpdate.image_url} 
                     alt={currentUpdate.title} 
-                    className="w-full h-full object-cover animate-in fade-in scale-in duration-700"
+                    className="w-full h-full object-cover animate-in fade-in scale-in duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/40 to-transparent"></div>
                 </div>
@@ -118,14 +135,14 @@ const UpdatesDisplay = () => {
 
                 <h3 
                   key={currentUpdate.id + "_h3"}
-                  className="text-2xl md:text-3xl font-black text-foreground mb-4 leading-tight animate-in slide-in-from-left-4 duration-500"
+                  className="text-2xl md:text-3xl font-black text-foreground mb-4 leading-tight animate-in slide-in-from-left-4 duration-300"
                 >
                   {currentUpdate.title}
                 </h3>
 
                 <p 
                   key={currentUpdate.id + "_p"}
-                  className="text-muted-foreground text-sm md:text-base line-clamp-3 mb-6 animate-in slide-in-from-left-6 duration-700"
+                  className="text-muted-foreground text-sm md:text-base line-clamp-3 mb-6 animate-in slide-in-from-left-6 duration-300"
                 >
                   {currentUpdate.content}
                 </p>
