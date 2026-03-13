@@ -40,6 +40,7 @@ import {
   CreditCard,
   Bell,
   LayoutGrid,
+  Camera,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +59,6 @@ import DashboardHeader from "@/components/DashboardHeader";
 import UpdatesManagement from "@/components/UpdatesManagement";
 import RecycleBin from "@/components/warden/RecycleBin";
 import AlbumManagement from "@/components/warden/AlbumManagement";
-import { Camera, LayoutGrid } from "lucide-react";
 import {
   HoverCard,
   HoverCardContent,
