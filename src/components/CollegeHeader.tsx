@@ -88,7 +88,7 @@ const CollegeHeader = () => {
             
             {/* Quick Navigation Links */}
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 sm:mt-3 border-t border-primary/5 pt-2">
-              <Link to="/" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group">
+              <Link to="/#login-section" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group">
                 <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
                 <span>CHOOSE LOGINS</span>
               </Link>
@@ -96,7 +96,7 @@ const CollegeHeader = () => {
                 <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
                 <span>HOSTEL APPLICATION FORM</span>
               </Link>
-              <Link to="/" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group">
+              <Link to="/#medicine-section" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group">
                 <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
                 <span>MEDICINE AVAILABILITY</span>
               </Link>

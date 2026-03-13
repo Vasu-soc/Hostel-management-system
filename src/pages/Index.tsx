@@ -201,7 +201,8 @@ const Index = () => {
 
           {/* Choose Login Card */}
           <Card
-            className="card-hover border-2 border-border bg-card/80 backdrop-blur-sm animate-fade-in"
+            id="login-section"
+            className="card-hover border-2 border-border bg-card/80 backdrop-blur-sm animate-fade-in scroll-mt-24"
             style={{ animationDelay: "0.2s" }}
           >
             <CardHeader className="text-center pb-4">
@@ -262,7 +263,8 @@ const Index = () => {
 
           {/* Medicine Availability Card */}
           <Card
-            className="card-hover border-2 border-border bg-card/80 backdrop-blur-sm animate-fade-in md:col-span-2 lg:col-span-1"
+            id="medicine-section"
+            className="card-hover border-2 border-border bg-card/80 backdrop-blur-sm animate-fade-in md:col-span-2 lg:col-span-1 scroll-mt-24"
             style={{ animationDelay: "0.3s" }}
           >
             <CardHeader className="text-center pb-4">
