@@ -78,7 +78,7 @@ const CollegeHeader = () => {
 
   useEffect(() => {
     const fetchMedicines = async () => {
-      const { data } = await supabase.from("medicine_management").select("*");
+      const { data } = await supabase.from("medicines").select("*");
       if (data) setMedicines(data);
     };
     fetchMedicines();
