@@ -31,6 +31,7 @@ import {
   Utensils,
   Library,
   Camera,
+  User,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +86,7 @@ const StudentDashboard = () => {
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-  const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "" });
+  const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "", email: "", address: "", zipCode: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -145,7 +146,13 @@ const StudentDashboard = () => {
       return;
     }
     setStudent(session);
-    setSettingsForm({ rollNumber: session.roll_number, password: "" });
+    setSettingsForm({ 
+      rollNumber: session.roll_number, 
+      password: "", 
+      email: session.email || "", 
+      address: (session as any).address || "", 
+      zipCode: (session as any).zip_code || "" 
+    });
     refreshStudentData(session.id);
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
@@ -181,7 +188,13 @@ const StudentDashboard = () => {
     setIsLoading(true);
     const { error } = await supabase
       .from("students")
-      .update({ roll_number: settingsForm.rollNumber.toUpperCase(), password: settingsForm.password })
+      .update({ 
+        roll_number: settingsForm.rollNumber.toUpperCase(), 
+        password: settingsForm.password,
+        email: settingsForm.email,
+        address: settingsForm.address,
+        zip_code: settingsForm.zipCode
+      })
       .eq("id", student.id);
 
     setIsLoading(false);
@@ -612,6 +625,41 @@ const StudentDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
+            <Card className="border-2 border-border shadow-sm overflow-hidden">
+              <CardHeader className="bg-primary/5 pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  My Profile
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Email Address</p>
+                  <p className="text-sm font-medium">{student.email || "Not Provided"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contact No</p>
+                  <p className="text-sm font-medium">{student.roll_number}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Full Address</p>
+                  <p className="text-sm font-medium leading-relaxed">{(student as any).address || "No address on file"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Zip / Pin Code</p>
+                  <p className="text-sm font-medium">{(student as any).zip_code || "-"}</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full text-xs h-8 border-primary/20 hover:bg-primary/5"
+                  onClick={() => setSettingsDialogOpen(true)}
+                >
+                  Edit Profile
+                </Button>
+              </CardContent>
+            </Card>
+
             <Card className="border-2 border-border shadow-sm">
               <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-lg">Fee Details</CardTitle>
@@ -1292,15 +1340,41 @@ const StudentDashboard = () => {
               />
               <p className="text-xs text-muted-foreground">If you registered with a mobile number, you can update it to your Roll Number here.</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="settingsPassword">Password</Label>
-              <Input
-                id="settingsPassword"
-                type="password"
-                value={settingsForm.password}
-                onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="settingsEmail">Email Address</Label>
+                <Input
+                  id="settingsEmail"
+                  type="email"
+                  value={settingsForm.email}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="settingsAddress">Residential Address</Label>
+                <Input
+                  id="settingsAddress"
+                  value={settingsForm.address}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="settingsZipCode">Zip / PIN Code</Label>
+                <Input
+                  id="settingsZipCode"
+                  value={settingsForm.zipCode}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, zipCode: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="settingsPassword">New Password</Label>
+                <Input
+                  id="settingsPassword"
+                  type="password"
+                  value={settingsForm.password}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground italic">Leave empty to keep current password.</p>
+              </div>
             <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
               {isLoading ? "Saving..." : "Save Settings"}
             </Button>

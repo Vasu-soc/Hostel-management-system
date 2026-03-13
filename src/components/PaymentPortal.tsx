@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Building, ExternalLink, Copy, Download, ZoomIn } from "lucide-react";
+import { CreditCard, Building, ExternalLink, Copy, Download, ZoomIn, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -133,7 +133,15 @@ const PaymentPortal = ({ student }: PaymentPortalProps) => {
         {/* Payment Submission / Google Form Link */}
         {student && (
           <div className="mb-4">
-            <PaymentSubmissionForm student={student} />
+            {student.pending_fee <= 0 ? (
+                <div className="p-4 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center flex flex-col items-center gap-2">
+                    <Check className="w-8 h-8 text-success" />
+                    <p className="font-bold text-success text-sm uppercase tracking-tight italic">Your Fees is Completed!</p>
+                    <p className="text-[10px] text-muted-foreground font-medium">No further payments are required for this year.</p>
+                </div>
+            ) : (
+                <PaymentSubmissionForm student={student} />
+            )}
           </div>
         )}
         <Button

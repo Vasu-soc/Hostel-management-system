@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
-import { CreditCard, Check, X, Clock, ExternalLink, Download } from "lucide-react";
+import { CreditCard, Check, X, Clock, ExternalLink, Download, AlertTriangle } from "lucide-react";
 
 interface PaymentSubmissionsDashboardProps {
   wardenType?: string;
@@ -37,7 +37,7 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
   const fetchSubmissions = async () => {
     let query = (supabase as any)
       .from('payment_submissions')
-      .select('*, students!inner(gender)')
+      .select('*, students!inner(gender, paid_fee, pending_fee)')
       .order('created_at', { ascending: false });
 
     if (wardenType === 'girls') {
@@ -81,7 +81,10 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
         
       if (!error && data) {
         studentData = data;
-        const currentPending = Number(data.pending_fee || submission.hostel_fee);
+        const currentPending = (data.pending_fee !== null && data.pending_fee !== undefined) 
+          ? Number(data.pending_fee) 
+          : Number(submission.hostel_fee);
+        
         if (currentPending <= 0) {
           currentAction = "rejected";
         }
@@ -139,8 +142,12 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
 
       if (!txError) {
         // 4. Update student paid and pending fees
+        const basePending = (studentData.pending_fee !== null && studentData.pending_fee !== undefined)
+          ? Number(studentData.pending_fee)
+          : Number(submission.hostel_fee);
+          
         const newPaid = Number(studentData.paid_fee || 0) + Number(submission.amount_paid);
-        const newPending = Number(studentData.pending_fee || submission.hostel_fee) - Number(submission.amount_paid);
+        const newPending = basePending - Number(submission.amount_paid);
 
         await supabase
           .from("students")
@@ -244,11 +251,18 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
                   <div className="flex justify-between"><span className="text-muted-foreground">Roll No:</span> <strong>{selectedSubmission.roll_number}</strong></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Branch:</span> <strong>{selectedSubmission.branch} ({selectedSubmission.year} Year)</strong></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Total Fee:</span> <strong>₹{Number(selectedSubmission.hostel_fee).toLocaleString()}</strong></div>
+                  <div className="flex justify-between text-success"><span className="text-muted-foreground">Paid so far:</span> <strong>₹{Number(selectedSubmission.students?.paid_fee || 0).toLocaleString()}</strong></div>
+                  <div className="flex justify-between text-destructive"><span className="text-muted-foreground">Pending:</span> <strong>₹{Number(selectedSubmission.students?.pending_fee || 0).toLocaleString()}</strong></div>
                 </div>
 
                 <h4 className="font-bold text-sm uppercase text-muted-foreground tracking-widest border-b pb-1 pt-4">Payment Details</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Amount Paid:</span> <strong className="text-lg text-primary">₹{Number(selectedSubmission.amount_paid).toLocaleString()}</strong></div>
+                  {Number(selectedSubmission.amount_paid) > Number(selectedSubmission.students?.pending_fee ?? selectedSubmission.hostel_fee) && (
+                    <div className="flex items-center gap-1 text-[10px] text-destructive bg-destructive/5 p-1 rounded border border-destructive/20 font-bold animate-pulse">
+                      <AlertTriangle className="w-3 h-3" /> OVERPAYMENT WARNING
+                    </div>
+                  )}
                   <div className="flex justify-between"><span className="text-muted-foreground">Date:</span> <strong>{new Date(selectedSubmission.payment_date).toLocaleDateString()}</strong></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Method:</span> <strong className="uppercase">{selectedSubmission.payment_method}</strong></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Ref/UTR No:</span> <strong className="font-mono">{selectedSubmission.transaction_id}</strong></div>

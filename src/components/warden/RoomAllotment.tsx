@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Check, Home, Users, IndianRupee, MessageSquare, User, Trash2, Loader2 } from "lucide-react";
+import { Search, Check, Home, Users, IndianRupee, MessageSquare, User, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -66,6 +66,7 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
   const [transactionRemark, setTransactionRemark] = useState("");
   const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
   const [isTransitioningYear, setIsTransitioningYear] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Memoize room student counts from allStudents prop
   const roomStudentCounts = useMemo(() => {
@@ -293,6 +294,40 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
     setTransactionRemark("");
 
     onRefresh();
+  };
+  
+  const handleRecalculateFees = async () => {
+    if (!selectedStudent) return;
+    
+    setIsUpdating(true);
+    try {
+      const { data: transactions } = await supabase
+        .from("fee_transactions")
+        .select("amount")
+        .eq("student_id", selectedStudent.id);
+        
+      const actualPaid = (transactions || []).reduce((sum, tx) => sum + Number(tx.amount), 0);
+      const total = selectedStudent.total_fee || 100000;
+      const newPending = Math.max(0, total - actualPaid);
+      
+      const { error } = await supabase
+        .from("students")
+        .update({
+          paid_fee: actualPaid,
+          pending_fee: newPending
+        })
+        .eq("id", selectedStudent.id);
+        
+      if (error) throw error;
+      
+      toast({ title: "Balance Fixed", description: `Recalculated from ${transactions?.length || 0} history records.` });
+      setShowFeeDialog(false);
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleRemarksUpdate = async () => {
@@ -618,8 +653,18 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh }: 
       {/* Fee Details Dialog */}
       <Dialog open={showFeeDialog} onOpenChange={setShowFeeDialog}>
         <DialogContent className="bg-card">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle>Student Fees Updation - {selectedStudent?.student_name}</DialogTitle>
+            <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs h-8 border-destructive/20 text-destructive hover:bg-destructive/5 hover:border-destructive/40"
+                onClick={handleRecalculateFees}
+                disabled={isUpdating}
+            >
+                {isUpdating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                Audit & Fix Balance
+            </Button>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4 text-sm mb-2">

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { StudentSession } from "@/lib/session";
-import { Loader2, Upload, ExternalLink } from "lucide-react";
+import { Loader2, Upload, ExternalLink, Check } from "lucide-react";
 
 interface PaymentSubmissionFormProps {
   student: StudentSession;
@@ -104,7 +104,19 @@ const PaymentSubmissionForm = ({ student }: PaymentSubmissionFormProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full font-bold">Submit Payment Details</Button>
+        <Button 
+          className={`w-full font-bold ${student.pending_fee <= 0 ? "bg-success/20 text-success border-success/30 hover:bg-success/30" : ""}`}
+          disabled={student.pending_fee <= 0}
+        >
+          {student.pending_fee <= 0 ? (
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4" />
+              Fees Already Completed
+            </div>
+          ) : (
+            "Submit Payment Details"
+          )}
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>

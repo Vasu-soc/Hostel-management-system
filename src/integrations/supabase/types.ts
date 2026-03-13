@@ -271,6 +271,8 @@ export type Database = {
           status: string | null
           student_name: string
           terms_accepted: boolean | null
+          address: string | null
+          zip_code: string | null
         }
         Insert: {
           ac_type: string
@@ -290,6 +292,8 @@ export type Database = {
           status?: string | null
           student_name: string
           terms_accepted?: boolean | null
+          address?: string | null
+          zip_code?: string | null
         }
         Update: {
           ac_type?: string
@@ -309,6 +313,8 @@ export type Database = {
           status?: string | null
           student_name?: string
           terms_accepted?: boolean | null
+          address?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }
@@ -592,6 +598,8 @@ export type Database = {
           branch: string
           created_at: string
           email: string | null
+          address: string | null
+          zip_code: string | null
           floor_number: string | null
           gender: string
           hostel_room_number: string | null
@@ -614,6 +622,8 @@ export type Database = {
           branch: string
           created_at?: string
           email?: string | null
+          address?: string | null
+          zip_code?: string | null
           floor_number?: string | null
           gender: string
           hostel_room_number?: string | null
@@ -636,6 +646,8 @@ export type Database = {
           branch?: string
           created_at?: string
           email?: string | null
+          address?: string | null
+          zip_code?: string | null
           floor_number?: string | null
           gender?: string
           hostel_room_number?: string | null

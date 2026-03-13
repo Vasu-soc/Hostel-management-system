@@ -153,6 +153,8 @@ const HostelApplication = () => {
     acType: "",
     months: 12,
     floorPreference: "any",
+    address: "",
+    zipCode: "",
     termsAccepted: false,
   });
   const [selectedRoomType, setSelectedRoomType] = useState<string>("");
@@ -216,11 +218,11 @@ const HostelApplication = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.studentName || !formData.branch || !formData.phoneNumber ||
+    if (!formData.studentName || !formData.branch || !formData.phoneNumber || !formData.parentPhoneNumber ||
       !selectedRoomType || !formData.acType || !formData.gender || !formData.email) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields including email",
+        description: "Please fill in all required fields including Parent Phone Number",
         variant: "destructive",
       });
       return;
@@ -254,6 +256,8 @@ const HostelApplication = () => {
         photo_url: photoPreview,
         signature_url: signaturePreview,
         terms_accepted: formData.termsAccepted,
+        address: formData.address,
+        zip_code: formData.zipCode,
       });
 
       if (error) throw error;
@@ -481,16 +485,39 @@ const HostelApplication = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="parentPhoneNumber">Parent Phone Number</Label>
+                    <Label htmlFor="parentPhoneNumber">Parent Phone Number *</Label>
                     <Input
                       id="parentPhoneNumber"
                       type="tel"
+                      required
                       placeholder="Enter parent's phone number"
                       value={formData.parentPhoneNumber}
                       onChange={(e) => handleInputChange("parentPhoneNumber", e.target.value)}
                       className="h-12"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">Zip Code / Pin Code *</Label>
+                    <Input
+                      id="zipCode"
+                      placeholder="Enter your zip code"
+                      value={formData.zipCode}
+                      onChange={(e) => handleInputChange("zipCode", e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Full Address *</Label>
+                  <Input
+                    id="address"
+                    placeholder="Enter your full residential address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    className="h-12"
+                  />
                 </div>
               </div>
 

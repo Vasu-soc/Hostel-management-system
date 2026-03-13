@@ -20,6 +20,8 @@ CREATE TABLE public.students (
   total_fee NUMERIC DEFAULT 84000,
   paid_fee NUMERIC DEFAULT 0,
   pending_fee NUMERIC DEFAULT 84000,
+  address TEXT,
+  zip_code TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -50,6 +52,8 @@ CREATE TABLE public.hostel_applications (
   signature_url TEXT,
   terms_accepted BOOLEAN DEFAULT false,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  address TEXT,
+  zip_code TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -453,6 +457,14 @@ CREATE POLICY "Enable update access for all users" ON public.fee_transactions
 
 CREATE POLICY "Enable delete access for all users" ON public.fee_transactions
     FOR DELETE USING (true);
+
+-- ===================== MIGRATION 6: Address Support =====================
+-- Run these if tables already exist but lack address columns
+ALTER TABLE public.hostel_applications ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE public.hostel_applications ADD COLUMN IF NOT EXISTS zip_code TEXT;
+
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS zip_code TEXT;
 
 -- Enable Realtime for fee_transactions
 DO $$

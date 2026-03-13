@@ -94,50 +94,171 @@ const WardenDashboard = () => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    if (printRef.current) {
-      const printContent = printRef.current.innerHTML;
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Hostel Application - ${selectedApplication?.student_name}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-              .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-              .print-header h1 { margin: 0; font-size: 18px; }
-              .print-header p { margin: 5px 0; font-size: 12px; }
-              .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-              .detail-item { margin-bottom: 10px; }
-              .detail-label { font-size: 11px; color: #666; margin-bottom: 2px; }
-              .detail-value { font-size: 14px; font-weight: 600; }
-              .photos-section { display: flex; justify-content: space-between; margin-bottom: 20px; }
-              .photo-box { text-align: center; }
-              .photo-box img { max-width: 100px; max-height: 120px; border: 1px solid #ccc; }
-              .photo-label { font-size: 11px; color: #666; margin-bottom: 5px; }
-              .fee-section { margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
-              .status-badge { display: inline-block; padding: 5px 15px; border-radius: 4px; font-weight: 600; text-transform: capitalize; }
-              .status-pending { background: #fff3cd; color: #856404; }
-              .status-accepted { background: #d4edda; color: #155724; }
-              .status-rejected { background: #f8d7da; color: #721c24; }
-              @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-            </style>
-          </head>
-          <body>
-            <div class="print-header">
+    if (!selectedApplication) return;
+    
+    const matchedStudent = students.find(s => s.roll_number === (selectedApplication.phone_number || "").toUpperCase().trim() || (s.email && s.email === selectedApplication.email));
+    const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved" || selectedApplication.status === "allotted") && matchedStudent?.hostel_room_number ? matchedStudent.hostel_room_number : "PENDING";
+    const appPhoto = appImages[selectedApplication.id]?.photo_url || selectedApplication.photo_url;
+    const appSignature = appImages[selectedApplication.id]?.signature_url || selectedApplication.signature_url;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Hostel Application - ${selectedApplication.student_name}</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.4; padding: 0; margin: 0; background: #fff; }
+            .container { max-width: 800px; margin: 0 auto; border: 1px solid #eee; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+            
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 25px; }
+            .header h1 { margin: 0; font-size: 22px; color: #000; letter-spacing: 0.5px; }
+            .header p { margin: 3px 0; font-size: 11px; font-weight: 600; }
+            .application-title { font-size: 18px; font-weight: 800; margin-top: 15px; text-decoration: underline; text-transform: uppercase; }
+            
+            .photo-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+            .photo-box { width: 110px; height: 130px; border: 2px solid #333; display: flex; items-center justify-content: center; overflow: hidden; background: #fafafa; }
+            .photo-box img { width: 100%; height: 100%; object-cover: cover; }
+            .allotment-badge { text-align: right; }
+            .room-number { font-size: 32px; font-weight: 900; color: #000; border: 3px solid #000; padding: 5px 15px; display: inline-block; margin-top: 5px; }
+            
+            .section-label { font-size: 14px; font-weight: bold; background: #f0f0f0; padding: 5px 10px; border-left: 5px solid #000; margin: 20px 0 15px 0; text-transform: uppercase; }
+            
+            .details-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .details-table td { padding: 8px 10px; border: 1px solid #ddd; font-size: 13px; }
+            .label { font-weight: bold; background-color: #f9f9f9; width: 35%; }
+            .value { width: 65%; }
+
+            .address-block { margin-top: 5px; border: 1px solid #ddd; padding: 10px; font-size: 13px; min-height: 40px; }
+            
+            .footer-section { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; }
+            .signature-item { text-align: center; width: 45%; }
+            .signature-line { border-top: 1px solid #000; margin-top: 60px; padding-top: 5px; font-size: 12px; font-weight: bold; }
+            .signature-box { height: 60px; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+            .signature-box img { max-height: 100%; max-width: 100%; object-fit: contain; }
+            
+            .status-watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; opacity: 0.1; font-weight: 900; z-index: -1; pointer-events: none; }
+            
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .container { border: none; box-shadow: none; width: 100%; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="status-watermark">${selectedApplication.status?.toUpperCase()}</div>
+            
+            <div class="header">
               <h1>GEETHANJALI INSTITUTE OF SCIENCE & TECHNOLOGY</h1>
               <p>(AUTONOMOUS INSTITUTION)</p>
-              <p>3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt.</p>
-              <h2 style="margin-top: 15px;">HOSTEL APPLICATION FORM</h2>
+              <p>Approved by AICTE, New Delhi & Permanently Affiliated to JNTUA, Anantapuramu</p>
+              <p>3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt. - 524137</p>
+              <div class="application-title">Hostel Admission Application</div>
             </div>
-            ${printContent}
-          </body>
-          </html>
-        `);
-        printWindow.document.close();
+
+            <div class="photo-section">
+              <div class="photo-box">
+                ${appPhoto && appPhoto !== 'NONE' ? `<img src="${appPhoto}" />` : '<span>Affix Passport Photo</span>'}
+              </div>
+              <div class="allotment-badge">
+                <div style="font-size: 11px; font-weight: bold;">ALLOTTED ROOM</div>
+                <div class="room-number">${allocatedRoom}</div>
+                <div style="font-size: 10px; color: #666; margin-top: 5px;">Status: <b>${selectedApplication.status?.toUpperCase()}</b></div>
+              </div>
+            </div>
+
+            <div class="section-label">Personal Information</div>
+            <table class="details-table">
+              <tr>
+                <td class="label">Candidate Name</td>
+                <td class="value">${selectedApplication.student_name}</td>
+              </tr>
+              <tr>
+                <td class="label">Father's Name</td>
+                <td class="value">${selectedApplication.father_name || "N/A"}</td>
+              </tr>
+              <tr>
+                <td class="label">Branch / Department</td>
+                <td class="value">${selectedApplication.branch?.toUpperCase()}</td>
+              </tr>
+              <tr>
+                <td class="label">Gender</td>
+                <td class="value" style="text-transform: capitalize;">${selectedApplication.gender}</td>
+              </tr>
+              <tr>
+                <td class="label">Contact Number</td>
+                <td class="value">${selectedApplication.phone_number}</td>
+              </tr>
+              <tr>
+                <td class="label">Email Address</td>
+                <td class="value">${selectedApplication.email || "N/A"}</td>
+              </tr>
+              <tr>
+                <td class="label">Parent Contact No.</td>
+                <td class="value">${selectedApplication.parent_phone_number || "N/A"}</td>
+              </tr>
+            </table>
+
+            <div class="section-label">Accommodation Details</div>
+            <table class="details-table">
+              <tr>
+                <td class="label">Room Type Requested</td>
+                <td class="value">${getRoomTypeName(selectedApplication.room_type)}</td>
+              </tr>
+              <tr>
+                <td class="label">AC Preferences</td>
+                <td class="value">${selectedApplication.ac_type === 'ac' ? 'Air Conditioned' : 'Non Air Conditioned'}</td>
+              </tr>
+              <tr>
+                <td class="label">Proposed Duration</td>
+                <td class="value">${selectedApplication.months} Months</td>
+              </tr>
+              <tr>
+                <td class="label">Floor Preference</td>
+                <td class="value">${selectedApplication.floor_preference === 'any' ? 'Any Floor' : selectedApplication.floor_preference + ' Floor'}</td>
+              </tr>
+              <tr>
+                <td class="label">Total Annual Fee</td>
+                <td class="value" style="font-weight: bold; color: #000;">₹ ${selectedApplication.price?.toLocaleString()}</td>
+              </tr>
+            </table>
+
+            <div class="section-label">Permanent Address</div>
+            <div class="address-block">
+              ${selectedApplication.address || "Address details not provided"}<br>
+              <b>Zip/PIN Code:</b> ${selectedApplication.zip_code || "N/A"}
+            </div>
+
+            <div class="footer-section">
+              <div class="signature-item">
+                <div class="signature-box">
+                  ${appSignature && appSignature !== 'NONE' ? `<img src="${appSignature}" />` : ''}
+                </div>
+                <div class="signature-line">Candidate Signature</div>
+              </div>
+              <div class="signature-item">
+                <div class="signature-box">
+                  ${warden?.signature_url ? `<img src="${warden.signature_url}" />` : ''}
+                </div>
+                <div class="signature-line">Hostel Warden / Auth. Signatory</div>
+              </div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 10px; color: #777; border-top: 1px solid #ccc; padding-top: 5px; text-align: center;">
+              This is a computer generated document. Generated on: ${new Date().toLocaleString()}
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      // Small delay to ensure images/styles are loaded
+      setTimeout(() => {
         printWindow.print();
-      }
+      }, 500);
     }
   };
 
@@ -147,7 +268,7 @@ const WardenDashboard = () => {
 
   const fetchApplications = async (gender: string | null) => {
     // Omit large base64 string columns (photo_url, signature_url) for initial fast loading
-    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price, floor_preference").order("created_at", { ascending: false });
+    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price, floor_preference, address, zip_code").order("created_at", { ascending: false });
     if (gender) query = query.ilike("gender", gender);
     const { data } = await query;
     if (data) setApplications(data as any[]);
@@ -395,13 +516,25 @@ const WardenDashboard = () => {
         const existingStudent = students.find(s => s.roll_number === rollOrPhone || (s.email && s.email === application.email));
 
         if (existingStudent) {
+          if (existingStudent.student_name !== application.student_name) {
+            if (!confirm(`An existing student profile was found with this phone/email naming "${existingStudent.student_name}". \n\nDo you want to REPLACE their details with "${application.student_name}"? \n\nClick Cancel if this is a different student.`)) {
+              return;
+            }
+          }
           const { error: updateError } = await supabase.from("students").update({
+            student_name: application.student_name,
+            roll_number: rollOrPhone,
+            email: application.email,
+            branch: application.branch,
             room_allotted: false, // Block the room, but keep them pending for Room Allotment confirmation
             hostel_room_number: availableRoom.room_number,
             floor_number: availableRoom.floor_number,
             total_fee: application.price || 100000,
             pending_fee: (application.price || 100000) - (existingStudent.paid_fee || 0),
             password: existingStudent.password || defaultPassword,
+            address: application.address,
+            zip_code: application.zip_code,
+            photo_url: application.photo_url || existingStudent.photo_url
           }).eq("id", existingStudent.id);
 
           if (updateError) {
@@ -435,6 +568,8 @@ const WardenDashboard = () => {
             year: "1st Year",
             photo_url: finalPhotoUrl,
             password: defaultPassword,
+            address: application.address,
+            zip_code: application.zip_code,
           });
 
           if (insertError) {
@@ -1509,6 +1644,18 @@ const WardenDashboard = () => {
                       ? "Any Floor"
                       : `${selectedApplication.floor_preference}${selectedApplication.floor_preference === '1' ? 'st' : selectedApplication.floor_preference === '2' ? 'nd' : 'rd'} Floor`}
                   </p>
+                </div>
+                <div className="detail-item col-span-2">
+                  <p className="detail-label text-sm text-muted-foreground">Email Address</p>
+                  <p className="detail-value font-medium break-all">{selectedApplication.email || "-"}</p>
+                </div>
+                <div className="detail-item">
+                  <p className="detail-label text-sm text-muted-foreground">Zip Code</p>
+                  <p className="detail-value font-medium">{selectedApplication.zip_code || "-"}</p>
+                </div>
+                <div className="detail-item col-span-2">
+                  <p className="detail-label text-sm text-muted-foreground">Full Address</p>
+                  <p className="detail-value font-medium">{selectedApplication.address || "-"}</p>
                 </div>
                 <div className="detail-item">
                   <p className="detail-label text-sm text-muted-foreground">Status</p>
