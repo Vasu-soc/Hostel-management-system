@@ -32,6 +32,7 @@ import CollegeHeader from "@/components/CollegeHeader";
 import ImageCarousel from "@/components/ImageCarousel";
 import FoodMenu from "@/components/FoodMenu";
 import AdministrationProfiles from "@/components/AdministrationProfiles";
+import UpdatesDisplay from "@/components/UpdatesDisplay";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Medicine {
@@ -162,6 +163,9 @@ const Index = () => {
             Streamlined hostel administration for students, wardens, and staff
           </p>
         </div>
+
+        {/* System Updates Display */}
+        <UpdatesDisplay />
 
         {/* Administration Profiles Section */}
         <AdministrationProfiles />

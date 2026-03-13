@@ -38,6 +38,7 @@ import {
   PieChart as PieChartIcon,
   Table as TableIcon,
   CreditCard,
+  Bell,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ import FoodSelectionChart from "@/components/warden/FoodSelectionChart";
 import PaymentSubmissionsDashboard from "@/components/warden/PaymentSubmissionsDashboard";
 import { getWardenSession, clearWardenSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
+import UpdatesManagement from "@/components/UpdatesManagement";
 
 interface Warden {
   id: string;
@@ -62,7 +64,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -80,6 +82,7 @@ const WardenDashboard = () => {
   const [electricalIssues, setElectricalIssues] = useState<any[]>([]);
   const [foodIssues, setFoodIssues] = useState<any[]>([]);
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
 
   // Dialog states
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
@@ -990,6 +993,7 @@ const WardenDashboard = () => {
     { id: "medicines" as TabType, label: "Medicines", icon: Pill },
     { id: "completedFees" as TabType, label: "Fees Completed", icon: Check, count: students.filter(s => s.pending_fee <= 0 && s.room_allotted).length },
     { id: "paymentSubmissions" as TabType, label: "Student Payments", icon: CreditCard },
+    { id: "updates" as TabType, label: "Hostel Updates", icon: Bell },
   ];
 
   if (!warden) {
@@ -1519,6 +1523,13 @@ const WardenDashboard = () => {
             <h2 className="text-2xl font-bold text-foreground">Medicine Management</h2>
             <p className="text-muted-foreground">Add medicines to make them available on the home page. Remove medicines to hide them.</p>
             <MedicineManagement wardenId={warden.id} wardenType={warden.warden_type as "boys" | "girls"} />
+          </div>
+        )}
+
+        {/* Updates Tab */}
+        {activeTab === "updates" && (
+          <div className="animate-in fade-in duration-500">
+            <UpdatesManagement authorName={warden.name} role="warden" />
           </div>
         )}
       </div>

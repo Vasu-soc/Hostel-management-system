@@ -34,6 +34,7 @@ import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
 import WardenApproval from "@/components/admin/WardenApproval";
+import UpdatesManagement from "@/components/UpdatesManagement";
 
 interface Admin {
   id: string;
@@ -90,6 +91,7 @@ const AdminDashboard = () => {
   const [showStudents, setShowStudents] = useState(false);
   const [showPendingRooms, setShowPendingRooms] = useState(false);
   const [showWardenCredentials, setShowWardenCredentials] = useState(false);
+  const [showUpdates, setShowUpdates] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fee update dialog
@@ -188,6 +190,8 @@ const AdminDashboard = () => {
     await fetchStudentsData(selectedBranch, selectedYear);
     setShowStudents(true);
     setShowPendingRooms(false);
+    setShowUpdates(false);
+    setShowWardenCredentials(false);
     setIsLoading(false);
   };
 
@@ -475,6 +479,7 @@ const AdminDashboard = () => {
                       setShowPendingRooms(true);
                       setShowStudents(false);
                       setShowWardenCredentials(false);
+                      setShowUpdates(false);
                     }}
                     className="h-12"
                   >
@@ -488,11 +493,26 @@ const AdminDashboard = () => {
                       setShowWardenCredentials(true);
                       setShowStudents(false);
                       setShowPendingRooms(false);
+                      setShowUpdates(false);
                     }}
                     className="h-12"
                   >
                     <UserCheck className="w-4 h-4 mr-2" />
                     Warden Approvals
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowUpdates(true);
+                      setShowWardenCredentials(false);
+                      setShowStudents(false);
+                      setShowPendingRooms(false);
+                    }}
+                    className="h-12 border-primary/30 text-primary hover:bg-primary/5 shadow-sm"
+                  >
+                    <Bell className="w-4 h-4 mr-2" />
+                    Manage Updates
                   </Button>
                 </div>
 
@@ -740,6 +760,24 @@ const AdminDashboard = () => {
             </div>
 
             <WardenApproval />
+          </div>
+        )}
+
+        {/* Updates Management View */}
+        {showUpdates && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowUpdates(false)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </div>
+            <div className="animate-in fade-in duration-500">
+              <UpdatesManagement authorName={admin.name} role="admin" />
+            </div>
           </div>
         )}
       </main>
