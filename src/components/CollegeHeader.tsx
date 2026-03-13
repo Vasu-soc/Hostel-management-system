@@ -9,7 +9,27 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Menu, Users, Home, UserPlus, Shield, ShieldCheck, LogIn, FileText, Pill } from "lucide-react";
+import { 
+  Menu, 
+  Users, 
+  Home, 
+  UserPlus, 
+  Shield, 
+  ShieldCheck, 
+  LogIn, 
+  FileText, 
+  Pill,
+  GraduationCap,
+  ChevronDown
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
 import HostelAlbumGallery from "./HostelAlbumGallery";
 import gisteduLogo from "@/assets/gistedu-logo.png";
@@ -42,10 +62,27 @@ const loginOptions = [
 ];
 
 
+const navigationLogins = [
+  { label: "Boys Student", path: "/student-login?gender=boys", icon: Users, color: "text-blue-500" },
+  { label: "Girls Student", path: "/student-login?gender=girls", icon: Users, color: "text-pink-500" },
+  { label: "Hostel Warden", path: "/warden-login", icon: Shield, color: "text-orange-500" },
+  { label: "College Admin", path: "/admin-login", icon: ShieldCheck, color: "text-red-500" },
+  { label: "Parent Portal", path: "/parent-login", icon: GraduationCap, color: "text-green-500" },
+];
+
 const CollegeHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [medicines, setMedicines] = useState<any[]>([]);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+
+  useEffect(() => {
+    const fetchMedicines = async () => {
+      const { data } = await supabase.from("medicine_management").select("*");
+      if (data) setMedicines(data);
+    };
+    fetchMedicines();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full header-dynamic-bg shadow-xl border-b border-primary/20 transition-all duration-500">
@@ -86,20 +123,71 @@ const CollegeHeader = () => {
               3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt. Andhra Pradesh, India - 524137.
             </p>
             
-            {/* Quick Navigation Links */}
+            {/* Quick Navigation Links with Dropdowns */}
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 sm:mt-3 border-t border-primary/5 pt-2">
-              <Link to="/#login-section" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group">
-                <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                <span>CHOOSE LOGINS</span>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
+                    <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <span>CHOOSE LOGINS</span>
+                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-2 z-[100]">
+                  {navigationLogins.map((login) => (
+                    <DropdownMenuItem key={login.path} asChild>
+                      <Link to={login.path} className="flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 transition-all cursor-pointer group">
+                        <div className={`p-2 rounded-lg bg-background shadow-sm group-hover:bg-primary transition-all`}>
+                          <login.icon className={`w-4 h-4 ${login.color} group-hover:text-primary-foreground`} />
+                        </div>
+                        <span className="font-bold text-sm group-hover:text-primary">{login.label}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Link to="/hostel-application" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
                 <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
                 <span>HOSTEL APPLICATION FORM</span>
               </Link>
-              <Link to="/#medicine-section" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group">
-                <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                <span>MEDICINE AVAILABILITY</span>
-              </Link>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
+                    <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <span>MEDICINE AVAILABILITY</span>
+                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-4 z-[100]">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-primary/10 pb-2 mb-2">
+                      <Pill className="w-4 h-4 text-accent" />
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-accent">Current Stock</h4>
+                    </div>
+                    {medicines.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto pr-2 scrollbar-none">
+                        {medicines.map((med) => (
+                          <div key={med.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-primary/5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{med.icon || "💊"}</span>
+                              <span className="text-xs font-bold text-foreground">{med.name}</span>
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${med.quantity > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                              {med.quantity > 0 ? `QTY: ${med.quantity}` : "OUT"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-[10px] font-bold text-muted-foreground italic">No data available</p>
+                      </div>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
