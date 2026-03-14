@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,42 +41,35 @@ const App = () => {
     setShowSplash(false);
   };
 
-  // Show splash screen covering everything
-  if (showSplash && isFirstVisit) {
-    return (
-      <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <SplashScreen onComplete={handleSplashComplete} />
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-    );
-  }
-
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/hostel-application" element={<HostelApplication />} />
-              <Route path="/student-login" element={<StudentLogin />} />
-              <Route path="/student-dashboard" element={<StudentDashboard />} />
-              <Route path="/warden-login" element={<WardenLogin />} />
-              <Route path="/warden-dashboard" element={<WardenDashboard />} />
-              <Route path="/warden-register" element={<WardenRegister />} />
-              <Route path="/parent-login" element={<ParentLogin />} />
-              <Route path="/parent-dashboard" element={<ParentDashboard />} />
-              <Route path="/admin-login" element={<AdminLogin />} />
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          {showSplash && isFirstVisit ? (
+            <SplashScreen onComplete={handleSplashComplete} />
+          ) : (
+            <>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/hostel-application" element={<HostelApplication />} />
+                  <Route path="/student-login" element={<StudentLogin />} />
+                  <Route path="/student-dashboard" element={<StudentDashboard />} />
+                  <Route path="/warden-login" element={<WardenLogin />} />
+                  <Route path="/warden-dashboard" element={<WardenDashboard />} />
+                  <Route path="/warden-register" element={<WardenRegister />} />
+                  <Route path="/parent-login" element={<ParentLogin />} />
+                  <Route path="/parent-dashboard" element={<ParentDashboard />} />
+                  <Route path="/admin-login" element={<AdminLogin />} />
+                  <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </>
+          )}
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

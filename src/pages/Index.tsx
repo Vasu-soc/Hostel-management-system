@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,7 +71,7 @@ const hostelRules = [
 
 const WARDEN_CONTACT = "9553866278";
 
-const Index = () => {
+function Index() {
   const [selectedLogin, setSelectedLogin] = useState<string>("");
   const [selectedMedicine, setSelectedMedicine] = useState<string>("");
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);

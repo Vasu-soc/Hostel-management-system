@@ -89,6 +89,7 @@ const StudentDashboard = () => {
   const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "", email: "", address: "", zipCode: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [medicines, setMedicines] = useState<any[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [gatePassForm, setGatePassForm] = useState({
@@ -157,7 +158,25 @@ const StudentDashboard = () => {
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
     loadStudyMaterials(session.branch, session.year);
+    fetchMedicines();
+
+    // Subscribe to medicine updates
+    const medicineChannel = supabase
+      .channel("medicines-dashboard")
+      .on("postgres_changes", { event: "*", schema: "public", table: "medicines" }, () => {
+        fetchMedicines();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(medicineChannel);
+    };
   }, [gender, navigate]);
+
+  const fetchMedicines = async () => {
+    const { data } = await supabase.from("medicines").select("*");
+    if (data) setMedicines(data);
+  };
 
   const fetchFeeTransactions = async (studentId: string) => {
     console.log(`Attempting to fetch fee transactions for student ID: ${studentId}`);
@@ -1013,8 +1032,37 @@ const StudentDashboard = () => {
 
 
 
-
-
+            {/* Medicine Availability Card */}
+            <Card className="border-2 border-border shadow-sm overflow-hidden">
+              <CardHeader className="bg-success/5 pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Pill className="w-5 h-5 text-success" />
+                  Medicine Availability
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <p className="text-xs text-muted-foreground italic">Check current stock levels at the hostel medical room.</p>
+                {medicines.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto pr-2 scrollbar-none">
+                    {medicines.map((med) => (
+                      <div key={med.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-primary/5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{med.icon || "💊"}</span>
+                          <span className="text-xs font-bold text-foreground">{med.name}</span>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${med.quantity > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                          {med.quantity > 0 ? `QTY: ${med.quantity}` : "OUT OF STOCK"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p className="text-xs italic">Loading medicine data...</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
           </div>
 

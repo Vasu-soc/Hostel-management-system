@@ -37,6 +37,63 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
   const [description, setDescription] = useState("");
   const [newImageUrls, setNewImageUrls] = useState<string[]>([]);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
+  const [isUploadingLocal, setIsUploadingLocal] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be under 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingLocal(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64String = reader.result as string;
+        
+        const response = await fetch('/api/local-upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileData: base64String,
+          }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          setNewImageUrls([...newImageUrls, result.url]);
+          toast({
+            title: "Success",
+            description: "Image uploaded and added to queue",
+          });
+        } else {
+          throw new Error(result.error || "Upload failed");
+        }
+      };
+    } catch (error: any) {
+      toast({
+        title: "Upload Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLocal(false);
+      // Reset input
+      if (e.target) e.target.value = "";
+    }
+  };
 
   useEffect(() => {
     fetchAlbums();
@@ -203,21 +260,51 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
             <div className="space-y-2">
               <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <ImageIcon className="w-3 h-3" />
-                Upload Images (URLs)
+                Add Photos
               </Label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Paste image URL here..." 
-                  value={currentImageUrl}
-                  onChange={(e) => setCurrentImageUrl(e.target.value)}
-                  className="bg-background/50"
-                  onKeyDown={(e) => e.key === 'Enter' && addImageUrl()}
-                />
-                <Button size="icon" onClick={addImageUrl} variant="outline" className="shrink-0 border-2 border-primary/20">
-                  <Plus className="w-4 h-4" />
-                </Button>
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Paste image URL..." 
+                    value={currentImageUrl}
+                    onChange={(e) => setCurrentImageUrl(e.target.value)}
+                    className="bg-background/50 text-xs h-9"
+                    onKeyDown={(e) => e.key === 'Enter' && addImageUrl()}
+                  />
+                  <Button size="icon" onClick={addImageUrl} variant="outline" className="shrink-0 h-9 w-9 border-2 border-primary/20">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="album-image-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={isUploadingLocal}
+                  />
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-10 border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group"
+                    asChild
+                    disabled={isUploadingLocal}
+                  >
+                    <label htmlFor="album-image-upload" className="cursor-pointer flex items-center justify-center gap-2">
+                      {isUploadingLocal ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Camera className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                      )}
+                      <span className="text-xs font-bold uppercase tracking-wider">
+                        {isUploadingLocal ? "Uploading..." : "Upload from Device"}
+                      </span>
+                    </label>
+                  </Button>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground italic">Add multiple URLs to create a gallery</p>
+              <p className="text-[10px] text-muted-foreground italic text-center">Images will be stored in local server storage</p>
             </div>
 
             {newImageUrls.length > 0 && (

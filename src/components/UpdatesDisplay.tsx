@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Bell, 
-  Calendar, 
-  ChevronRight, 
+import {
+  Bell,
+  Calendar,
+  ChevronRight,
   ChevronLeft,
   Megaphone
 } from "lucide-react";
@@ -20,7 +20,7 @@ interface Update {
   created_by_role: string;
 }
 
-const UpdatesDisplay = () => {
+function UpdatesDisplay() {
   const [updates, setUpdates] = useState<Update[]>([{
     id: "sample-1",
     title: "Welcome to our New Hostel Management System!",
@@ -103,17 +103,17 @@ const UpdatesDisplay = () => {
       <div className="relative group">
         {/* Background Glow */}
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-secondary/30 to-primary/30 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-300 group-hover:duration-200"></div>
-        
+
         <Card className="relative overflow-hidden border-2 border-primary/20 bg-card/60 backdrop-blur-md shadow-2xl rounded-2xl">
           <CardContent className="p-0">
             <div className="flex flex-col md:flex-row min-h-[250px]">
               {/* Image Section */}
               {currentUpdate.image_url && (
                 <div className="md:w-1/3 relative h-48 md:h-auto overflow-hidden">
-                  <img 
+                  <img
                     key={currentUpdate.id + "_img"}
-                    src={currentUpdate.image_url} 
-                    alt={currentUpdate.title} 
+                    src={currentUpdate.image_url}
+                    alt={currentUpdate.title}
                     className="w-full h-full object-cover animate-in fade-in scale-in duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/40 to-transparent"></div>
@@ -133,14 +133,14 @@ const UpdatesDisplay = () => {
                   </div>
                 </div>
 
-                <h3 
+                <h3
                   key={currentUpdate.id + "_h3"}
                   className="text-2xl md:text-3xl font-black text-foreground mb-4 leading-tight animate-in slide-in-from-left-4 duration-300"
                 >
                   {currentUpdate.title}
                 </h3>
 
-                <p 
+                <p
                   key={currentUpdate.id + "_p"}
                   className="text-muted-foreground text-sm md:text-base line-clamp-3 mb-6 animate-in slide-in-from-left-6 duration-300"
                 >
@@ -157,13 +157,13 @@ const UpdatesDisplay = () => {
               {/* Navigation Controls */}
               {updates.length > 1 && (
                 <div className="absolute bottom-4 right-4 flex gap-2">
-                  <button 
+                  <button
                     onClick={prevUpdate}
                     className="p-2 rounded-full bg-background/50 backdrop-blur-md border border-border hover:bg-primary hover:text-white transition-all shadow-sm"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button 
+                  <button
                     onClick={nextUpdate}
                     className="p-2 rounded-full bg-background/50 backdrop-blur-md border border-border hover:bg-primary hover:text-white transition-all shadow-sm"
                   >
@@ -171,12 +171,12 @@ const UpdatesDisplay = () => {
                   </button>
                 </div>
               )}
-              
+
               {/* Pagination Dots */}
               {updates.length > 1 && (
                 <div className="absolute top-4 right-4 flex gap-1">
                   {updates.map((_, i) => (
-                    <div 
+                    <div
                       key={i}
                       className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-4 bg-primary' : 'bg-primary/20'}`}
                     ></div>

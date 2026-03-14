@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
 import HostelAlbumGallery from "./HostelAlbumGallery";
 import gisteduLogo from "@/assets/gistedu-logo.png";
@@ -70,7 +69,7 @@ const navigationLogins = [
   { label: "Parent Portal", path: "/parent-login", icon: GraduationCap, color: "text-green-500" },
 ];
 
-const CollegeHeader = () => {
+function CollegeHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [medicines, setMedicines] = useState<any[]>([]);
   const location = useLocation();
@@ -125,69 +124,75 @@ const CollegeHeader = () => {
             
             {/* Quick Navigation Links with Dropdowns */}
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 sm:mt-3 border-t border-primary/5 pt-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
-                    <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                    <span>CHOOSE LOGINS</span>
-                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-2 z-[100]">
-                  {navigationLogins.map((login) => (
-                    <DropdownMenuItem key={login.path} asChild>
-                      <Link to={login.path} className="flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 transition-all cursor-pointer group">
-                        <div className={`p-2 rounded-lg bg-background shadow-sm group-hover:bg-primary transition-all`}>
-                          <login.icon className={`w-4 h-4 ${login.color} group-hover:text-primary-foreground`} />
-                        </div>
-                        <span className="font-bold text-sm group-hover:text-primary">{login.label}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Link to="/hostel-application" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
-                <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                <span>HOSTEL APPLICATION FORM</span>
-              </Link>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
-                    <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                    <span>MEDICINE AVAILABILITY</span>
-                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-4 z-[100]">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 border-b border-primary/10 pb-2 mb-2">
-                      <Pill className="w-4 h-4 text-accent" />
-                      <h4 className="font-bold text-xs uppercase tracking-wider text-accent">Current Stock</h4>
-                    </div>
-                    {medicines.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto pr-2 scrollbar-none">
-                        {medicines.map((med) => (
-                          <div key={med.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-primary/5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">{med.icon || "💊"}</span>
-                              <span className="text-xs font-bold text-foreground">{med.name}</span>
+              {isHomePage && (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
+                        <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                        <span>CHOOSE LOGINS</span>
+                        <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-2 z-[100]">
+                      {navigationLogins.map((login) => (
+                        <DropdownMenuItem key={login.path} asChild>
+                          <Link to={login.path} className="flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 transition-all cursor-pointer group">
+                            <div className={`p-2 rounded-lg bg-background shadow-sm group-hover:bg-primary transition-all`}>
+                              <login.icon className={`w-4 h-4 ${login.color} group-hover:text-primary-foreground`} />
                             </div>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${med.quantity > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
-                              {med.quantity > 0 ? `QTY: ${med.quantity}` : "OUT"}
-                            </span>
-                          </div>
-                        ))}
+                            <span className="font-bold text-sm group-hover:text-primary">{login.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Link to="/hostel-application" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
+                    <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <span>HOSTEL APPLICATION FORM</span>
+                  </Link>
+                </>
+              )}
+
+              {(isHomePage || location.pathname.includes("/student-dashboard")) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
+                      <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                      <span>MEDICINE AVAILABILITY</span>
+                      <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-64 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-4 z-[100]">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 border-b border-primary/10 pb-2 mb-2">
+                        <Pill className="w-4 h-4 text-accent" />
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-accent">Current Stock</h4>
                       </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-[10px] font-bold text-muted-foreground italic">No data available</p>
-                      </div>
-                    )}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      {medicines.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto pr-2 scrollbar-none">
+                          {medicines.map((med) => (
+                            <div key={med.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-primary/5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{med.icon || "💊"}</span>
+                                <span className="text-xs font-bold text-foreground">{med.name}</span>
+                              </div>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${med.quantity > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                                {med.quantity > 0 ? `QTY: ${med.quantity}` : "OUT"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-[10px] font-bold text-muted-foreground italic">No data available</p>
+                        </div>
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
