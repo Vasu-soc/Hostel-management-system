@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogPortal,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { 
@@ -33,20 +34,18 @@ const HostelAlbumGallery = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
+  // Reset viewer state when main dialog closes
   useEffect(() => {
-    if (isOpen) {
-      fetchAlbums();
+    if (!isOpen) {
+      // Clear all viewer states after a small delay to allow for close animation
+      const timer = setTimeout(() => {
+        setIsViewerOpen(false);
+        setSelectedAlbum(null);
+        setCurrentImageIndex(0);
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
-
-  const fetchAlbums = async () => {
-    const { data } = await supabase
-      .from("hostel_albums")
-      .select("*")
-      .order("event_date", { ascending: false });
-    
-    if (data) setAlbums(data as Album[]);
-  };
 
   const openViewer = (album: Album, index: number) => {
     setSelectedAlbum(album);
@@ -54,12 +53,14 @@ const HostelAlbumGallery = () => {
     setIsViewerOpen(true);
   };
 
-  const nextImage = () => {
+  const nextImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!selectedAlbum) return;
     setCurrentImageIndex((prev) => (prev + 1) % selectedAlbum.image_urls.length);
   };
 
-  const prevImage = () => {
+  const prevImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!selectedAlbum) return;
     setCurrentImageIndex((prev) => (prev - 1 + selectedAlbum.image_urls.length) % selectedAlbum.image_urls.length);
   };
@@ -113,7 +114,7 @@ const HostelAlbumGallery = () => {
                       <div 
                         key={idx} 
                         className="group relative aspect-square overflow-hidden rounded-2xl border-2 border-border hover:border-primary/50 cursor-pointer shadow-md hover:shadow-xl transition-all duration-500"
-                        onClick={() => openViewer(album, idx)}
+                        onClick={(e) => { e.stopPropagation(); openViewer(album, idx); }}
                       >
                         <img 
                           src={url} 
@@ -133,63 +134,76 @@ const HostelAlbumGallery = () => {
             </div>
           )}
         </div>
-      </DialogContent>
 
-      {/* Fullscreen Viewer */}
-      {isViewerOpen && selectedAlbum && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300">
-          <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-[110]">
-             <div className="bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col">
-                <h4 className="text-white text-xl font-black italic">{selectedAlbum.event_name}</h4>
-                <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{currentImageIndex + 1} of {selectedAlbum.image_urls.length}</p>
-             </div>
-             <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all" onClick={() => setIsViewerOpen(false)}>
-               <X className="w-6 h-6" />
-             </Button>
-          </div>
-
-          <div className="relative w-full h-full flex items-center justify-center p-4 sm:p-12">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute left-2 sm:left-8 h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-white/5 text-white hover:bg-white/10 border border-white/10 z-[110]"
-              onClick={(e) => { e.stopPropagation(); prevImage(); }}
-            >
-              <ChevronLeft className="w-8 h-8 sm:w-10 sm:h-10" />
-            </Button>
-
-            <div className="relative max-w-5xl max-h-[75vh] w-full h-full flex items-center justify-center">
-               <img 
-                 src={selectedAlbum.image_urls[currentImageIndex]} 
-                 alt="Full view" 
-                 className="max-w-full max-h-full object-contain rounded-lg shadow-[0_0_50px_rgba(var(--primary),0.3)] select-none pointer-events-none"
-               />
+        {/* Fullscreen Viewer - MOVED INSIDE DialogContent for proper event handling */}
+        {isViewerOpen && selectedAlbum && (
+          <div 
+            className="fixed inset-0 z-[100] bg-black/98 backdrop-blur-3xl flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsViewerOpen(false);
+            }}
+          >
+            {/* Header info */}
+            <div className="absolute top-0 left-0 right-0 p-6 flex items-center justify-between z-[120] bg-gradient-to-b from-black/80 to-transparent">
+               <div className="bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col">
+                  <h4 className="text-white text-xl font-black italic">{selectedAlbum.event_name}</h4>
+                  <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{currentImageIndex + 1} of {selectedAlbum.image_urls.length}</p>
+               </div>
+               <Button 
+                 variant="ghost" 
+                 size="icon" 
+                 className="h-14 w-14 rounded-2xl bg-white/10 text-white hover:bg-destructive hover:rotate-90 transition-all duration-300 border border-white/20" 
+                 onClick={(e) => { e.stopPropagation(); setIsViewerOpen(false); }}
+               >
+                 <X className="w-8 h-8" />
+               </Button>
             </div>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-2 sm:right-8 h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-white/5 text-white hover:bg-white/10 border border-white/10 z-[110]"
-              onClick={(e) => { e.stopPropagation(); nextImage(); }}
-            >
-              <ChevronRight className="w-8 h-8 sm:w-10 sm:h-10" />
-            </Button>
-          </div>
+            {/* Main content */}
+            <div className="relative w-full h-[70vh] flex items-center justify-center px-4" onClick={(e) => e.stopPropagation()}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute left-4 sm:left-12 h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-black/50 text-white hover:bg-primary hover:scale-110 border-2 border-white/20 z-[130] transition-all duration-300 group"
+                onClick={prevImage}
+              >
+                <ChevronLeft className="w-10 h-10 sm:w-16 h-16 group-active:-translate-x-2 transition-transform" />
+              </Button>
 
-          {/* Thumbnail strip */}
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center px-4 overflow-x-auto pb-4 gap-3 z-[110] scrollbar-hide">
-             {selectedAlbum.image_urls.map((url, idx) => (
-                <div 
-                  key={idx} 
-                  className={`relative h-16 w-16 sm:h-20 sm:w-20 rounded-xl overflow-hidden border-2 transition-all duration-300 cursor-pointer flex-shrink-0 ${idx === currentImageIndex ? 'border-primary scale-110 shadow-lg shadow-primary/40' : 'border-white/10 opacity-40 hover:opacity-100'}`}
-                  onClick={() => setCurrentImageIndex(idx)}
-                >
-                   <img src={url} alt="Thumbnail" className="w-full h-full object-cover" />
-                </div>
-             ))}
+              <div className="relative max-w-full max-h-full flex items-center justify-center overflow-hidden z-[110]">
+                 <img 
+                   src={selectedAlbum.image_urls[currentImageIndex]} 
+                   alt="Full view" 
+                   className="max-w-[90vw] max-h-[75vh] object-contain rounded-2xl shadow-[0_0_100px_rgba(var(--primary),0.3)] select-none animate-in fade-in zoom-in-90 duration-500 cursor-pointer"
+                   onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                 />
+              </div>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-4 sm:right-12 h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-black/50 text-white hover:bg-primary hover:scale-110 border-2 border-white/20 z-[130] transition-all duration-300 group"
+                onClick={nextImage}
+              >
+                <ChevronRight className="w-10 h-10 sm:w-16 h-16 group-active:translate-x-2 transition-transform" />
+              </Button>
+            </div>
+
+            {/* Thumbnail strip */}
+            <div className="mt-8 flex justify-center px-4 overflow-x-auto pb-4 gap-4 z-[120] max-w-full scrollbar-hide" onClick={(e) => e.stopPropagation()}>
+               {selectedAlbum.image_urls.map((url, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`relative h-20 w-20 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border-2 transition-all duration-300 cursor-pointer flex-shrink-0 ${idx === currentImageIndex ? 'border-primary ring-4 ring-primary/30 scale-110 shadow-2xl shadow-primary/40' : 'border-white/20 opacity-30 hover:opacity-100 hover:scale-105 hover:border-white/50'}`}
+                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                  >
+                     <img src={url} alt="Thumbnail" className="w-full h-full object-cover" />
+                  </div>
+               ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </DialogContent>
     </Dialog>
   );
 };
