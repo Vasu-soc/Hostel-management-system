@@ -81,7 +81,7 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
       console.error("Upload error:", error);
       toast({
         title: "Upload Error",
-        description: error.message || "Could not upload image. Please check your connection.",
+        description: error.message || "Could not upload to cloud storage. Please check your connection.",
         variant: "destructive",
       });
     } finally {
@@ -179,10 +179,22 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
     }
   };
 
-  const handleDeleteAlbum = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this album?")) return;
+  const handleDeleteAlbum = async (id: string, imageUrls: string[]) => {
+    if (!confirm("Are you sure you want to delete this album? This will also remove the images from storage.")) return;
 
     try {
+      // 1. Delete images from Supabase Storage
+      if (imageUrls && imageUrls.length > 0) {
+        const filesToRemove = imageUrls
+          .map(url => url.split('/').pop())
+          .filter(Boolean) as string[];
+        
+        if (filesToRemove.length > 0) {
+          await supabase.storage.from('updates').remove(filesToRemove);
+        }
+      }
+
+      // 2. Delete database record
       const { error } = await supabase
         .from("hostel_albums")
         .delete()
@@ -191,8 +203,8 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
       if (error) throw error;
 
       toast({
-        title: "Deleted",
-        description: "Album removed successfully",
+        title: "Album Deleted",
+        description: "Successfully removed the album and its images.",
       });
       setAlbums(albums.filter(a => a.id !== id));
     } catch (error: any) {
@@ -299,7 +311,7 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
                   </Button>
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground italic text-center">Images will be stored in local server storage</p>
+              <p className="text-[10px] text-muted-foreground italic text-center">Images will be stored securely in the cloud</p>
             </div>
 
             {newImageUrls.length > 0 && (
@@ -380,7 +392,7 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:bg-destructive/10 h-8 w-8"
-                      onClick={() => handleDeleteAlbum(album.id)}
+                      onClick={() => handleDeleteAlbum(album.id, album.image_urls)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
