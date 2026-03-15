@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1669,7 +1670,9 @@ const WardenDashboard = () => {
               </div>
               WARDEN FEATURE VISION
             </DialogTitle>
-            <p className="text-muted-foreground font-medium mt-1">Access all management tools from a single point.</p>
+            <DialogDescription className="text-muted-foreground font-medium mt-1">
+              Access all management tools from a single point.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="p-4 sm:p-8 overflow-y-auto h-full scrollbar-hide">
@@ -1733,6 +1736,9 @@ const WardenDashboard = () => {
                 </Button>
               </div>
             </DialogTitle>
+            <DialogDescription>
+              Review all student application details, requested room type, and supporting documents.
+            </DialogDescription>
           </DialogHeader>
           {selectedApplication && (
             <div ref={printRef} className="space-y-4 pt-4">
@@ -1912,6 +1918,9 @@ const WardenDashboard = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Gate Pass Details</DialogTitle>
+            <DialogDescription>
+              Verify student identity and review the reason for the gate pass request.
+            </DialogDescription>
           </DialogHeader>
           {selectedGatePass && (() => {
             const studentData = students.find((s: any) => s.roll_number === selectedGatePass.roll_number);
@@ -2046,6 +2055,7 @@ const WardenDashboard = () => {
         <DialogContent className="max-w-md p-2">
           <DialogHeader>
             <DialogTitle>Student Photo - Identity Verification</DialogTitle>
+            <DialogDescription>Enlarged view of the student's passport photo for identification.</DialogDescription>
           </DialogHeader>
           {enlargedPhotoUrl && (
             <div className="flex justify-center p-4">
@@ -2067,6 +2077,9 @@ const WardenDashboard = () => {
               <PenTool className="w-5 h-5" />
               Warden Signature
             </DialogTitle>
+            <DialogDescription>
+              Upload or update your official signature to be used in student documents.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             {warden?.signature_url && !signaturePreview && (

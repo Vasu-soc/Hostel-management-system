@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -95,7 +96,7 @@ const AdminDashboard = () => {
     paid_fee: 0,
     new_payment: 0,
   });
-  const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
+  const [feeHistory, setFeeHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const session = getAdminSession();
@@ -168,13 +169,13 @@ const AdminDashboard = () => {
   const acRooms = useMemo(() => rooms.filter(r => r.ac_type === "ac"), [rooms]);
   const normalRooms = useMemo(() => rooms.filter(r => r.ac_type === "normal"), [rooms]);
 
-  const fetchStudentTransactions = async (studentId: string) => {
+  const fetchFeeHistory = async (studentId: string) => {
     const { data } = await supabase
       .from("fee_transactions")
       .select("*")
       .eq("student_id", studentId)
       .order("payment_date", { ascending: true });
-    setStudentTransactions(data || []);
+    setFeeHistory(data || []);
   };
 
   const handleUpdateFee = async () => {
@@ -411,7 +412,7 @@ const AdminDashboard = () => {
                       <div className="w-full mt-10 pt-10 border-t border-black/[0.05] dark:border-white/[0.05]">
                          <div className="flex justify-between items-center mb-6">
                             <h5 className="font-bold flex items-center gap-2"><Wallet className="w-4 h-4" /> Assets</h5>
-                            <Button size="icon" variant="ghost" className="rounded-full bg-blue-500/10 text-blue-500 w-10 h-10" onClick={() => { setSelectedStudent(student); setFeeData({ total_fee: student.total_fee || 100000, paid_fee: student.paid_fee || 0, new_payment: 0 }); setFeeDialogOpen(true); fetchStudentTransactions(student.id); }}>
+                            <Button size="icon" variant="ghost" className="rounded-full bg-blue-500/10 text-blue-500 w-10 h-10" onClick={() => { setSelectedStudent(student); setFeeData({ total_fee: student.total_fee || 100000, paid_fee: student.paid_fee || 0, new_payment: 0 }); setFeeDialogOpen(true); fetchFeeHistory(student.id); }}>
                               <IndianRupee className="w-4 h-4" />
                             </Button>
                          </div>
@@ -486,13 +487,15 @@ const AdminDashboard = () => {
         <DialogContent className="max-w-xl bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl border-0 rounded-[3rem] p-0 overflow-hidden shadow-2xl">
           {selectedStudent && (
             <div className="flex flex-col">
-               <div className="p-10 pb-0 flex justify-between items-start">
+               <DialogHeader className="p-10 pb-0 flex-row justify-between items-start space-y-0">
                   <div>
-                    <h3 className="text-3xl font-bold tracking-tight">{selectedStudent.student_name}</h3>
-                    <p className="text-sm font-bold text-[#0071E3] mt-1 uppercase tracking-widest">{selectedStudent.roll_number}</p>
+                    <DialogTitle className="text-3xl font-bold tracking-tight">{selectedStudent.student_name}</DialogTitle>
+                    <DialogDescription className="text-sm font-bold text-[#0071E3] mt-1 uppercase tracking-widest font-mono">
+                      {selectedStudent.roll_number}
+                    </DialogDescription>
                   </div>
                   <Badge className="rounded-full px-6 py-2 bg-[#F5F5F7] dark:bg-[#323235] text-foreground border-0 font-bold">{selectedStudent.year}</Badge>
-               </div>
+               </DialogHeader>
 
                <div className="p-10 space-y-10">
                   <div className="grid grid-cols-2 gap-6">
@@ -511,11 +514,11 @@ const AdminDashboard = () => {
                      <p className="text-6xl font-bold tracking-tighter">₹{(feeData.total_fee - feeData.paid_fee - (feeData.new_payment || 0)).toLocaleString()}</p>
                   </div>
 
-                  {studentTransactions.length > 0 && (
+                  {feeHistory.length > 0 && (
                     <div className="space-y-4">
                        <h4 className="text-sm font-bold opacity-60 px-2 flex items-center gap-2">History <Info className="w-3 h-3" /></h4>
                        <div className="max-h-56 overflow-y-auto space-y-3 pr-2 no-scrollbar">
-                          {studentTransactions.map((tx, idx) => (
+                          {feeHistory.map((tx, idx) => (
                             <div key={idx} className="p-5 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-[1.5rem] flex justify-between items-center transition-all hover:bg-slate-100">
                                <div><p className="font-bold text-md">{tx.remarks || "Log Entry"}</p><p className="text-[10px] text-muted-foreground mt-0.5">{new Date(tx.payment_date).toLocaleDateString("en-US", { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
                                <p className="font-bold text-green-500">+₹{tx.amount.toLocaleString()}</p>
