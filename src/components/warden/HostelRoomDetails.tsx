@@ -564,48 +564,48 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
       </div>
 
       {/* Bed Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card className="border-2 border-border shadow-sm">
-          <CardContent className="py-4 text-center">
-            <p className="text-2xl font-black text-foreground">{selectedRoom.total_beds}</p>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Total Beds</p>
+          <CardContent className="p-3 sm:py-4 text-center">
+            <p className="text-xl sm:text-2xl font-black text-foreground">{selectedRoom.total_beds}</p>
+            <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Total</p>
           </CardContent>
         </Card>
         <Card className="border-2 border-success/30 bg-success/5 shadow-sm">
-          <CardContent className="py-4 text-center">
+          <CardContent className="p-3 sm:py-4 text-center">
             <div className="flex items-baseline justify-center gap-1">
-              <p className="text-2xl font-black text-success">{roomStudents.filter(s => s.room_allotted).length}</p>
+              <p className="text-xl sm:text-2xl font-black text-success">{roomStudents.filter(s => s.room_allotted).length}</p>
               {roomStudents.filter(s => !s.room_allotted).length > 0 && (
-                <p className="text-sm font-bold text-amber-500">+{roomStudents.filter(s => !s.room_allotted).length}</p>
+                <p className="text-xs sm:text-sm font-bold text-amber-500">+{roomStudents.filter(s => !s.room_allotted).length}</p>
               )}
             </div>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Allotted + Blocked</p>
+            <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Allotted</p>
           </CardContent>
         </Card>
         <Card className="border-2 border-primary/30 bg-primary/5 shadow-sm">
-          <CardContent className="py-4 text-center">
-            <p className="text-2xl font-black text-primary">{availableBeds}</p>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Available</p>
+          <CardContent className="p-3 sm:py-4 text-center">
+            <p className="text-xl sm:text-2xl font-black text-primary">{availableBeds}</p>
+            <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Available</p>
           </CardContent>
         </Card>
         <Card className="border-2 border-destructive/30 bg-destructive/5 shadow-sm">
-          <CardContent className="py-4 text-center">
-            <p className="text-2xl font-black text-destructive">{closedBeds}</p>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Closed</p>
+          <CardContent className="p-3 sm:py-4 text-center">
+            <p className="text-xl sm:text-2xl font-black text-destructive">{closedBeds}</p>
+            <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Closed</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Bed Control */}
       <Card className="border-2 border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bed className="w-5 h-5" />
+        <CardHeader className="py-4">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Bed className="w-4 h-4 sm:w-5 sm:h-5" />
             Bed Control
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {bedStatuses.map((isAvailable, index) => {
               const studentAtBed = roomStudents[index];
               const isOccupied = !!studentAtBed;
@@ -613,23 +613,25 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
               const isFullyAllotted = isOccupied && studentAtBed.room_allotted;
 
               return (
-                <div key={index} className={`p-4 rounded-lg border-2 ${
+                <div key={index} className={`p-3 sm:p-4 rounded-xl border-2 transition-all ${
                   isFullyAllotted 
-                    ? 'bg-success/10 border-success/30' 
+                    ? 'bg-success/5 border-success/30 shadow-sm' 
                     : isBlocked 
-                      ? 'bg-amber-500/10 border-amber-500/30' 
+                      ? 'bg-amber-500/5 border-amber-500/30' 
                       : isAvailable 
-                        ? 'bg-muted border-border' 
-                        : 'bg-destructive/10 border-destructive/30'
+                        ? 'bg-muted/50 border-border' 
+                        : 'bg-destructive/5 border-destructive/30'
                 }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">Bed {index + 1}</span>
-                    {isFullyAllotted && <User className="w-4 h-4 text-success" />}
-                    {isBlocked && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                    {!isOccupied && !isAvailable && <X className="w-4 h-4 text-destructive" />}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-xs sm:text-sm italic">B-{index + 1}</span>
+                    {isFullyAllotted && <Check className="w-3 h-3 text-success" />}
+                    {isBlocked && <AlertTriangle className="w-3 h-3 text-amber-500" />}
+                    {!isOccupied && !isAvailable && <X className="w-3 h-3 text-destructive" />}
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {isFullyAllotted ? "Occupied" : isBlocked ? "Blocked" : isAvailable ? "Available" : "Closed"}
+                  <p className={`text-[9px] sm:text-xs font-black uppercase tracking-tighter mb-2 ${
+                     isFullyAllotted ? 'text-success' : isBlocked ? 'text-amber-500' : isAvailable ? 'text-muted-foreground' : 'text-destructive'
+                  }`}>
+                    {isFullyAllotted ? "Occupied" : isBlocked ? "Blocked" : isAvailable ? "Ready" : "Closed"}
                   </p>
                   {!isOccupied && (
                     <div className="flex items-center gap-2">
@@ -637,8 +639,8 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
                         checked={isAvailable}
                         onCheckedChange={() => handleBedToggle(index)}
                         disabled={isOccupied}
+                        className="scale-75 origin-left"
                       />
-                      <span className="text-xs">{isAvailable ? "Open" : "Closed"}</span>
                     </div>
                   )}
                 </div>
@@ -650,56 +652,62 @@ const HostelRoomDetails = ({ students, onRefresh, wardenType }: HostelRoomDetail
 
       {/* Students in Room */}
       {roomStudents.length > 0 && (
-        <Card className="border-2 border-border">
-          <CardHeader>
-            <CardTitle>Students in Room</CardTitle>
+        <Card className="border-2 border-border overflow-hidden">
+          <CardHeader className="bg-muted/30 py-4 border-b">
+            <CardTitle className="text-base sm:text-lg">Students in Room</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {roomStudents.map((student) => (
-              <div key={student.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  {student.photo_url ? (
-                    <img
-                      src={student.photo_url}
-                      alt={student.student_name}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-primary"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-5 h-5 text-primary" />
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{student.student_name}</p>
-                      {student.pending_fee <= 0 && student.room_allotted && (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-success/10 border border-success/30 text-[10px] font-black uppercase text-success">
-                          <Check className="w-3 h-3" />
-                          <span>Paid</span>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {roomStudents.map((student) => (
+                <div key={student.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3">
+                  <div className="flex items-center gap-3">
+                    {student.photo_url ? (
+                      <img
+                        src={student.photo_url}
+                        alt={student.student_name}
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-primary shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                        <p className="font-bold text-sm sm:text-base">{student.student_name}</p>
+                        <div className="flex gap-1">
+                          {student.pending_fee <= 0 && student.room_allotted && (
+                            <div className="px-1.5 py-0.5 rounded-full bg-success/10 border border-success/30 text-[8px] font-black uppercase text-success italic">
+                              Paid
+                            </div>
+                          )}
+                          {!student.room_allotted && (
+                            <div className="px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[8px] font-black uppercase text-amber-500 italic">
+                              Blocked
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {!student.room_allotted && (
-                        <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 text-amber-500 border-amber-500/20 uppercase font-bold">
-                          Blocked
-                        </Badge>
-                      )}
+                      </div>
+                      <p className="text-xs text-muted-foreground font-medium">{student.roll_number}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{student.roll_number}</p>
+                  </div>
+                  <div className="flex sm:justify-end gap-1.5 border-t sm:border-t-0 pt-2 sm:pt-0">
+                    <Button variant="outline" size="sm" onClick={() => openFeeDialog(student)} title="Fee Details" className="flex-1 sm:flex-none h-8 px-2">
+                      <IndianRupee className="w-4 h-4 mr-1 sm:mr-0" />
+                      <span className="sm:hidden text-xs">Fee</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openRemarksDialog(student)} title="Remarks" className="flex-1 sm:flex-none h-8 px-2">
+                      <MessageSquare className="w-4 h-4 mr-1 sm:mr-0" />
+                      <span className="sm:hidden text-xs">Notes</span>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 h-8 px-2 flex-1 sm:flex-none" onClick={() => handleDeleteStudent(student)} title="Delete Profile">
+                      <Trash2 className="w-4 h-4 mr-1 sm:mr-0" />
+                      <span className="sm:hidden text-xs">Delete</span>
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => openFeeDialog(student)}>
-                    <IndianRupee className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => openRemarksDialog(student)}>
-                    <MessageSquare className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteStudent(student)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

@@ -1091,13 +1091,13 @@ const WardenDashboard = () => {
               <Button
                 variant="outline"
                 onClick={() => setIsFeatureVisionOpen(true)}
-                className="flex items-center gap-2 font-black italic border-2 border-primary/30 text-primary hover:bg-primary/10 rounded-xl transition-all h-10 px-4 group shadow-lg shadow-primary/10 shrink-0"
+                className="flex items-center gap-2 font-black italic border-2 border-primary/30 text-primary hover:bg-primary/10 rounded-xl transition-all h-9 sm:h-10 px-3 sm:px-4 group shadow-lg shadow-primary/10 shrink-0"
               >
                 <LayoutGrid className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                <span className="hidden sm:inline">ALL FEATURES</span>
+                <span className="hidden xs:inline">ALL FEATURES</span>
               </Button>
             </HoverCardTrigger>
-            <HoverCardContent className="w-[450px] p-4 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl shadow-2xl z-50">
+            <HoverCardContent className="hidden lg:block w-[450px] p-4 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl shadow-2xl z-50">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
                   <LayoutGrid className="w-5 h-5 text-primary" />
@@ -1125,24 +1125,26 @@ const WardenDashboard = () => {
             </HoverCardContent>
           </HoverCard>
 
-          <div className="h-8 w-[2px] bg-border mx-1 shrink-0" />
+          <div className="h-6 w-[1.5px] bg-border mx-1 shrink-0" />
 
-          {tabs.map((tab) => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? "default" : "outline"}
-              onClick={() => setActiveTab(tab.id)}
-              className="relative whitespace-nowrap"
-            >
-              <tab.icon className="w-4 h-4 mr-2" />
-              {tab.label}
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full ${tab.id === 'allotment' ? 'bg-muted text-muted-foreground' : 'bg-success text-success-foreground'} text-xs flex items-center justify-center ${["applications", "gatepasses", "issues"].includes(tab.id) ? "pulse-dot" : ""}`}>
-                  {tab.count}
-                </span>
-              )}
-            </Button>
-          ))}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+            {tabs.map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "outline"}
+                onClick={() => setActiveTab(tab.id)}
+                className="relative whitespace-nowrap h-9 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all active:scale-95"
+              >
+                <tab.icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                {tab.label}
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span className={`absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full ${tab.id === 'allotment' ? 'bg-muted text-muted-foreground' : 'bg-success text-success-foreground'} text-[9px] sm:text-xs flex items-center justify-center font-black ${["applications", "gatepasses", "issues"].includes(tab.id) ? "pulse-dot" : ""}`}>
+                    {tab.count}
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Dashboard Tab */}
@@ -1670,8 +1672,8 @@ const WardenDashboard = () => {
             <p className="text-muted-foreground font-medium mt-1">Access all management tools from a single point.</p>
           </DialogHeader>
 
-          <div className="p-8 overflow-y-auto h-full scrollbar-hide">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-20">
+          <div className="p-4 sm:p-8 overflow-y-auto h-full scrollbar-hide">
+            <div className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 pb-20">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -1680,28 +1682,28 @@ const WardenDashboard = () => {
                     setIsFeatureVisionOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`group relative flex flex-col items-center justify-center p-8 rounded-3xl border-2 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
+                  className={`group relative flex flex-col items-center justify-center p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
                     activeTab === tab.id 
                     ? "border-primary bg-primary/5 shadow-xl shadow-primary/10" 
                     : "border-border bg-muted/20 hover:border-primary/40 hover:bg-card"
                   }`}
                 >
-                  <div className={`p-5 rounded-2xl transition-all duration-500 mb-4 ${
+                  <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-500 mb-2 sm:mb-4 ${
                     activeTab === tab.id 
                     ? "bg-primary text-primary-foreground scale-110 rotate-3 shadow-lg" 
                     : "bg-background text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:rotate-6 shadow-md"
                   }`}>
-                    <tab.icon className="w-8 h-8" />
+                    <tab.icon className="w-6 h-6 sm:w-8 sm:h-8" />
                   </div>
                   
-                  <span className={`font-black italic text-center text-sm transition-colors duration-300 ${
+                  <span className={`font-black italic text-center text-[10px] sm:text-sm transition-colors duration-300 ${
                     activeTab === tab.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                   }`}>
                     {tab.label.toUpperCase()}
                   </span>
 
                   {tab.count !== undefined && tab.count > 0 && (
-                    <span className="absolute top-4 right-4 bg-success text-success-foreground w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shadow-lg animate-bounce">
+                    <span className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-success text-success-foreground w-5 h-5 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl flex items-center justify-center text-[9px] sm:text-xs font-black shadow-lg animate-bounce">
                       {tab.count}
                     </span>
                   )}
@@ -1750,44 +1752,56 @@ const WardenDashboard = () => {
               })()}
 
               {/* Passport Photo and Signature */}
-              <div className="photos-section flex justify-between items-start gap-4 pb-4 border-b border-border">
-                <div className="photo-box flex-1">
-                  <p className="photo-label text-sm text-muted-foreground mb-2">Passport Photo</p>
-                  {(!appImages[selectedApplication.id] || appImages[selectedApplication.id]?.loading) ? (
-                    <div className="w-24 h-28 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border flex-col gap-2">
-                      <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
-                      <span className="text-[10px] text-muted-foreground">Loading...</span>
-                    </div>
-                  ) : (selectedApplication.photo_url || (appImages[selectedApplication.id]?.photo_url && appImages[selectedApplication.id]?.photo_url !== "NONE")) ? (
-                    <img
-                      src={selectedApplication.photo_url || appImages[selectedApplication.id]?.photo_url}
-                      alt="Passport Photo"
-                      className="w-24 h-28 object-cover border-2 border-border rounded shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-24 h-28 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border">
-                      <span className="text-xs text-muted-foreground">No Photo</span>
-                    </div>
-                  )}
+              <div className="photos-section flex flex-col sm:flex-row justify-between items-center sm:items-start gap-6 pb-6 border-b border-border">
+                <div className="photo-box flex-1 w-full text-center sm:text-left">
+                  <p className="photo-label text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3 italic">Passport Photo</p>
+                  <div className="flex justify-center sm:justify-start">
+                    {(!appImages[selectedApplication.id] || appImages[selectedApplication.id]?.loading) ? (
+                      <div className="w-32 h-40 sm:w-24 sm:h-28 bg-muted flex items-center justify-center rounded-xl border-2 border-dashed border-primary/20 flex-col gap-2">
+                        <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                        <span className="text-[10px] text-muted-foreground font-bold">Loading...</span>
+                      </div>
+                    ) : (selectedApplication.photo_url || (appImages[selectedApplication.id]?.photo_url && appImages[selectedApplication.id]?.photo_url !== "NONE")) ? (
+                      <img
+                        src={selectedApplication.photo_url || appImages[selectedApplication.id]?.photo_url}
+                        alt="Passport Photo"
+                        className="w-32 h-40 sm:w-24 sm:h-28 object-cover border-2 border-primary/20 rounded-xl shadow-xl hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-32 h-40 sm:w-24 sm:h-28 bg-muted/30 flex items-center justify-center rounded-xl border-2 border-dashed border-border group hover:border-primary/30 transition-colors">
+                        <div className="text-center">
+                          <User className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                          <span className="text-[10px] text-muted-foreground font-black uppercase">No Photo</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="photo-box flex-1 text-right">
-                  <p className="photo-label text-sm text-muted-foreground mb-2">Signature</p>
-                  {(!appImages[selectedApplication.id] || appImages[selectedApplication.id]?.loading) ? (
-                    <div className="w-48 h-20 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto flex-col gap-2">
-                      <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
-                      <span className="text-[10px] text-muted-foreground">Loading...</span>
-                    </div>
-                  ) : (selectedApplication.signature_url || (appImages[selectedApplication.id]?.signature_url && appImages[selectedApplication.id]?.signature_url !== "NONE")) ? (
-                    <img
-                      src={selectedApplication.signature_url || appImages[selectedApplication.id]?.signature_url}
-                      alt="Signature"
-                      className="w-48 h-20 object-contain bg-white border-2 border-border rounded shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-48 h-20 bg-muted flex items-center justify-center rounded border-2 border-dashed border-border ml-auto">
-                      <span className="text-xs text-muted-foreground">No Signature</span>
-                    </div>
-                  )}
+                <div className="photo-box flex-1 w-full text-center sm:text-right">
+                  <p className="photo-label text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3 italic">Student Signature</p>
+                  <div className="flex justify-center sm:justify-end">
+                    {(!appImages[selectedApplication.id] || appImages[selectedApplication.id]?.loading) ? (
+                      <div className="w-full max-w-[250px] h-24 sm:w-48 sm:h-20 bg-muted flex items-center justify-center rounded-xl border-2 border-dashed border-primary/20 flex-col gap-2">
+                        <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                        <span className="text-[10px] text-muted-foreground font-bold">Loading...</span>
+                      </div>
+                    ) : (selectedApplication.signature_url || (appImages[selectedApplication.id]?.signature_url && appImages[selectedApplication.id]?.signature_url !== "NONE")) ? (
+                      <div className="bg-white p-2 rounded-xl border-2 border-primary/10 shadow-lg w-full max-w-[250px] sm:w-48">
+                        <img
+                          src={selectedApplication.signature_url || appImages[selectedApplication.id]?.signature_url}
+                          alt="Signature"
+                          className="w-full h-20 object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full max-w-[250px] h-24 sm:w-48 sm:h-20 bg-muted/30 flex items-center justify-center rounded-xl border-2 border-dashed border-border group hover:border-primary/30 transition-colors">
+                         <div className="text-center">
+                          <PenTool className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                          <span className="text-[10px] text-muted-foreground font-black uppercase">No Signature</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

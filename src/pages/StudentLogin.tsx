@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, UserPlus, Eye, EyeOff, Camera, Upload, LogIn } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Eye, EyeOff, Camera, Upload, LogIn, Sparkles, ShieldCheck, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -93,6 +93,36 @@ const StudentLogin = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: "None", color: "bg-muted" };
+    let score = 0;
+    if (pass.length > 6) score++;
+    if (pass.length >= 10) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+    if (score <= 2) return { score: 33, label: "Low", color: "bg-destructive" };
+    if (score <= 4) return { score: 66, label: "Medium", color: "bg-yellow-500" };
+    return { score: 100, label: "Hard", color: "bg-green-500" };
+  };
+
+  const generateStrongPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
+    let pass = "";
+    for (let i = 0; i < 14; i++) {
+        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setRegisterData(prev => ({ ...prev, password: pass, confirmPassword: pass }));
+    toast({
+        title: "Strong Password Suggested",
+        description: "A secure password has been generated for you.",
+        duration: 3000,
+    });
+  };
+
+  const strength = getPasswordStrength(registerData.password);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -250,6 +280,33 @@ const StudentLogin = () => {
     }
 
     setIsLoading(true);
+
+    // Dummy credentials for testing
+    if (loginData.rollNumber.toLowerCase() === "vasu" && loginData.password === "200421") {
+      const dummyStudent = {
+        id: "dummy-id-vasu",
+        roll_number: "VASU",
+        student_name: "Vasu (Guest)",
+        gender: gender === "boys" ? "male" : "female",
+        branch: "CSE",
+        year: "3rd Year",
+        room_allotted: true,
+        hostel_room_number: gender === "boys" ? "B101" : "G101",
+        total_fee: 100000,
+        paid_fee: 75000,
+        pending_fee: 25000,
+        photo_url: null,
+      };
+      setStudentSession(dummyStudent);
+      logger.info("login", "VASU", "success");
+      toast({
+        title: "Logged in with Dummy Account",
+        description: "Welcome back, Vasu!",
+      });
+      navigate(`/student-dashboard?gender=${gender}`);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data: student, error } = await supabase
@@ -688,7 +745,13 @@ const StudentLogin = () => {
                 </Button>
               </form>
             ) : (
-              <div className="space-y-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-8">
+                  <TabsTrigger value="login" className="font-bold">Login</TabsTrigger>
+                  <TabsTrigger value="register" className="font-bold">Register</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="login" className="space-y-6">
                   <div className="flex items-center justify-between border-b-2 border-primary/10 pb-4">
                     <h2 className={`text-xl font-bold ${genderColor} flex items-center gap-2`}>
                       <LogIn className="w-5 h-5" />
@@ -744,49 +807,306 @@ const StudentLogin = () => {
                       Forgot Password?
                     </button>
                   </form>
+                </TabsContent>
 
-                  {/* Forgot Password Modal */}
-                  {showForgotPassword && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                      <Card className="w-full max-w-md">
-                        <CardHeader>
-                          <CardTitle>Forgot Password</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <form onSubmit={handleForgotPassword} className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Email Address</Label>
-                              <Input
-                                type="email"
-                                placeholder="Enter your registered email"
-                                value={forgotPasswordData.email}
-                                onChange={(e) => setForgotPasswordData({ email: e.target.value.toLowerCase() })}
-                                className="h-12"
-                              />
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              A password reset link will be sent to your registered email address.
-                            </p>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => setShowForgotPassword(false)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button type="submit" className="flex-1" disabled={isSendingReset}>
-                                {isSendingReset ? "Sending..." : "Send Reset Link"}
-                              </Button>
-                            </div>
-                          </form>
-                        </CardContent>
-                      </Card>
+                <TabsContent value="register" className="space-y-6">
+                  <div className="flex items-center justify-between border-b-2 border-primary/10 pb-4">
+                    <h2 className={`text-xl font-bold ${genderColor} flex items-center gap-2`}>
+                      <UserPlus className="w-5 h-5" />
+                      Create Account
+                    </h2>
+                    <div className="bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
+                      New Student
                     </div>
-                  )}
-              </div>
-            )}
+                  </div>
+
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    {/* Photo Upload */}
+                    <div className="flex flex-col items-center space-y-2 pb-4">
+                      <div className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center overflow-hidden bg-muted">
+                        {photoPreview ? (
+                          <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <Camera className="w-8 h-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                        id="photo-upload"
+                      />
+                      <label htmlFor="photo-upload">
+                        <Button type="button" variant="outline" size="sm" asChild>
+                          <span>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Photo
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="regRollNumber">Roll Number *</Label>
+                        <Input
+                          id="regRollNumber"
+                          placeholder="e.g. 21GK1A0501"
+                          value={registerData.rollNumber}
+                          onChange={(e) => setRegisterData({ ...registerData, rollNumber: e.target.value.toUpperCase() })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="studentName">Student Name *</Label>
+                        <Input
+                          id="studentName"
+                          placeholder="Full Name"
+                          value={registerData.studentName}
+                          onChange={(e) => setRegisterData({ ...registerData, studentName: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="branch">Branch *</Label>
+                        <Select onValueChange={(value) => setRegisterData({ ...registerData, branch: value })} value={registerData.branch}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Branch" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {branches.map((b) => (
+                              <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="year">Year *</Label>
+                        <Select onValueChange={(value) => setRegisterData({ ...registerData, year: value })} value={registerData.year}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {years.map((y) => (
+                              <SelectItem key={y} value={y}>{y}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="email@example.com"
+                        value={registerData.email}
+                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="floorNumber">Floor *</Label>
+                        <Select onValueChange={(value) => setRegisterData({ ...registerData, floorNumber: value })} value={registerData.floorNumber}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Floor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {floors.map((f) => (
+                              <SelectItem key={f} value={f}>Floor {f}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="blockType">Block Type *</Label>
+                        <Select onValueChange={(value) => setRegisterData({ ...registerData, hostelBlockType: value })} value={registerData.hostelBlockType}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Block Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ac">AC Block</SelectItem>
+                            <SelectItem value="non-ac">Non-AC Block</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="roomNumber">Preferred Room *</Label>
+                      <Select 
+                        onValueChange={(value) => setRegisterData({ ...registerData, roomNumber: value })} 
+                        value={registerData.roomNumber}
+                        disabled={!registerData.floorNumber || !registerData.hostelBlockType}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={availableRooms.length > 0 ? "Choose available room" : "No rooms available"} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {availableRooms.map((r) => (
+                            <SelectItem key={r.room_number} value={r.room_number}>
+                              Room {r.room_number} ({r.total_beds - (r.occupied_beds || 0)} left)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {availableRooms.length === 0 && (registerData.floorNumber && registerData.hostelBlockType) && (
+                        <p className="text-[10px] text-destructive font-bold italic">No availability in selected floor/block</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between h-5">
+                          <Label htmlFor="regPassword">Password *</Label>
+                          <button
+                            type="button"
+                            onClick={generateStrongPassword}
+                            className="text-[10px] flex items-center gap-1 text-primary hover:text-primary/80 font-bold transition-colors"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            Suggest Strong
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <Input
+                            id="regPassword"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Min 6 characters"
+                            value={registerData.password}
+                            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                            className="h-11 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between h-5">
+                          <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                        </div>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Match password"
+                            value={registerData.confirmPassword}
+                            onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                            className="h-11 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Password Strength Indicator - Moved below grid to keep layout balanced */}
+                    {registerData.password && (
+                      <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-300 mt-2 p-3 bg-muted/30 rounded-lg border border-primary/5">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="flex items-center gap-1 font-medium text-muted-foreground">
+                            <ShieldCheck className="w-3 h-3" />
+                            Security Strength: 
+                            <span className={
+                              strength.label === "Low" ? "text-destructive" : 
+                              strength.label === "Medium" ? "text-yellow-600" : "text-green-600"
+                            }>
+                              {strength.label}
+                            </span>
+                          </span>
+                          <span className="text-muted-foreground font-bold">{strength.score}% Secure</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${strength.color} transition-all duration-500 ease-out`}
+                            style={{ width: `${strength.score}%` }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="flex items-center gap-1 text-[9px]">
+                                {registerData.password.length >= 8 ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                                <span className={registerData.password.length >= 8 ? "text-green-600" : "text-muted-foreground"}>8+ Chars</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[9px]">
+                                {/[A-Z]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                                <span className={/[A-Z]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Uppercase</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[9px]">
+                                {/[0-9]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                                <span className={/[0-9]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Numbers</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[9px]">
+                                {/[^A-Za-z0-9]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                                <span className={/[^A-Za-z0-9]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Symbols</span>
+                            </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button type="submit" variant="hero" size="lg" className="w-full mt-4" disabled={isLoading || isUploadingPhoto}>
+                      {isLoading ? "Creating Account..." : "Register Now"}
+                    </Button>
+                  </form>
+                </TabsContent>
+
+                {/* Forgot Password Modal */}
+                {showForgotPassword && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-md">
+                      <CardHeader>
+                        <CardTitle>Forgot Password</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input
+                              type="email"
+                              placeholder="Enter your registered email"
+                              value={forgotPasswordData.email}
+                              onChange={(e) => setForgotPasswordData({ email: e.target.value.toLowerCase() })}
+                              className="h-12"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            A password reset link will be sent to your registered email address.
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => setShowForgotPassword(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit" className="flex-1" disabled={isSendingReset}>
+                              {isSendingReset ? "Sending..." : "Send Reset Link"}
+                            </Button>
+                          </div>
+                        </form>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </Tabs>
+            )
+}
           </CardContent>
         </Card>
       </main>

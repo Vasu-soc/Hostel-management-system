@@ -107,43 +107,43 @@ const UpdatesDisplay = () => {
 
         <Card className="relative overflow-hidden border-2 border-primary/20 bg-card/60 backdrop-blur-md shadow-2xl rounded-2xl">
           <CardContent className="p-0">
-            <div className="flex flex-col md:flex-row min-h-[250px]">
+            <div className="flex flex-col md:flex-row min-h-[220px] sm:min-h-[250px]">
               {/* Image Section */}
               {currentUpdate.image_url && (
-                <div className="md:w-1/3 relative h-48 md:h-auto overflow-hidden">
+                <div className="md:w-1/3 relative h-40 sm:h-48 md:h-auto overflow-hidden">
                   <img
                     key={currentUpdate.id + "_img"}
                     src={currentUpdate.image_url}
                     alt={currentUpdate.title}
                     className="w-full h-full object-cover animate-in fade-in scale-in duration-300"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/40 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/60 md:from-black/40 to-transparent"></div>
                 </div>
               )}
 
               {/* Content Section */}
-              <div className={`flex-1 p-6 md:p-8 flex flex-col justify-center ${!currentUpdate.image_url ? 'md:items-center text-center' : ''}`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="default" className="bg-primary/90 text-white animate-pulse">
-                    <Megaphone className="w-3 h-3 mr-1" />
+              <div className={`flex-1 p-5 sm:p-6 md:p-8 flex flex-col justify-center ${!currentUpdate.image_url ? 'md:items-center text-center' : ''}`}>
+                <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
+                  <Badge variant="default" className="bg-primary px-2 py-0 h-5 text-[9px] sm:text-[10px] text-white animate-pulse font-black italic">
+                    <Megaphone className="w-2.5 h-2.5 mr-1" />
                     NEW UPDATE
                   </Badge>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-                    <Calendar className="w-3 h-3" />
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-bold italic">
+                    <Calendar className="w-2.5 h-2.5" />
                     {new Date(currentUpdate.created_at).toLocaleDateString()}
                   </div>
                 </div>
 
                 <h3
                   key={currentUpdate.id + "_h3"}
-                  className="text-2xl md:text-3xl font-black text-foreground mb-4 leading-tight animate-in slide-in-from-left-4 duration-300"
+                  className="text-lg sm:text-2xl md:text-3xl font-black text-foreground mb-2 sm:mb-4 leading-tight animate-in slide-in-from-left-4 duration-300 tracking-tighter"
                 >
                   {currentUpdate.title}
                 </h3>
 
                 <p
                   key={currentUpdate.id + "_p"}
-                  className="text-muted-foreground text-sm md:text-base line-clamp-3 mb-6 animate-in slide-in-from-left-6 duration-300"
+                  className="text-muted-foreground text-sm md:text-base mb-6 animate-in slide-in-from-left-6 duration-300 max-h-48 overflow-y-auto pr-2 scrollbar-none"
                 >
                   {currentUpdate.content}
                 </p>
@@ -157,29 +157,29 @@ const UpdatesDisplay = () => {
 
               {/* Navigation Controls */}
               {updates.length > 1 && (
-                <div className="absolute bottom-4 right-4 flex gap-2">
+                <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 flex gap-1.5 sm:gap-2">
                   <button
                     onClick={prevUpdate}
-                    className="p-2 rounded-full bg-background/50 backdrop-blur-md border border-border hover:bg-primary hover:text-white transition-all shadow-sm"
+                    className="p-1.5 sm:p-2 rounded-full bg-background/50 backdrop-blur-md border border-border hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={nextUpdate}
-                    className="p-2 rounded-full bg-background/50 backdrop-blur-md border border-border hover:bg-primary hover:text-white transition-all shadow-sm"
+                    className="p-1.5 sm:p-2 rounded-full bg-background/50 backdrop-blur-md border border-border hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               )}
 
               {/* Pagination Dots */}
               {updates.length > 1 && (
-                <div className="absolute top-4 right-4 flex gap-1">
+                <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-1">
                   {updates.map((_, i) => (
                     <div
                       key={i}
-                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-4 bg-primary' : 'bg-primary/20'}`}
+                      className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-3 sm:w-4 bg-primary' : 'w-1 sm:w-1.5 bg-primary/20'}`}
                     ></div>
                   ))}
                 </div>

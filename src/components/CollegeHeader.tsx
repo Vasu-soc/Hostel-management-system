@@ -172,23 +172,20 @@ const CollegeHeader = () => {
                         <Pill className="w-4 h-4 text-accent" />
                         <h4 className="font-bold text-xs uppercase tracking-wider text-accent">Current Stock</h4>
                       </div>
-                      {medicines.length > 0 ? (
+                      {medicines.filter(med => med.is_available).length > 0 ? (
                         <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto pr-2 scrollbar-none">
-                          {medicines.map((med) => (
+                          {medicines.filter(med => med.is_available).map((med) => (
                             <div key={med.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-primary/5">
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">{med.icon || "💊"}</span>
                                 <span className="text-xs font-bold text-foreground">{med.name}</span>
                               </div>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${med.quantity > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
-                                {med.quantity > 0 ? `QTY: ${med.quantity}` : "OUT"}
-                              </span>
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div className="text-center py-4">
-                          <p className="text-[10px] font-bold text-muted-foreground italic">No data available</p>
+                          <p className="text-[10px] font-bold text-muted-foreground italic">No medicines available currently</p>
                         </div>
                       )}
                     </div>
@@ -243,7 +240,7 @@ const CollegeHeader = () => {
                   </SheetHeader>
 
                   <div className="p-6">
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="grid grid-cols-1 gap-3">
                         {loginOptions.map((option) => (
                           <Link
@@ -267,6 +264,51 @@ const CollegeHeader = () => {
                             </div>
                           </Link>
                         ))}
+                      </div>
+
+                      {/* Mobile Only: Choose Logins & Medicine */}
+                      <div className="md:hidden space-y-6 pt-4 border-t border-primary/10">
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 italic">
+                            <LogIn className="w-3 h-3" />
+                            Registered Portals
+                          </h4>
+                          <div className="grid grid-cols-1 gap-2">
+                             {navigationLogins.map((login) => (
+                               <Link 
+                                 key={login.path} 
+                                 to={login.path} 
+                                 onClick={() => setMenuOpen(false)}
+                                 className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all"
+                               >
+                                 <login.icon className={`w-4 h-4 ${login.color}`} />
+                                 <span className="font-bold text-sm tracking-tight">{login.label}</span>
+                               </Link>
+                             ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-2 italic">
+                            <Pill className="w-3 h-3" />
+                            Medicine Stock
+                          </h4>
+                          <div className="bg-muted/30 rounded-2xl p-4 border border-primary/5">                          {medicines.filter(med => med.is_available).length > 0 ? (
+                            <div className="grid grid-cols-2 gap-2">
+                              {medicines.filter(med => med.is_available).slice(0, 6).map((med) => (
+                                <div key={med.id} className="flex flex-col p-2 rounded-lg bg-card/50 border border-primary/5">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm">{med.icon || "💊"}</span>
+                                    <span className="text-[10px] font-bold truncate">{med.name}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-center text-muted-foreground italic">No medicines available currently</p>
+                          )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

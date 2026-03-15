@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,12 +28,18 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Building2, ArrowLeft, User, IndianRupee, Save, UserCheck, AlertTriangle, ShieldAlert, Trash2, Loader2 } from "lucide-react";
+import { 
+  ArrowLeft, User, IndianRupee, Loader2, 
+  Users, DoorOpen, ShieldCheck, Megaphone, Wallet, 
+  TrendingUp, CheckCircle2, ChevronRight, Search, 
+  Trash2, BarChart3, XCircle, Info, Activity
+} from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
 import WardenApproval from "@/components/admin/WardenApproval";
 import UpdatesManagement from "@/components/UpdatesManagement";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Admin {
   id: string;
@@ -67,15 +72,6 @@ interface Room {
   pending_beds: number;
 }
 
-interface RoomStats {
-  room_number: string;
-  floor_number: string;
-  ac_type: string;
-  total_beds: number;
-  actualOccupied: number;
-  actualPending: number;
-}
-
 const branches = ["CSE", "MECH", "CIVIL", "AIML", "AIDS", "ECE", "EEE", "DS", "IT"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
@@ -88,13 +84,10 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [showStudents, setShowStudents] = useState(false);
-  const [showPendingRooms, setShowPendingRooms] = useState(false);
-  const [showWardenCredentials, setShowWardenCredentials] = useState(false);
-  const [showUpdates, setShowUpdates] = useState(false);
+  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "updates">("dashboard");
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Fee update dialog
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
   const [feeData, setFeeData] = useState({
@@ -103,7 +96,14 @@ const AdminDashboard = () => {
     new_payment: 0,
   });
   const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
-  const [isTransitioningYear, setIsTransitioningYear] = useState(false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsHeaderCollapsed(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const session = getAdminSession();
@@ -115,7 +115,6 @@ const AdminDashboard = () => {
     fetchRooms();
     fetchAllStudents();
 
-    // Real-time subscriptions
     const channel = supabase
       .channel("admin-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, fetchRooms)
@@ -130,109 +129,52 @@ const AdminDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [navigate, selectedBranch, selectedYear]);
+  }, [navigate]);
 
   const fetchAllStudents = async () => {
     const { data, error } = await supabase.from("students").select("*");
-    const deletedIds: string[] = []; // Local blocklist not supported on Vercel yet
-
-    if (!error && data) {
-      const activeStudents = (data as Student[]).filter(student => !deletedIds.includes(student.id));
-      setAllStudents(activeStudents);
-    }
+    if (!error && data) setAllStudents(data as Student[]);
   };
 
-  // Calculate actual occupied counts from students
   const getActualOccupied = (roomNumber: string) => {
-    // Count both allotted and blocked students for room occupancy
     return allStudents.filter(s => s.hostel_room_number === roomNumber).length;
   };
 
   const fetchRooms = async () => {
     const { data, error } = await supabase.from("rooms").select("*").order("room_number");
-    if (error) {
-      console.error("Error fetching rooms:", error);
-      return;
-    }
-    setRooms((data || []) as Room[]);
+    if (!error) setRooms((data || []) as Room[]);
   };
 
   const fetchStudentsData = async (branch: string, year: string) => {
-    // Map display year to stored year format
-    const yearMapping: Record<string, string> = {
-      "1st Year": "1st Year",
-      "2nd Year": "2nd Year",
-      "3rd Year": "3rd Year",
-      "4th Year": "4th Year",
-    };
-    const dbYear = yearMapping[year] || year;
-
     const { data, error } = await supabase
       .from("students")
       .select("*")
       .ilike("branch", branch)
-      .eq("year", dbYear);
-    const deletedIds: string[] = [];
-
-    if (error) {
-      console.error("Error fetching students:", error);
-      return;
-    }
-
-    const activeStudents = (data as Student[] || []).filter(student => !deletedIds.includes(student.id));
-    setStudents(activeStudents);
+      .eq("year", year);
+    if (!error) setStudents((data as Student[]) || []);
   };
 
   const fetchStudents = async () => {
     if (!selectedBranch || !selectedYear) return;
-
     setIsLoading(true);
     await fetchStudentsData(selectedBranch, selectedYear);
-    setShowStudents(true);
-    setShowPendingRooms(false);
-    setShowUpdates(false);
-    setShowWardenCredentials(false);
+    setActiveView("students");
     setIsLoading(false);
   };
 
-  const handleUpdateFee = async () => {
-    if (!selectedStudent) return;
+  const stats = useMemo(() => {
+    const totalCollection = allStudents.reduce((sum, s) => sum + (s.paid_fee || 0), 0);
+    const totalBeds = rooms.reduce((sum, r) => sum + r.total_beds, 0);
+    const occupiedBeds = rooms.reduce((sum, r) => sum + getActualOccupied(r.room_number), 0);
+    return {
+      totalStudents: allStudents.length,
+      totalCollection,
+      occupancyRate: totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0,
+    };
+  }, [allStudents, rooms]);
 
-    const newPending = Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment));
-
-    const { error } = await supabase
-      .from("students")
-      .update({
-        total_fee: feeData.total_fee,
-        paid_fee: feeData.paid_fee + feeData.new_payment,
-        pending_fee: newPending,
-      })
-      .eq("id", selectedStudent.id);
-
-    if (error) {
-      toast({ title: "Error", description: "Failed to update fee", variant: "destructive" });
-      logger.error("fee_update", selectedStudent.roll_number, "failure");
-      return;
-    }
-
-    logger.info("fee_update", selectedStudent.roll_number, "success");
-
-    if (feeData.new_payment > 0) {
-      await supabase.from("fee_transactions").insert({
-        student_id: selectedStudent.id,
-        amount: feeData.new_payment,
-        remarks: `Fee payment added by Admin`,
-        academic_year: selectedStudent.year,
-      });
-    }
-
-    toast({ title: "Success", description: "Fee details updated successfully" });
-    setFeeDialogOpen(false);
-    setSelectedStudent(null);
-    if (selectedBranch && selectedYear) {
-      fetchStudentsData(selectedBranch, selectedYear);
-    }
-  };
+  const acRooms = useMemo(() => rooms.filter(r => r.ac_type === "ac"), [rooms]);
+  const normalRooms = useMemo(() => rooms.filter(r => r.ac_type === "normal"), [rooms]);
 
   const fetchStudentTransactions = async (studentId: string) => {
     const { data } = await supabase
@@ -243,659 +185,372 @@ const AdminDashboard = () => {
     setStudentTransactions(data || []);
   };
 
-  const handleMoveToNextYear = async (skipConfirm = false) => {
+  const handleUpdateFee = async () => {
     if (!selectedStudent) return;
+    const newPending = Math.max(0, feeData.total_fee - (feeData.paid_fee + feeData.new_payment));
+    const { error } = await supabase.from("students").update({
+      total_fee: feeData.total_fee,
+      paid_fee: feeData.paid_fee + feeData.new_payment,
+      pending_fee: newPending,
+    }).eq("id", selectedStudent.id);
 
-    const currentYear = selectedStudent.year;
-    const yearNumber = parseInt(currentYear) || 1;
-    if (yearNumber >= 4) {
-      toast({ title: "Note", description: "Student is already in the final year." });
-      return;
+    if (!error && feeData.new_payment > 0) {
+      await supabase.from("fee_transactions").insert({
+        student_id: selectedStudent.id,
+        amount: feeData.new_payment,
+        remarks: `Updated by Admin`,
+        academic_year: selectedStudent.year,
+      });
     }
-
-    const getYearSuffix = (n: number) => {
-      if (n === 1) return "st";
-      if (n === 2) return "nd";
-      if (n === 3) return "rd";
-      return "th";
-    };
-
-    const nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
-
-    if (!skipConfirm && !confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
-
-    setIsTransitioningYear(true);
-    try {
-      const { error } = await supabase
-        .from("students")
-        .update({
-          year: nextYear,
-          paid_fee: 0,
-          pending_fee: selectedStudent.total_fee || 100000,
-          total_fee: selectedStudent.total_fee || 100000,
-        })
-        .eq("id", selectedStudent.id);
-
-      if (error) throw error;
-
-      toast({ title: "Success", description: `Moved to ${nextYear} successfully!` });
-      setFeeDialogOpen(false);
-      fetchAllStudents();
-      if (selectedBranch && selectedYear) {
-        fetchStudentsData(selectedBranch, selectedYear);
-      }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsTransitioningYear(false);
-    }
-  };
-
-  const openFeeDialog = (student: Student) => {
-    setSelectedStudent(student);
-    setFeeData({
-      total_fee: student.total_fee || 100000,
-      paid_fee: student.paid_fee || 0,
-      new_payment: 0,
-    });
-    setFeeDialogOpen(true);
-    fetchStudentTransactions(student.id);
+    toast({ title: "Updated", description: "Records synchronized" });
+    setFeeDialogOpen(false);
+    fetchAllStudents();
   };
 
   const handleResetSystem = async () => {
-    const confirm1 = confirm("⚠️ CRITICAL WARNING: This will permanently DELETE ALL student records, applications, gate passes, and issue reports. This action CANNOT be undone. Are you absolutely sure?");
-    if (!confirm1) return;
-
-    const confirm2 = confirm("FINAL CONFIRMATION: You are about to wipe the entire student database. All registrations will be lost. Proceed?");
-    if (!confirm2) return;
-
+    if (!confirm("Erase all application data?")) return;
     setIsLoading(true);
     try {
-      // 1. Fetch all students to forcibly delete them via RPC to bypass any RLS protections
-      const { data: existingStudents } = await supabase.from("students").select("id, roll_number");
-
-      if (existingStudents && existingStudents.length > 0) {
-        toast({ title: "Working...", description: `Deleting ${existingStudents.length} student records...` });
-
-        await Promise.all(existingStudents.map(student =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any).rpc('delete_student_complete', {
-            p_student_id: student.id,
-            p_roll_number: student.roll_number
-          })
-        ));
-      }
-
-      // 2. Clear remaining Supabase Tables (Order matters for FKs if any)
-      const tables = [
-        "gate_passes",
-        "electrical_issues",
-        "food_issues",
-        "medical_alerts",
-        "parents",
-        "hostel_applications",
-        // students table is already wiped by the RPC above, but keep it here as a fallback
-        "students"
-      ];
-
-      for (const table of tables) {
-        const { error } = await supabase.from(table as any).delete().neq("id", "00000000-0000-0000-0000-000000000000"); // Standard way to delete all
-        if (error) console.error(`Error clearing ${table}:`, error);
-      }
-
-      // 2. Clear Local JSON files (Not applicable on Vercel)
-      try {
-        await Promise.all([
-          // These are placeholder calls that might fail gracefully or be removed
-          supabase.from("food_selections").delete().neq("id", "00000000-0000-0000-0000-000000000000")
-        ]);
-      } catch (e) {
-        console.warn("Local cleanup skipped", e);
-      }
-
-      toast({
-        title: "System Reset Successful",
-        description: "All student data has been wiped. You can now start new registrations.",
-      });
-      logger.info("system_reset", admin.username, "success");
-
-      // Refresh data
+      const { data: st } = await supabase.from("students").select("id, roll_number");
+      if (st) await Promise.all(st.map(s => (supabase as any).rpc('delete_student_complete', { p_student_id: s.id, p_roll_number: s.roll_number })));
+      toast({ title: "System Wiped" });
       fetchAllStudents();
-      setStudents([]);
-      setShowStudents(false);
-
-      // Update room occupied counts to 0 optimistically
-      const { error: roomError } = await supabase.from("rooms").update({ occupied_beds: 0, pending_beds: 0 }).neq("id", "00000000-0000-0000-0000-000000000000");
-      if (!roomError) fetchRooms();
-
-    } catch (error: any) {
-      logger.error("system_reset", admin.username, "failure");
-      toast({
-        title: "Reset Failed",
-        description: error.message || "An error occurred during system reset",
-        variant: "destructive"
-      });
+      setActiveView("dashboard");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
-    if (admin) {
-      logger.info("admin_logout", admin.username, "success");
-    }
     clearAdminSession();
     navigate("/admin-login");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out",
-    });
   };
 
-  const acRooms = rooms.filter((r) => r.ac_type === "ac");
-  const normalRooms = rooms.filter((r) => r.ac_type === "normal");
-
-  if (!admin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  const filteredStudents = students.filter(s => 
+    s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    s.roll_number.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* College Header */}
-      <CollegeHeader />
-
-      {/* Enhanced Top Bar */}
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7] transition-colors duration-700 overflow-x-hidden">
+      {/* Draggable College Header Section */}
+      <div className="relative z-[100]">
+        <motion.div
+          initial={false}
+          animate={{ y: isHeaderCollapsed ? "-100%" : "0%" }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="fixed top-0 left-0 right-0 z-[110] bg-background shadow-xl"
+        >
+          <CollegeHeader />
+        </motion.div>
+        
+        {/* Spacer to prevent content jump when header is fixed */}
+        <div className="h-[auto]" style={{ display: isHeaderCollapsed ? 'none' : 'block' }}>
+           <div className="invisible"><CollegeHeader /></div>
+        </div>
+      </div>
+      
       <DashboardHeader
-        title="Admin Home Page"
-        titleColor="text-primary"
-        userName={admin.name}
-        userSubtitle="Administrator"
+        title="Admin"
+        userName={admin?.name || "Admin"}
+        userSubtitle={<Badge variant="secondary" className="rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0">Primary Domain</Badge>}
         onLogout={handleLogout}
         showPhoto={false}
+        stickyOffset="top-0"
       />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {!showStudents && !showPendingRooms && !showWardenCredentials && (
-          <div className="max-w-4xl mx-auto">
-            <Card className="border-2 border-border">
-              <CardHeader>
-                <CardTitle className="text-xl">Admin Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Choose Branch</label>
-                    <Select
-                      value={selectedBranch}
-                      onValueChange={setSelectedBranch}
-                    >
-                      <SelectTrigger className="h-12 bg-background">
-                        <SelectValue placeholder="Select Branch..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-2 border-border z-50">
-                        {branches.map((branch) => (
-                          <SelectItem key={branch} value={branch}>
-                            {branch}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Choose Year</label>
-                    <Select value={selectedYear} onValueChange={setSelectedYear}>
-                      <SelectTrigger className="h-12 bg-background">
-                        <SelectValue placeholder="Select Year..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-2 border-border z-50">
-                        {years.map((year) => (
-                          <SelectItem key={year} value={year}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button
-                    onClick={fetchStudents}
-                    disabled={!selectedBranch || !selectedYear || isLoading}
-                    className="h-12"
-                  >
-                    View Students
-                  </Button>
-                </div>
-
-                <div className="border-t border-border pt-6 flex flex-wrap gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowPendingRooms(true);
-                      setShowStudents(false);
-                      setShowWardenCredentials(false);
-                      setShowUpdates(false);
-                    }}
-                    className="h-12"
-                  >
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Pending Rooms (AC / Normal)
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowWardenCredentials(true);
-                      setShowStudents(false);
-                      setShowPendingRooms(false);
-                      setShowUpdates(false);
-                    }}
-                    className="h-12"
-                  >
-                    <UserCheck className="w-4 h-4 mr-2" />
-                    Warden Approvals
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowUpdates(true);
-                      setShowWardenCredentials(false);
-                      setShowStudents(false);
-                      setShowPendingRooms(false);
-                    }}
-                    className="h-12 border-primary/30 text-primary hover:bg-primary/5 shadow-sm"
-                  >
-                    <Bell className="w-4 h-4 mr-2" />
-                    Manage Updates
-                  </Button>
-                </div>
-
-                {/* Master Reset Section */}
-                <div className="pt-8 mt-8 border-t border-destructive/20 bg-destructive/5 -mx-6 px-6 pb-6 rounded-b-lg">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-destructive/10 rounded-full text-destructive">
-                      <ShieldAlert className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-destructive flex items-center gap-2">
-                        Master Data Reset
-                      </h3>
-                      <p className="text-sm text-destructive/70 mb-4">
-                        Wipe all student-related data (registrations, applications, gate passes, fees) to start a completely fresh session. Use with extreme caution.
-                      </p>
-                      <Button
-                        variant="destructive"
-                        onClick={handleResetSystem}
-                        disabled={isLoading}
-                        className="bg-destructive hover:bg-destructive/90 text-white shadow-lg"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Reset All Student Data
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Students View */}
-        {showStudents && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowStudents(false)}
+      {/* Floating Segmented Control */}
+      <div className={`sticky ${isHeaderCollapsed ? "top-[72px]" : "top-[84px]"} z-30 w-full py-4 px-4 bg-background/50 backdrop-blur-3xl border-b border-black/[0.05] dark:border-white/[0.05] transition-all duration-500`}>
+        <div className="container mx-auto flex justify-center">
+          <div className="flex bg-[#EEEEEF] dark:bg-[#1D1D1F] p-1 rounded-[1.25rem] shadow-inner transition-colors">
+            {[
+              { id: "dashboard", label: "Stats", icon: BarChart3 },
+              { id: "students", label: "People", icon: Users },
+              { id: "rooms", label: "Rooms", icon: DoorOpen },
+              { id: "wardens", label: "Security", icon: ShieldCheck },
+              { id: "updates", label: "News", icon: Megaphone }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id as any)}
+                className={`relative flex items-center gap-2 px-5 py-2 rounded-[1rem] text-sm font-semibold transition-all duration-500 ${
+                  activeView === tab.id 
+                  ? "bg-white dark:bg-[#3A3A3C] text-foreground shadow-lg shadow-black/5" 
+                  : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <h2 className="text-2xl font-bold text-foreground">
-                {selectedBranch} STUDENTS – {selectedYear} YEAR
-              </h2>
-            </div>
+                <tab.icon className={`w-4 h-4 ${activeView === tab.id ? "text-primary transition-colors" : ""}`} />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            {students.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  No students found for {selectedBranch} - {selectedYear}
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {students.map((student) => (
-                  <Card key={student.id} className="border-2 border-border hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center gap-3">
-                        {student.photo_url ? (
-                          <img
-                            src={student.photo_url}
-                            alt={student.student_name}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-primary"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="w-6 h-6 text-primary" />
-                          </div>
-                        )}
-                        <div>
-                          <CardTitle className="text-base">{student.student_name}</CardTitle>
-                          <p className="text-xs text-muted-foreground">{student.roll_number}</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="text-muted-foreground text-xs">Branch</p>
-                          <p className="font-medium">{student.branch?.toUpperCase()}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs">Year</p>
-                          <p className="font-medium">{student.year}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs">Gender</p>
-                          <p className="font-medium capitalize">{student.gender}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs">Room</p>
-                          <p className={`font-medium ${student.room_allotted ? "text-success" : "text-muted-foreground"}`}>
-                            {student.hostel_room_number || "Not Assigned"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-border">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">Fee Status</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => openFeeDialog(student)}
-                          >
-                            <IndianRupee className="w-3 h-3 mr-1" />
-                            Update
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="p-2 bg-muted/50 rounded">
-                            <p className="text-xs text-muted-foreground">Total</p>
-                            <p className="font-medium text-sm">₹{(student.total_fee || 100000).toLocaleString()}</p>
-                          </div>
-                          <div className="p-2 bg-success/10 rounded">
-                            <p className="text-xs text-success">Paid</p>
-                            <p className="font-medium text-sm text-success">₹{(student.paid_fee || 0).toLocaleString()}</p>
-                          </div>
-                          <div className="p-2 bg-destructive/10 rounded">
-                            <p className="text-xs text-destructive">Pending</p>
-                            <p className="font-medium text-sm text-destructive">₹{Math.max(0, student.pending_fee || (student.total_fee || 100000) - (student.paid_fee || 0)).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
+      <main className="container mx-auto px-4 py-10">
+        <AnimatePresence mode="wait">
+          {activeView === "dashboard" && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="space-y-12"
+            >
+              {/* Ultra Clean Insight Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  { label: "Residents", value: stats.totalStudents, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+                  { label: "Assets", value: `₹${stats.totalCollection.toLocaleString()}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10" },
+                  { label: "Occupancy", value: `${stats.occupancyRate}%`, icon: TrendingUp, color: "text-orange-500", bg: "bg-orange-500/10" }
+                ].map((item, idx) => (
+                  <Card key={idx} className="group relative rounded-[2.5rem] border-0 bg-white dark:bg-[#1C1C1E] p-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all">
+                    <div className={`w-14 h-14 ${item.bg} rounded-2xl flex items-center justify-center mb-6`}>
+                      <item.icon className={`w-6 h-6 ${item.color}`} />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground tracking-tight">{item.label}</p>
+                    <h3 className="text-5xl font-bold tracking-tighter mt-1">{item.value}</h3>
                   </Card>
                 ))}
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Pending Rooms View */}
-        {showPendingRooms && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowPendingRooms(false)}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <h2 className="text-2xl font-bold text-foreground">
-                Pending Room Details
-              </h2>
-            </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Clean ios Select Module */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 px-4">
+                    <h2 className="text-2xl font-bold">Query Engine</h2>
+                  </div>
+                  <Card className="rounded-[2.5rem] border-0 bg-white dark:bg-[#1C1C1E] p-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] dark:shadow-none">
+                     <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground pl-1">Branch</label>
+                              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                                <SelectTrigger className="h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0 text-md font-semibold"><SelectValue placeholder="Branch" /></SelectTrigger>
+                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                  {branches.map(b => <SelectItem key={b} value={b} className="rounded-xl font-medium">{b}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                           </div>
+                           <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground pl-1">Year</label>
+                              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                <SelectTrigger className="h-14 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0 text-md font-semibold"><SelectValue placeholder="Year" /></SelectTrigger>
+                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                  {years.map(y => <SelectItem key={y} value={y} className="rounded-xl font-medium">{y}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                           </div>
+                        </div>
+                        <Button onClick={fetchStudents} disabled={!selectedBranch || !selectedYear || isLoading} className="w-full h-16 rounded-[1.5rem] text-lg font-bold bg-[#0071E3] hover:bg-[#0077ED] transition-all shadow-xl shadow-blue-500/20">
+                          {isLoading ? <Loader2 className="animate-spin" /> : "Sync Database"}
+                        </Button>
+                     </div>
+                  </Card>
+                </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* AC Block */}
-              <Card className="border-2 border-border">
-                <CardHeader className="bg-primary/10 border-b border-border">
-                  <CardTitle className="text-lg">AC Block</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Floor</TableHead>
-                        <TableHead>Room No</TableHead>
-                        <TableHead>Total Beds</TableHead>
-                        <TableHead>Total Occupied</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {acRooms.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                            No AC rooms available
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        acRooms.map((room) => (
-                          <TableRow key={room.id}>
-                            <TableCell>{room.floor_number}</TableCell>
-                            <TableCell>{room.room_number}</TableCell>
-                            <TableCell>{room.total_beds}</TableCell>
-                            <TableCell>{getActualOccupied(room.room_number)}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                {/* Maintenance Section */}
+                <div className="space-y-6">
+                   <h2 className="text-2xl font-bold px-4">Maintenance</h2>
+                   <div className="space-y-4">
+                      {/* Swipeable like button UI */}
+                      <button onClick={handleResetSystem} className="w-full group rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-10 flex items-center justify-between shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] dark:shadow-none transition-all hover:scale-[1.01]">
+                         <div className="flex items-center gap-6">
+                            <div className="w-14 h-14 rounded-3xl bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
+                               <Trash2 className="w-6 h-6 text-red-500" />
+                            </div>
+                            <div className="text-left">
+                               <h4 className="text-xl font-bold">Wipe System Memory</h4>
+                               <p className="text-sm text-muted-foreground">Permanent erasure of indices</p>
+                            </div>
+                         </div>
+                         <ChevronRight className="w-6 h-6 text-muted-foreground/30 transition-transform group-hover:translate-x-2" />
+                      </button>
 
-              {/* Normal Block */}
-              <Card className="border-2 border-border">
-                <CardHeader className="bg-secondary/10 border-b border-border">
-                  <CardTitle className="text-lg">Normal Block</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Floor</TableHead>
-                        <TableHead>Room No</TableHead>
-                        <TableHead>Total Beds</TableHead>
-                        <TableHead>Total Occupied</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {normalRooms.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                            No Normal rooms available
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        normalRooms.map((room) => (
-                          <TableRow key={room.id}>
-                            <TableCell>{room.floor_number}</TableCell>
-                            <TableCell>{room.room_number}</TableCell>
-                            <TableCell>{room.total_beds}</TableCell>
-                            <TableCell>{getActualOccupied(room.room_number)}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
+                      <div className="rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] dark:shadow-none flex items-center gap-6">
+                          <div className="w-14 h-14 rounded-3xl bg-orange-500/10 flex items-center justify-center">
+                            <Activity className="w-6 h-6 text-orange-500 animate-pulse" />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-bold">System Status</h4>
+                            <p className="text-sm text-muted-foreground">Encryption Level 7 Active</p>
+                          </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-        {/* Warden Approvals View */}
-        {showWardenCredentials && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowWardenCredentials(false)}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <h2 className="text-2xl font-bold text-foreground">
-                Warden Registration Approvals
-              </h2>
-            </div>
+          {activeView === "students" && (
+            <motion.div key="students" className="space-y-10">
+              <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-[#1C1C1E] p-10 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] gap-6">
+                <div className="flex items-center gap-6">
+                  <button onClick={() => setActiveView("dashboard")} className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all">
+                    <ArrowLeft className="w-6 h-6" />
+                  </button>
+                  <div>
+                    <h2 className="text-3xl font-bold tracking-tight">{selectedBranch} <span className="text-[#0071E3]">{selectedYear}</span></h2>
+                    <p className="text-sm text-muted-foreground">{students.length} Records online</p>
+                  </div>
+                </div>
+                <div className="relative w-full md:w-96">
+                   <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                   <Input 
+                    placeholder="Search people..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-14 h-16 rounded-[1.5rem] bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0 text-lg font-medium shadow-inner"
+                   />
+                </div>
+              </div>
 
-            <WardenApproval />
-          </div>
-        )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredStudents.map((student) => (
+                  <Card key={student.id} className="rounded-[2.5rem] border-0 bg-white dark:bg-[#1C1C1E] p-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="relative mb-6">
+                        {student.photo_url ? (
+                          <img src={student.photo_url} className="w-28 h-28 rounded-[2rem] object-cover ring-8 ring-[#F5F5F7] dark:ring-[#2C2C2E]" />
+                        ) : (
+                          <div className="w-28 h-28 rounded-[2rem] bg-[#F5F5F7] dark:bg-[#2C2C2E] flex items-center justify-center text-muted-foreground"><User className="w-12 h-12" /></div>
+                        )}
+                        <div className={`absolute -bottom-2 -right-2 w-10 h-10 rounded-[1.25rem] bg-white dark:bg-[#1C1C1E] flex items-center justify-center shadow-lg`}>
+                           {student.room_allotted ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-red-500" />}
+                        </div>
+                      </div>
+                      
+                      <h4 className="text-2xl font-bold leading-tight tracking-tight">{student.student_name}</h4>
+                      <p className="text-sm font-bold text-[#0071E3] mt-2 uppercase tracking-widest">{student.roll_number}</p>
 
-        {/* Updates Management View */}
-        {showUpdates && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowUpdates(false)}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </div>
-            <div className="animate-in fade-in duration-500">
-              <UpdatesManagement authorName={admin.name} role="admin" />
-            </div>
-          </div>
-        )}
+                      <div className="w-full grid grid-cols-2 gap-4 mt-8">
+                         <div className="p-4 rounded-3xl bg-[#F5F5F7] dark:bg-[#2C2C2E] text-center">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">Spatial</p>
+                            <p className="font-bold text-md">{student.hostel_room_number || "None"}</p>
+                         </div>
+                         <div className="p-4 rounded-3xl bg-[#F5F5F7] dark:bg-[#2C2C2E] text-center">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">Gender</p>
+                            <p className="font-bold text-md uppercase">{student.gender}</p>
+                         </div>
+                      </div>
+
+                      <div className="w-full mt-10 pt-10 border-t border-black/[0.05] dark:border-white/[0.05]">
+                         <div className="flex justify-between items-center mb-6">
+                            <h5 className="font-bold flex items-center gap-2"><Wallet className="w-4 h-4" /> Assets</h5>
+                            <Button size="icon" variant="ghost" className="rounded-full bg-blue-500/10 text-blue-500 w-10 h-10" onClick={() => { setSelectedStudent(student); setFeeData({ total_fee: student.total_fee || 100000, paid_fee: student.paid_fee || 0, new_payment: 0 }); setFeeDialogOpen(true); fetchStudentTransactions(student.id); }}>
+                              <IndianRupee className="w-4 h-4" />
+                            </Button>
+                         </div>
+                         <div className="bg-[#F5F5F7] dark:bg-[#2C2C2E] h-3 rounded-full overflow-hidden shadow-inner mb-2"><div className="h-full bg-green-500" style={{width: `${Math.min(100, ((student.paid_fee || 0) / (student.total_fee || 1)) * 100)}%`}} /></div>
+                         <div className="flex justify-between text-sm font-bold"><span className="text-green-500">Paid: ₹{student.paid_fee?.toLocaleString()}</span><span className="text-red-500">Due: ₹{student.pending_fee?.toLocaleString()}</span></div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {activeView === "rooms" && (
+            <motion.div key="rooms" className="space-y-12">
+              <div className="bg-white dark:bg-[#1C1C1E] p-10 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-6">
+                  <button onClick={() => setActiveView("dashboard")} className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all"><ArrowLeft className="w-6 h-6"/></button>
+                  <h2 className="text-3xl font-bold tracking-tight">Spatial Audit</h2>
+                </div>
+                <div className="flex gap-4">
+                  <Badge className="px-8 py-3 rounded-2xl bg-blue-500/10 text-blue-500 border-0 font-bold">AC: {acRooms.length}</Badge>
+                  <Badge className="px-8 py-3 rounded-2xl bg-orange-500/10 text-orange-500 border-0 font-bold">Standard: {normalRooms.length}</Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {[{ title: "Atmosphere Plus (AC)", color: "text-blue-500", rooms: acRooms }, { title: "Standard Configuration", color: "text-orange-500", rooms: normalRooms }].map((block, i) => (
+                   <div key={i} className="space-y-6">
+                      <h3 className="text-2xl font-bold px-6">{block.title}</h3>
+                      <div className="bg-white dark:bg-[#1C1C1E] rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+                        <Table>
+                          <TableHeader className="bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0"><TableRow className="border-0"><TableHead className="px-10 py-6 font-bold uppercase text-[10px] opacity-60">Room</TableHead><TableHead className="font-bold uppercase text-[10px] opacity-60">Floor</TableHead><TableHead className="text-center font-bold uppercase text-[10px] opacity-60">Status</TableHead></TableRow></TableHeader>
+                          <TableBody>{block.rooms.map(r => (
+                            <TableRow key={r.id} className="border-b border-black/[0.03] dark:border-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                              <TableCell className="px-10 py-6"><span className={`text-2xl font-bold ${block.color}`}>{r.room_number}</span></TableCell>
+                              <TableCell className="font-semibold text-muted-foreground">Floor {r.floor_number}</TableCell>
+                              <TableCell className="text-center font-bold"><span className="inline-flex items-center justify-center w-12 h-12 rounded-[1.25rem] bg-slate-100 dark:bg-[#2C2C2E]">{getActualOccupied(r.room_number)}</span></TableCell>
+                            </TableRow>
+                          ))}</TableBody>
+                        </Table>
+                      </div>
+                   </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {activeView === "wardens" && (
+            <motion.div key="wardens" className="space-y-10">
+               <div className="bg-white dark:bg-[#1C1C1E] p-10 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] flex items-center gap-6">
+                  <button onClick={() => setActiveView("dashboard")} className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all"><ArrowLeft/></button>
+                  <h2 className="text-3xl font-bold tracking-tight">Security Domain</h2>
+               </div>
+               <div className="bg-white/50 dark:bg-black/50 backdrop-blur-3xl rounded-[2.5rem] border border-black/[0.05] p-2 shadow-2xl overflow-hidden"><WardenApproval /></div>
+            </motion.div>
+          )}
+
+          {activeView === "updates" && (
+            <motion.div key="updates" className="space-y-10">
+               <div className="bg-white dark:bg-[#1C1C1E] p-10 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] flex items-center gap-6">
+                  <button onClick={() => setActiveView("dashboard")} className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all"><ArrowLeft/></button>
+                  <h2 className="text-3xl font-bold tracking-tight">Newsroom</h2>
+               </div>
+               <div className="bg-white dark:bg-[#1C1C1E] rounded-[3rem] p-10 shadow-2xl border border-black/[0.02]"><UpdatesManagement authorName={admin?.name || "Admin"} role="admin" /></div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
-      {/* Fee Update Dialog */}
       <Dialog open={feeDialogOpen} onOpenChange={setFeeDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <IndianRupee className="w-5 h-5" />
-              Update Fee Details
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-xl bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl border-0 rounded-[3rem] p-0 overflow-hidden shadow-2xl">
           {selectedStudent && (
-            <div className="space-y-4 pt-4">
-              <div className="p-3 bg-muted rounded-lg flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{selectedStudent.student_name}</p>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.roll_number}</p>
-                </div>
-                <Badge variant="outline" className="font-bold text-primary">
-                  {selectedStudent.year}
-                </Badge>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="totalFee">Total Fee (₹)</Label>
-                <Input
-                  id="totalFee"
-                  type="number"
-                  value={feeData.total_fee}
-                  onChange={(e) => setFeeData({ ...feeData, total_fee: Number(e.target.value) })}
-                  className="h-12 border-2"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Previously Paid (₹)</Label>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {studentTransactions
-                    .filter(tx => tx.academic_year === selectedStudent.year)
-                    .map((tx, idx) => (
-                      <div key={tx.id} className="p-3 bg-background border-2 border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
-                        <span className="font-medium text-xs">
-                          {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : `${idx + 1}th`} payment
-                        </span>
-                        <span className="font-bold text-primary text-sm">₹{tx.amount.toLocaleString()}</span>
-                      </div>
-                    ))}
-
-                  {studentTransactions.filter(tx => tx.academic_year === selectedStudent.year).length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">No payments yet for {selectedStudent.year}.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="newPayment">New Paid Amount (₹)</Label>
-                <Input
-                  id="newPayment"
-                  type="number"
-                  value={feeData.new_payment || ""}
-                  onChange={(e) => setFeeData({ ...feeData, new_payment: Number(e.target.value) })}
-                  placeholder="Enter new payment"
-                  className="h-12 border-2"
-                />
-              </div>
-
-              <div className="p-4 bg-muted/30 rounded-xl border-2 border-border/50">
-                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Calculated Pending Balance</p>
-                {(() => {
-                  const calcPending = feeData.total_fee - feeData.paid_fee - (feeData.new_payment || 0);
-                  return (
-                    <>
-                      <p className={`text-3xl font-black ${calcPending < 0 ? "text-destructive" : calcPending === 0 ? "text-success" : "text-foreground"}`}>
-                        ₹{calcPending.toLocaleString()}
-                      </p>
-                      {calcPending < 0 && (
-                        <p className="text-xs text-destructive mt-1 font-bold">New payment cannot exceed pending balance!</p>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-
-              <div className="flex gap-3">
-                {((feeData.total_fee - feeData.paid_fee) > 0 || feeData.total_fee !== selectedStudent.total_fee) ? (
-                  <Button
-                    onClick={handleUpdateFee}
-                    className="flex-[2] h-12 text-lg font-bold shadow-lg"
-                    variant="hero"
-                    disabled={(feeData.total_fee - feeData.paid_fee - (feeData.new_payment || 0)) < 0 || (feeData.new_payment || 0) < 0}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </Button>
-                ) : (
-                  <div className="flex-[2] p-3 bg-success/10 border-2 border-success/30 rounded-lg text-center font-bold text-success animate-in zoom-in text-xs flex items-center justify-center">
-                    {(() => {
-                      const yearNum = parseInt(selectedStudent.year) || 1;
-                      if (yearNum >= 4) return "All 4 Years Completed!";
-                      const nextYear = `${yearNum + 1}${yearNum + 1 === 2 ? 'nd' : yearNum + 1 === 3 ? 'rd' : 'th'} Year`;
-                      return `Next payment updation open in ${nextYear}, now the ${selectedStudent.year} fees is completed.`;
-                    })()}
+            <div className="flex flex-col">
+               <div className="p-10 pb-0 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-3xl font-bold tracking-tight">{selectedStudent.student_name}</h3>
+                    <p className="text-sm font-bold text-[#0071E3] mt-1 uppercase tracking-widest">{selectedStudent.roll_number}</p>
                   </div>
-                )}
+                  <Badge className="rounded-full px-6 py-2 bg-[#F5F5F7] dark:bg-[#323235] text-foreground border-0 font-bold">{selectedStudent.year}</Badge>
+               </div>
 
-                {(selectedStudent.pending_fee || 100000) <= 0 && (
-                  <Button
-                    onClick={() => handleMoveToNextYear()}
-                    disabled={isTransitioningYear}
-                    className="flex-1 h-12 bg-success hover:bg-success/90 text-white shadow-lg"
-                    title="Move to Next Academic Year"
-                  >
-                    {isTransitioningYear ? <Loader2 className="animate-spin" /> : <div className="flex flex-col items-center leading-tight"><span className="text-[10px]">Next</span><span>Year</span></div>}
-                  </Button>
-                )}
-              </div>
+               <div className="p-10 space-y-10">
+                  <div className="grid grid-cols-2 gap-6">
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase pl-2">Asset Base</label>
+                        <Input type="number" value={feeData.total_fee} onChange={(e) => setFeeData({ ...feeData, total_fee: Number(e.target.value) })} className="h-16 rounded-3xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0 text-xl font-bold shadow-inner" />
+                     </div>
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase pl-2">Deposit Sync</label>
+                        <Input type="number" value={feeData.new_payment || ""} onChange={(e) => setFeeData({ ...feeData, new_payment: Number(e.target.value) })} placeholder="Amount..." className="h-16 rounded-3xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0 text-xl font-bold shadow-inner" />
+                     </div>
+                  </div>
+
+                  <div className="p-10 rounded-[2.5rem] bg-[#0071E3] text-white flex flex-col items-center shadow-xl shadow-blue-500/30">
+                     <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Portfolio Deficit</p>
+                     <p className="text-6xl font-bold tracking-tighter">₹{(feeData.total_fee - feeData.paid_fee - (feeData.new_payment || 0)).toLocaleString()}</p>
+                  </div>
+
+                  {studentTransactions.length > 0 && (
+                    <div className="space-y-4">
+                       <h4 className="text-sm font-bold opacity-60 px-2 flex items-center gap-2">History <Info className="w-3 h-3" /></h4>
+                       <div className="max-h-56 overflow-y-auto space-y-3 pr-2 no-scrollbar">
+                          {studentTransactions.map((tx, idx) => (
+                            <div key={idx} className="p-5 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-[1.5rem] flex justify-between items-center transition-all hover:bg-slate-100">
+                               <div><p className="font-bold text-md">{tx.remarks || "Log Entry"}</p><p className="text-[10px] text-muted-foreground mt-0.5">{new Date(tx.payment_date).toLocaleDateString("en-US", { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+                               <p className="font-bold text-green-500">+₹{tx.amount.toLocaleString()}</p>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+                  )}
+
+                  <Button onClick={handleUpdateFee} className="w-full h-20 rounded-[2rem] text-xl font-bold bg-[#0071E3] hover:bg-[#0077ED] shadow-2xl shadow-blue-500/30">Commit Synchrony</Button>
+               </div>
             </div>
           )}
         </DialogContent>

@@ -175,18 +175,18 @@ const UpdatesManagement = ({ authorName, role }: UpdatesManagementProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Bell className="w-6 h-6 text-primary" />
-            System Updates & Notifications
+          <h2 className="text-xl sm:text-2xl font-black italic flex items-center gap-2 text-primary">
+            <Bell className="w-6 h-6" />
+            SYSTEM UPDATES
           </h2>
-          <p className="text-muted-foreground text-sm">Manage important announcements for students and staff</p>
+          <p className="text-muted-foreground text-xs sm:text-sm font-medium">Manage announcements for students</p>
         </div>
         {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)} className="gap-2 bg-primary hover:bg-primary/90 text-white glare-hover">
+          <Button onClick={() => setShowAddForm(true)} className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90 text-white font-bold h-11 sm:h-10">
             <Plus className="w-4 h-4" />
-            Add New Update
+            Add Announcement
           </Button>
         )}
       </div>

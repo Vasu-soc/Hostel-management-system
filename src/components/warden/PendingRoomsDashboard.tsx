@@ -119,56 +119,56 @@ const PendingRoomsDashboard = ({ rooms, students = [] }: PendingRoomsDashboardPr
             </div>
           </CardHeader>
           <CardContent>
-            <div className="max-h-64 overflow-auto">
+            <div className="max-h-64 overflow-auto scrollbar-thin">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Floor</TableHead>
-                    <TableHead>Room</TableHead>
-                    <TableHead className="text-center">Total</TableHead>
-                    <TableHead className="text-center">Occupied</TableHead>
-                    <TableHead className="text-center">Profiles</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="px-2 sm:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tighter">FLR</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tighter">ROOM</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-center text-[10px] sm:text-xs font-black uppercase tracking-tighter">TOT</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-center text-[10px] sm:text-xs font-black uppercase tracking-tighter text-success">OCC</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-center text-[10px] sm:text-xs font-black uppercase tracking-tighter">STUDENTS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {acRooms.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        No AC rooms available
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8 italic text-xs">
+                        No AC rooms found
                       </TableCell>
                     </TableRow>
                   ) : (
                     acRooms.map((room) => {
                       const roomStudents = getRoomStudents(room.room_number);
                       return (
-                        <TableRow key={room.id} className="group">
-                          <TableCell>{room.floor_number}</TableCell>
-                          <TableCell className="font-medium">{room.room_number}</TableCell>
-                          <TableCell className="text-center">{room.total_beds}</TableCell>
-                          <TableCell className="text-center text-success">{getActualOccupied(room.room_number)}</TableCell>
-                          <TableCell>
+                        <TableRow key={room.id} className="group transition-colors h-12">
+                          <TableCell className="px-2 sm:px-4 font-bold text-xs sm:text-sm">{room.floor_number}</TableCell>
+                          <TableCell className="px-2 sm:px-4 font-black text-xs sm:text-sm text-primary">{room.room_number}</TableCell>
+                          <TableCell className="px-2 sm:px-4 text-center font-bold text-xs sm:text-sm">{room.total_beds}</TableCell>
+                          <TableCell className="px-2 sm:px-4 text-center text-success font-black text-xs sm:text-sm">{getActualOccupied(room.room_number)}</TableCell>
+                          <TableCell className="px-2 sm:px-4">
                             <div className="flex items-center justify-center gap-1">
                               {roomStudents.length === 0 ? (
-                                <span className="text-muted-foreground text-xs">-</span>
+                                <span className="text-muted-foreground text-[10px] italic">Empty</span>
                               ) : (
-                                roomStudents.slice(0, 4).map((student, idx) => (
+                                roomStudents.slice(0, 3).map((student) => (
                                   <button
                                     key={student.id}
                                     onClick={() => setSelectedStudent(student)}
-                                    className="focus:outline-none hover:ring-2 hover:ring-primary rounded-full transition-all"
+                                    className="focus:outline-none hover:ring-2 hover:ring-primary rounded-full transition-all shrink-0"
                                     title={student.student_name}
                                   >
-                                    <Avatar className="w-6 h-6 border border-border">
+                                    <Avatar className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-background shadow-sm">
                                       <AvatarImage src={student.photo_url || undefined} alt={student.student_name} />
-                                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                                      <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
                                         {getInitials(student.student_name || "?")}
                                       </AvatarFallback>
                                     </Avatar>
                                   </button>
                                 ))
                               )}
-                              {roomStudents.length > 4 && (
-                                <span className="text-xs text-muted-foreground">+{roomStudents.length - 4}</span>
+                              {roomStudents.length > 3 && (
+                                <span className="text-[9px] font-black text-muted-foreground">+{roomStudents.length - 3}</span>
                               )}
                             </div>
                           </TableCell>
@@ -201,56 +201,56 @@ const PendingRoomsDashboard = ({ rooms, students = [] }: PendingRoomsDashboardPr
             </div>
           </CardHeader>
           <CardContent>
-            <div className="max-h-64 overflow-auto">
+            <div className="max-h-64 overflow-auto scrollbar-thin">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Floor</TableHead>
-                    <TableHead>Room</TableHead>
-                    <TableHead className="text-center">Total</TableHead>
-                    <TableHead className="text-center">Occupied</TableHead>
-                    <TableHead className="text-center">Profiles</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="px-2 sm:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tighter">FLR</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tighter">ROOM</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-center text-[10px] sm:text-xs font-black uppercase tracking-tighter">TOT</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-center text-[10px] sm:text-xs font-black uppercase tracking-tighter text-success">OCC</TableHead>
+                    <TableHead className="px-2 sm:px-4 text-center text-[10px] sm:text-xs font-black uppercase tracking-tighter">STUDENTS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {nonAcRooms.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        No Non-AC rooms available
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8 italic text-xs">
+                        No Non-AC rooms found
                       </TableCell>
                     </TableRow>
                   ) : (
                     nonAcRooms.map((room) => {
                       const roomStudents = getRoomStudents(room.room_number);
                       return (
-                        <TableRow key={room.id} className="group">
-                          <TableCell>{room.floor_number}</TableCell>
-                          <TableCell className="font-medium">{room.room_number}</TableCell>
-                          <TableCell className="text-center">{room.total_beds}</TableCell>
-                          <TableCell className="text-center text-success">{getActualOccupied(room.room_number)}</TableCell>
-                          <TableCell>
+                        <TableRow key={room.id} className="group transition-colors h-12">
+                          <TableCell className="px-2 sm:px-4 font-bold text-xs sm:text-sm">{room.floor_number}</TableCell>
+                          <TableCell className="px-2 sm:px-4 font-black text-xs sm:text-sm text-secondary">{room.room_number}</TableCell>
+                          <TableCell className="px-2 sm:px-4 text-center font-bold text-xs sm:text-sm">{room.total_beds}</TableCell>
+                          <TableCell className="px-2 sm:px-4 text-center text-success font-black text-xs sm:text-sm">{getActualOccupied(room.room_number)}</TableCell>
+                          <TableCell className="px-2 sm:px-4">
                             <div className="flex items-center justify-center gap-1">
                               {roomStudents.length === 0 ? (
-                                <span className="text-muted-foreground text-xs">-</span>
+                                <span className="text-muted-foreground text-[10px] italic">Empty</span>
                               ) : (
-                                roomStudents.slice(0, 4).map((student, idx) => (
+                                roomStudents.slice(0, 3).map((student) => (
                                   <button
                                     key={student.id}
                                     onClick={() => setSelectedStudent(student)}
-                                    className="focus:outline-none hover:ring-2 hover:ring-primary rounded-full transition-all"
+                                    className="focus:outline-none hover:ring-2 hover:ring-primary rounded-full transition-all shrink-0"
                                     title={student.student_name}
                                   >
-                                    <Avatar className="w-6 h-6 border border-border">
+                                    <Avatar className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-background shadow-sm">
                                       <AvatarImage src={student.photo_url || undefined} alt={student.student_name} />
-                                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                                      <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-bold">
                                         {getInitials(student.student_name || "?")}
                                       </AvatarFallback>
                                     </Avatar>
                                   </button>
                                 ))
                               )}
-                              {roomStudents.length > 4 && (
-                                <span className="text-xs text-muted-foreground">+{roomStudents.length - 4}</span>
+                              {roomStudents.length > 3 && (
+                                <span className="text-[9px] font-black text-muted-foreground">+{roomStudents.length - 3}</span>
                               )}
                             </div>
                           </TableCell>
