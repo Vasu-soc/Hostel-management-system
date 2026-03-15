@@ -54,39 +54,34 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
 
     setIsUploadingLocal(true);
     try {
-      const base64String = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Use unique filename to avoid collisions
+      const fileExt = file.name.split('.').pop();
+      const fileName = `album-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-      const response = await fetch('/api/local-upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileName: `${Date.now()}-${file.name}`,
-          fileData: base64String,
-        }),
-      });
+      // Upload to Supabase Storage in 'updates' bucket which we know exists and works
+      const { error: uploadError } = await supabase.storage
+        .from('updates')
+        .upload(filePath, file);
 
-      const result = await response.json();
-      if (result.success) {
-        setNewImageUrls(prev => [...prev, result.url]);
-        toast({
-          title: "Added to Queue",
-          description: "Image successfully prepared for the album.",
-        });
-      } else {
-        throw new Error(result.error || "Upload failed");
-      }
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('updates')
+        .getPublicUrl(filePath);
+
+      setNewImageUrls(prev => [...prev, publicUrl]);
+      
+      toast({
+        title: "Added to Queue",
+        description: "Image successfully uploaded and prepared for the album.",
+      });
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
         title: "Upload Error",
-        description: "Could not add image. Please ensure the local server is running.",
+        description: error.message || "Could not upload image. Please check your connection.",
         variant: "destructive",
       });
     } finally {
