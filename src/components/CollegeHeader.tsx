@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ThemeToggle from "./ThemeToggle";
 import HostelAlbumGallery from "./HostelAlbumGallery";
 import gisteduLogo from "@/assets/gistedu-logo.png";
+import { motion } from "framer-motion";
 
 const loginOptions = [
   {
@@ -120,20 +121,44 @@ const CollegeHeader = () => {
               </p>
               <div className="h-[1.5px] w-6 sm:w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent hidden sm:block transition-all duration-500 group-hover:w-16"></div>
             </div>
-            <p className="text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed max-w-[95%] sm:max-w-[85%] font-semibold tracking-wide border-t border-primary/10 pt-1 uppercase">
+            <p className="text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs text-muted-foreground/80 mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed max-w-[95%] sm:max-w-[85%] font-semibold tracking-wide uppercase">
               3rd Mile, Nellore-Bombay Highway, Gangavaram(V), Kovur(Md), SPSR Nellore Dt. Andhra Pradesh, India - 524137.
             </p>
+
+            {/* Premium Dynamic Divider with Wave Flow - Enhanced Visibility */}
+            <div className="relative w-full max-w-[95%] h-[1.8px] mt-4 mb-3 overflow-hidden rounded-full">
+              {/* Visible Saturated Base - Stronger for light theme */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/40 dark:via-primary/20 to-transparent"></div>
+              
+              {/* The Wave Flow - High-Contrast Light Streak */}
+              <motion.div 
+                animate={{ 
+                  x: ["-100%", "250%"] 
+                }}
+                transition={{ 
+                  duration: 2.5, 
+                  repeat: Infinity, 
+                  ease: "linear" 
+                }}
+                className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white dark:via-white/80 to-transparent opacity-100 blur-[1px]"
+              />
+              
+              {/* High-Gloss Center Point */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-[15%] h-full bg-primary/60 dark:bg-primary/30 blur-[2px] shadow-[0_0_15px_rgba(var(--primary),0.5)]"></div>
+              </div>
+            </div>
             
             {/* Quick Navigation Links with Dropdowns */}
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 sm:mt-3 border-t border-primary/5 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-3 sm:mt-4 pb-1">
               {isHomePage && (
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
-                        <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                      <button className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border-2 border-primary/40 hover:bg-primary/30 hover:border-primary/60 hover:shadow-[0_0_15px_rgba(var(--primary),0.2)] hover:-translate-y-0.5 transition-all text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
+                        <LogIn className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                         <span>CHOOSE LOGINS</span>
-                        <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                        <ChevronDown className="w-2.5 h-2.5 opacity-60" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-2 z-[100]">
@@ -150,8 +175,8 @@ const CollegeHeader = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  <Link to="/hostel-application" className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
-                    <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                  <Link to="/hostel-application" className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-success/20 border-2 border-success/40 hover:bg-success/30 hover:border-success/60 hover:shadow-[0_0_15px_rgba(var(--success),0.2)] hover:-translate-y-0.5 transition-all text-[10px] md:text-xs font-black italic tracking-widest text-success group">
+                    <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                     <span>HOSTEL APPLICATION FORM</span>
                   </Link>
                 </>
@@ -160,10 +185,10 @@ const CollegeHeader = () => {
               {(isHomePage || location.pathname.includes("/student-dashboard")) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
-                      <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <button className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/20 border-2 border-accent/40 hover:bg-accent/30 hover:border-accent/60 hover:shadow-[0_0_15px_rgba(var(--accent),0.2)] hover:-translate-y-0.5 transition-all text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
+                      <Pill className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                       <span>MEDICINE AVAILABILITY</span>
-                      <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                      <ChevronDown className="w-2.5 h-2.5 opacity-60" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-64 bg-card/95 backdrop-blur-xl border-2 border-primary/20 rounded-2xl p-4 z-[100]">

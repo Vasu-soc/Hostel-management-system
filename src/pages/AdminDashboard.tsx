@@ -96,14 +96,6 @@ const AdminDashboard = () => {
     new_payment: 0,
   });
   const [studentTransactions, setStudentTransactions] = useState<any[]>([]);
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsHeaderCollapsed(true);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const session = getAdminSession();
@@ -233,22 +225,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7] transition-colors duration-700 overflow-x-hidden">
-      {/* Draggable College Header Section */}
-      <div className="relative z-[100]">
-        <motion.div
-          initial={false}
-          animate={{ y: isHeaderCollapsed ? "-100%" : "0%" }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed top-0 left-0 right-0 z-[110] bg-background shadow-xl"
-        >
-          <CollegeHeader />
-        </motion.div>
-        
-        {/* Spacer to prevent content jump when header is fixed */}
-        <div className="h-[auto]" style={{ display: isHeaderCollapsed ? 'none' : 'block' }}>
-           <div className="invisible"><CollegeHeader /></div>
-        </div>
-      </div>
+      <CollegeHeader />
       
       <DashboardHeader
         title="Admin"
@@ -256,11 +233,10 @@ const AdminDashboard = () => {
         userSubtitle={<Badge variant="secondary" className="rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0">Primary Domain</Badge>}
         onLogout={handleLogout}
         showPhoto={false}
-        stickyOffset="top-0"
       />
 
       {/* Floating Segmented Control */}
-      <div className={`sticky ${isHeaderCollapsed ? "top-[72px]" : "top-[84px]"} z-30 w-full py-4 px-4 bg-background/50 backdrop-blur-3xl border-b border-black/[0.05] dark:border-white/[0.05] transition-all duration-500`}>
+      <div className="sticky top-0 z-30 w-full py-2 px-4 bg-background/50 backdrop-blur-3xl border-b border-black/[0.05] dark:border-white/[0.05] transition-all duration-500">
         <div className="container mx-auto flex justify-center">
           <div className="flex bg-[#EEEEEF] dark:bg-[#1D1D1F] p-1 rounded-[1.25rem] shadow-inner transition-colors">
             {[
@@ -450,30 +426,30 @@ const AdminDashboard = () => {
           )}
 
           {activeView === "rooms" && (
-            <motion.div key="rooms" className="space-y-12">
-              <div className="bg-white dark:bg-[#1C1C1E] p-10 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="flex items-center gap-6">
-                  <button onClick={() => setActiveView("dashboard")} className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all"><ArrowLeft className="w-6 h-6"/></button>
-                  <h2 className="text-3xl font-bold tracking-tight">Spatial Audit</h2>
+            <motion.div key="rooms" className="space-y-8">
+              <div className="bg-white dark:bg-[#1C1C1E] p-4 rounded-[1.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setActiveView("dashboard")} className="p-2 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all"><ArrowLeft className="w-4 h-4"/></button>
+                  <h2 className="text-xl font-bold tracking-tight">Spatial Audit</h2>
                 </div>
-                <div className="flex gap-4">
-                  <Badge className="px-8 py-3 rounded-2xl bg-blue-500/10 text-blue-500 border-0 font-bold">AC: {acRooms.length}</Badge>
-                  <Badge className="px-8 py-3 rounded-2xl bg-orange-500/10 text-orange-500 border-0 font-bold">Standard: {normalRooms.length}</Badge>
+                <div className="flex gap-2">
+                  <Badge className="px-4 py-1.5 rounded-lg bg-blue-500/10 text-blue-500 border-0 font-bold text-[10px]">AC: {acRooms.length}</Badge>
+                  <Badge className="px-4 py-1.5 rounded-lg bg-orange-500/10 text-orange-500 border-0 font-bold text-[10px]">Standard: {normalRooms.length}</Badge>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {[{ title: "Atmosphere Plus (AC)", color: "text-blue-500", rooms: acRooms }, { title: "Standard Configuration", color: "text-orange-500", rooms: normalRooms }].map((block, i) => (
-                   <div key={i} className="space-y-6">
-                      <h3 className="text-2xl font-bold px-6">{block.title}</h3>
-                      <div className="bg-white dark:bg-[#1C1C1E] rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+                   <div key={i} className="space-y-3">
+                      <h3 className="text-lg font-bold px-3">{block.title}</h3>
+                      <div className="bg-white dark:bg-[#1C1C1E] rounded-[1.25rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
                         <Table>
-                          <TableHeader className="bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0"><TableRow className="border-0"><TableHead className="px-10 py-6 font-bold uppercase text-[10px] opacity-60">Room</TableHead><TableHead className="font-bold uppercase text-[10px] opacity-60">Floor</TableHead><TableHead className="text-center font-bold uppercase text-[10px] opacity-60">Status</TableHead></TableRow></TableHeader>
+                          <TableHeader className="bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0"><TableRow className="border-0"><TableHead className="px-6 py-2.5 font-bold uppercase text-[8px] opacity-60">Room</TableHead><TableHead className="font-bold uppercase text-[8px] opacity-60">Floor</TableHead><TableHead className="text-center font-bold uppercase text-[8px] opacity-60">Status</TableHead></TableRow></TableHeader>
                           <TableBody>{block.rooms.map(r => (
                             <TableRow key={r.id} className="border-b border-black/[0.03] dark:border-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                              <TableCell className="px-10 py-6"><span className={`text-2xl font-bold ${block.color}`}>{r.room_number}</span></TableCell>
-                              <TableCell className="font-semibold text-muted-foreground">Floor {r.floor_number}</TableCell>
-                              <TableCell className="text-center font-bold"><span className="inline-flex items-center justify-center w-12 h-12 rounded-[1.25rem] bg-slate-100 dark:bg-[#2C2C2E]">{getActualOccupied(r.room_number)}</span></TableCell>
+                              <TableCell className="px-6 py-2.5"><span className={`text-base font-bold ${block.color}`}>{r.room_number}</span></TableCell>
+                              <TableCell className="font-semibold text-muted-foreground text-xs">Floor {r.floor_number}</TableCell>
+                              <TableCell className="text-center font-bold"><span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#2C2C2E] text-[10px]">{getActualOccupied(r.room_number)}</span></TableCell>
                             </TableRow>
                           ))}</TableBody>
                         </Table>
