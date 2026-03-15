@@ -291,50 +291,8 @@ const CollegeHeader = () => {
                         ))}
                       </div>
 
-                      {/* Mobile Only: Choose Logins & Medicine */}
-                      <div className="md:hidden space-y-6 pt-4 border-t border-primary/10">
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 italic">
-                            <LogIn className="w-3 h-3" />
-                            Registered Portals
-                          </h4>
-                          <div className="grid grid-cols-1 gap-2">
-                             {navigationLogins.map((login) => (
-                               <Link 
-                                 key={login.path} 
-                                 to={login.path} 
-                                 onClick={() => setMenuOpen(false)}
-                                 className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all"
-                               >
-                                 <login.icon className={`w-4 h-4 ${login.color}`} />
-                                 <span className="font-bold text-sm tracking-tight">{login.label}</span>
-                               </Link>
-                             ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-2 italic">
-                            <Pill className="w-3 h-3" />
-                            Medicine Stock
-                          </h4>
-                          <div className="bg-muted/30 rounded-2xl p-4 border border-primary/5">                          {medicines.filter(med => med.is_available).length > 0 ? (
-                            <div className="grid grid-cols-2 gap-2">
-                              {medicines.filter(med => med.is_available).slice(0, 6).map((med) => (
-                                <div key={med.id} className="flex flex-col p-2 rounded-lg bg-card/50 border border-primary/5">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm">{med.icon || "💊"}</span>
-                                    <span className="text-[10px] font-bold truncate">{med.name}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[10px] text-center text-muted-foreground italic">No medicines available currently</p>
-                          )}
-                          </div>
-                        </div>
-                      </div>
+                      {/* Mobile Footer Spacing */}
+                      <div className="h-20 md:hidden" />
                     </div>
                   </div>
 

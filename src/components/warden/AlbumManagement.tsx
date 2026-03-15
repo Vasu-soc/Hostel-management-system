@@ -54,43 +54,43 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
 
     setIsUploadingLocal(true);
     try {
-      // Convert to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const base64String = reader.result as string;
-        
-        const response = await fetch('/api/local-upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            fileName: file.name,
-            fileData: base64String,
-          }),
-        });
+      const base64String = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-        const result = await response.json();
-        if (result.success) {
-          setNewImageUrls([...newImageUrls, result.url]);
-          toast({
-            title: "Success",
-            description: "Image uploaded and added to queue",
-          });
-        } else {
-          throw new Error(result.error || "Upload failed");
-        }
-      };
+      const response = await fetch('/api/local-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: `${Date.now()}-${file.name}`,
+          fileData: base64String,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setNewImageUrls(prev => [...prev, result.url]);
+        toast({
+          title: "Added to Queue",
+          description: "Image successfully prepared for the album.",
+        });
+      } else {
+        throw new Error(result.error || "Upload failed");
+      }
     } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
         title: "Upload Error",
-        description: error.message,
+        description: "Could not add image. Please ensure the local server is running.",
         variant: "destructive",
       });
     } finally {
       setIsUploadingLocal(false);
-      // Reset input
       if (e.target) e.target.value = "";
     }
   };
