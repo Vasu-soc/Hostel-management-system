@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
@@ -69,7 +71,7 @@ const navigationLogins = [
   { label: "Parent Portal", path: "/parent-login", icon: GraduationCap, color: "text-green-500" },
 ];
 
-function CollegeHeader() {
+const CollegeHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [medicines, setMedicines] = useState<any[]>([]);
   const location = useLocation();
@@ -128,7 +130,7 @@ function CollegeHeader() {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
+                      <button className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-primary/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-primary group outline-none">
                         <LogIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
                         <span>CHOOSE LOGINS</span>
                         <ChevronDown className="w-2.5 h-2.5 opacity-50" />
@@ -148,7 +150,7 @@ function CollegeHeader() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  <Link to="/hostel-application" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
+                  <Link to="/hostel-application" className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-success/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-success group">
                     <FileText className="w-3 h-3 group-hover:scale-110 transition-transform" />
                     <span>HOSTEL APPLICATION FORM</span>
                   </Link>
@@ -158,7 +160,7 @@ function CollegeHeader() {
               {(isHomePage || location.pathname.includes("/student-dashboard")) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
+                    <button className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-accent/5 transition-all text-[8px] sm:text-[10px] md:text-xs font-black italic tracking-widest text-accent group outline-none">
                       <Pill className="w-3 h-3 group-hover:scale-110 transition-transform" />
                       <span>MEDICINE AVAILABILITY</span>
                       <ChevronDown className="w-2.5 h-2.5 opacity-50" />
@@ -205,7 +207,7 @@ function CollegeHeader() {
               </div>
 
               {/* Theme Toggle Button Style */}
-              <div className="bg-muted/50 p-1 rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner">
+              <div className="bg-muted/50 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner leading-none flex items-center justify-center">
                 <ThemeToggle />
               </div>
 
@@ -215,13 +217,17 @@ function CollegeHeader() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/25 border-b-4 border-primary-foreground/20"
+                    className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/25 border-b-[2px] sm:border-b-4 border-primary-foreground/20"
                     aria-label="Open menu"
                   >
-                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <Menu className="h-4 w-4 sm:h-6 sm:w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[85vw] sm:w-[400px] border-l-2 border-primary/20 bg-card/95 backdrop-blur-xl p-0 overflow-hidden">
+                <SheetContent 
+                  side="right" 
+                  className="w-[85vw] sm:w-[400px] border-l-2 border-primary/20 bg-card/95 backdrop-blur-xl p-0 overflow-hidden"
+                  aria-describedby={undefined}
+                >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
                   <SheetHeader className="p-6 border-b border-primary/10 bg-muted/30 relative">
@@ -231,6 +237,9 @@ function CollegeHeader() {
                       </div>
                       JOIN HOSTEL
                     </SheetTitle>
+                    <SheetDescription className="sr-only">
+                      Access quick links to join the hostel and manage your account.
+                    </SheetDescription>
                   </SheetHeader>
 
                   <div className="p-6">

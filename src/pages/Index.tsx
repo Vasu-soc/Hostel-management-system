@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   FileText,
@@ -71,7 +73,7 @@ const hostelRules = [
 
 const WARDEN_CONTACT = "9553866278";
 
-function Index() {
+const Index = () => {
   const [selectedLogin, setSelectedLogin] = useState<string>("");
   const [selectedMedicine, setSelectedMedicine] = useState<string>("");
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
@@ -373,12 +375,18 @@ function Index() {
 
       {/* Hostel Rules Dialog */}
       <Dialog open={rulesDialogOpen} onOpenChange={setRulesDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent 
+          aria-describedby={undefined}
+          className="max-w-lg max-h-[80vh] overflow-y-auto"
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-primary" />
               Hostel Rules & Regulations
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              List of rules and regulations for hostel residents.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-4">
             {hostelRules.map((rule, index) => (

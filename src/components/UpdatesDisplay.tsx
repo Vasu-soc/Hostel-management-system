@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ interface Update {
   created_by_role: string;
 }
 
-function UpdatesDisplay() {
+const UpdatesDisplay = () => {
   const [updates, setUpdates] = useState<Update[]>([{
     id: "sample-1",
     title: "Welcome to our New Hostel Management System!",
