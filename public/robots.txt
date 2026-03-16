@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://geethanjalihostel.vercel.app/sitemap.xml
+Sitemap: https://hostel-management-system-steel.vercel.app/sitemap.xml
