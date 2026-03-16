@@ -330,9 +330,9 @@ const WardenDashboard = () => {
   };
 
   const fetchIssues = async (gender: string | null) => {
-    let elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
-    let foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
-    let medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
+    const elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
+    const foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
+    const medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
 
     if (gender) {
       const [{ data: elecData }, { data: foodData }, { data: medicalData, error: medicalError }] = await Promise.all([

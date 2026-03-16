@@ -405,7 +405,7 @@ const localApiPlugin = () => ({
             const id = req.url!.split('/').pop();
             const updates = JSON.parse(body);
             updates.updated_at = new Date().toISOString();
-            let students = readStudents();
+            const students = readStudents();
             const idx = students.findIndex((s: any) => s.id === id);
             if (idx === -1) { res.statusCode = 404; res.end(JSON.stringify({ error: 'Not found' })); return; }
             students[idx] = { ...students[idx], ...updates };
@@ -473,7 +473,7 @@ const localApiPlugin = () => ({
           try {
             const id = req.url!.split('/').pop();
             const updates = JSON.parse(body);
-            let rooms = readRooms();
+            const rooms = readRooms();
             const idx = rooms.findIndex((r: any) => r.id === id || r.room_number === id);
             if (idx === -1) { res.statusCode = 404; res.end(JSON.stringify({ error: 'Room not found' })); return; }
             rooms[idx] = { ...rooms[idx], ...updates };

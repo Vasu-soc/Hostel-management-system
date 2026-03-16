@@ -53,7 +53,7 @@ const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours
 
 // Remove password from any object
 const sanitizeUserData = <T extends Record<string, unknown>>(data: T): Omit<T, 'password'> => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { password, ...safeData } = data;
   return safeData as Omit<T, 'password'>;
 };
