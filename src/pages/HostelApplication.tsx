@@ -880,6 +880,7 @@ const HostelApplication = () => {
           </CardContent>
         </Card>
       </main>
+      <QRZoomModal open={qrZoomOpen} onOpenChange={setQrZoomOpen} />
     </div>
   );
 };
