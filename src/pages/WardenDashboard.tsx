@@ -823,11 +823,6 @@ const WardenDashboard = () => {
             console.log('Gate pass email sent successfully');
           } catch (err: any) {
             console.error('Gate pass EmailJS error:', err);
-            toast({
-              title: "Gate Pass Email Failed",
-              description: `Error: ${err.text || err.message || "Unknown error"}. Check Template ID.`,
-              variant: "destructive",
-            });
           }
         };
 

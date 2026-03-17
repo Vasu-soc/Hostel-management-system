@@ -833,10 +833,6 @@ const StudentDashboard = () => {
                   <div className="space-y-3 pt-4">
                     <p className="text-sm text-muted-foreground">Useful links for your learning and development:</p>
                     <div className="grid grid-cols-1 gap-3">
-                      <Button variant="outline" className="justify-start h-12 hover:bg-primary/5 border-primary/30" onClick={() => window.open('https://forms.gle/obPGXkBNG4gZwyFV9', '_blank')}>
-                        <ExternalLink className="w-4 h-4 mr-3 text-primary" />
-                        Fees Submition Google form
-                      </Button>
                       <Button variant="outline" className="justify-start h-12 hover:bg-primary/5" onClick={() => window.open('https://www.w3schools.com/python/', '_blank')}>
                         <ExternalLink className="w-4 h-4 mr-3 text-primary" />
                         Python Tutorial (W3Schools)

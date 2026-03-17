@@ -7,6 +7,13 @@ import carousel5 from "@/assets/carousel-5.jpg";
 import carousel6 from "@/assets/carousel-6.jpg";
 import carousel7 from "@/assets/carousel-7.jpg";
 import carousel8 from "@/assets/carousel-8.jpg";
+import carousel9 from "@/assets/carousel-9.jpg";
+import carousel10 from "@/assets/carousel-10.jpg";
+import carousel11 from "@/assets/carousel-11.jpg";
+import carousel12 from "@/assets/carousel-12.jpg";
+import carousel13 from "@/assets/carousel-13.jpg";
+import carousel14 from "@/assets/carousel-14.jpg";
+import carousel15 from "@/assets/carousel-15.jpg";
 
 const images = [
   carousel1,
@@ -17,6 +24,13 @@ const images = [
   carousel6,
   carousel7,
   carousel8,
+  carousel9,
+  carousel10,
+  carousel11,
+  carousel12,
+  carousel13,
+  carousel14,
+  carousel15,
 ];
 
 // Preload all images immediately

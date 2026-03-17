@@ -110,12 +110,12 @@ const UpdatesDisplay = () => {
             <div className="flex flex-col md:flex-row min-h-[220px] sm:min-h-[250px]">
               {/* Image Section */}
               {currentUpdate.image_url && (
-                <div className="md:w-1/3 relative h-40 sm:h-48 md:h-auto overflow-hidden">
+                <div className="w-full md:w-1/3 relative h-56 sm:h-64 md:h-auto min-h-[220px] md:min-h-full overflow-hidden shrink-0">
                   <img
                     key={currentUpdate.id + "_img"}
                     src={currentUpdate.image_url}
                     alt={currentUpdate.title}
-                    className="w-full h-full object-cover animate-in fade-in scale-in duration-300"
+                    className="w-full h-full object-cover object-center animate-in fade-in scale-in duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/60 md:from-black/40 to-transparent"></div>
                 </div>
