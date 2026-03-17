@@ -5,6 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -12,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, Check, Upload, Camera, PenLine, CreditCard, Wallet, QrCode, ShieldCheck, IndianRupee, Loader2, Download, ImagePlus } from "lucide-react";
+import { ArrowLeft, Building2, Check, Upload, Camera, PenLine, CreditCard, Wallet, QrCode, ShieldCheck, IndianRupee, Loader2, Download, ImagePlus, X, Maximize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -106,6 +113,7 @@ const HostelApplication = () => {
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
+  const [qrZoomOpen, setQrZoomOpen] = useState(false);
 
   const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> => {
     return new Promise((resolve) => {
@@ -748,24 +756,33 @@ const HostelApplication = () => {
                       <div className="space-y-4">
                         <Label>1. Scan & Pay ₹100</Label>
                         <div className="relative group">
-                          <div className="aspect-square w-48 mx-auto bg-white rounded-2xl p-3 border-2 border-primary/20 shadow-xl overflow-hidden">
+                          <div 
+                            className="aspect-square w-48 mx-auto bg-white rounded-2xl p-3 border-2 border-primary/20 shadow-xl overflow-hidden cursor-pointer relative group-hover:border-primary/50 transition-all"
+                            onClick={() => setQrZoomOpen(true)}
+                          >
                             <img 
                               src="/payment_qr.png" 
                               alt="Payment QR" 
                               className="w-full h-full object-contain"
                             />
+                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <div className="bg-white/90 p-2 rounded-full shadow-lg">
+                                <Maximize2 className="w-5 h-5 text-primary" />
+                              </div>
+                            </div>
                           </div>
-                          <div className="mt-3 flex justify-center">
+                          <div className="mt-3 flex flex-col items-center gap-2">
+                            <p className="text-[10px] text-muted-foreground font-medium animate-pulse">Click image to zoom</p>
                             <Button 
                               type="button" 
                               variant="outline" 
                               size="sm" 
                               onClick={downloadQR}
-                              className="gap-2 font-bold uppercase text-[10px]"
+                              className="gap-2 font-bold uppercase text-[10px] w-48"
                               disabled={isDownloadingQR}
                             >
                               <Download className="w-3 h-3" />
-                              {isDownloadingQR ? "Downloading..." : "Download QR"}
+                              {isDownloadingQR ? "Downloading..." : "Download QR Code"}
                             </Button>
                           </div>
                         </div>
@@ -866,5 +883,38 @@ const HostelApplication = () => {
     </div>
   );
 };
+
+// QR Zoom Dialog Component
+const QRZoomModal = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="sm:max-w-[500px] p-0 bg-transparent border-0 shadow-none overflow-visible flex items-center justify-center">
+      <div className="relative w-[90vw] max-w-[450px] aspect-square bg-white rounded-[2.5rem] p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+        <DialogHeader className="absolute -top-12 left-0 right-0 flex-row justify-between items-center px-4">
+          <DialogTitle className="text-white text-lg font-black tracking-tight drop-shadow-md">SCAN TO PAY</DialogTitle>
+          <DialogClose asChild>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full w-10 h-10">
+              <X className="w-6 h-6" />
+            </Button>
+          </DialogClose>
+        </DialogHeader>
+        
+        <div className="w-full h-full rounded-2xl border-4 border-primary/10 p-4 bg-white shadow-inner flex items-center justify-center">
+          <img 
+            src="/payment_qr.png" 
+            alt="Zoomed QR" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+        
+        <div className="absolute -bottom-16 left-0 right-0 text-center">
+          <Badge variant="secondary" className="px-6 py-2 bg-white/90 backdrop-blur-md text-primary font-black text-sm rounded-full shadow-lg border-0">
+            ₹100 INR
+          </Badge>
+          <p className="mt-2 text-white/80 text-[10px] uppercase font-black tracking-[0.2em]">Application Fee</p>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
 
 export default HostelApplication;
