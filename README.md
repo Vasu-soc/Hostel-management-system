@@ -923,6 +923,22 @@ CSE · AIML · DS · ECE · EEE · MECH · CIVIL · IT · CSM · CSD · DME · D
 
 ---
 
+## 💻 Technical Summary
+
+### Frontend
+- **Language**: TypeScript / JSX (React)
+- **Framework**: Vite
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Animations**: Framer Motion
+
+### Backend & Infrastructure
+- **System**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **Local Storage**: JSON-based persistent storage for medical and study data.
+- **Node Integration**: Custom API middleware in `vite.config.ts`.
+
+---
+
 > Built with ❤️ for **Geethanjali Institute of Science & Technology** — *Championing Digital Hostel Management*
 
 © 2026 Geethanjali Institute of Science & Technology. All rights reserved.

@@ -33,7 +33,8 @@ import {
   ArrowLeft, User, IndianRupee, Loader2, 
   Users, DoorOpen, ShieldCheck, Megaphone, Wallet, 
   TrendingUp, CheckCircle2, ChevronRight, Search, 
-  Trash2, BarChart3, XCircle, Info, Activity
+  Trash2, BarChart3, XCircle, Info, Activity,
+  ExternalLink
 } from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -61,6 +62,7 @@ interface Student {
   pending_fee: number | null;
   gender: string;
   photo_url: string | null;
+  email: string | null;
 }
 
 interface Room {
@@ -85,9 +87,10 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "updates">("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "updates" | "appFees">("dashboard");
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [applications, setApplications] = useState<any[]>([]);
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
@@ -107,6 +110,7 @@ const AdminDashboard = () => {
     setAdmin(session);
     fetchRooms();
     fetchAllStudents();
+    fetchApplications();
 
     const channel = supabase
       .channel("admin-changes")
@@ -117,12 +121,21 @@ const AdminDashboard = () => {
           fetchStudentsData(selectedBranch, selectedYear);
         }
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "hostel_applications" }, fetchApplications)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [navigate]);
+
+  const fetchApplications = async () => {
+    const { data } = await supabase
+      .from("hostel_applications")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setApplications(data);
+  };
 
   const fetchAllStudents = async () => {
     const { data, error } = await supabase.from("students").select("*");
@@ -159,12 +172,51 @@ const AdminDashboard = () => {
     const totalCollection = allStudents.reduce((sum, s) => sum + (s.paid_fee || 0), 0);
     const totalBeds = rooms.reduce((sum, r) => sum + r.total_beds, 0);
     const occupiedBeds = rooms.reduce((sum, r) => sum + getActualOccupied(r.room_number), 0);
+    
+    // Normalized gender helper
+    const isMale = (g: string | null) => {
+      const val = (g || "").toLowerCase().trim();
+      return val === "male" || val === "m" || val === "boy" || val === "gentleman";
+    };
+    const isFemale = (g: string | null) => {
+      const val = (g || "").toLowerCase().trim();
+      return val === "female" || val === "f" || val === "girl" || val === "lady";
+    };
+
+    // Robust Branch-wise breakdown
+    const branchStats = branches.reduce((acc, branchName) => {
+      const branchStudents = allStudents.filter(s => 
+        (s.branch || "").toUpperCase().trim() === branchName.toUpperCase().trim()
+      );
+      
+      acc[branchName] = {
+        total: branchStudents.length,
+        male: branchStudents.filter(s => isMale(s.gender)).length,
+        female: branchStudents.filter(s => isFemale(s.gender)).length
+      };
+      return acc;
+    }, {} as Record<string, { total: number, male: number, female: number }>);
+
+    // Capture students who might be in miscellaneous branches
+    const knownBranches = branches.map(b => b.toUpperCase().trim());
+    const miscStudents = allStudents.filter(s => !knownBranches.includes((s.branch || "").toUpperCase().trim()));
+    if (miscStudents.length > 0) {
+      branchStats["OTHERS"] = {
+        total: miscStudents.length,
+        male: miscStudents.filter(s => isMale(s.gender)).length,
+        female: miscStudents.filter(s => isFemale(s.gender)).length
+      };
+    }
+
     return {
       totalStudents: allStudents.length,
+      boysCount: allStudents.filter(s => isMale(s.gender)).length,
+      girlsCount: allStudents.filter(s => isFemale(s.gender)).length,
       totalCollection,
       occupancyRate: totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0,
+      branchStats
     };
-  }, [allStudents, rooms]);
+  }, [allStudents, rooms, getActualOccupied]);
 
   const acRooms = useMemo(() => rooms.filter(r => r.ac_type === "ac"), [rooms]);
   const normalRooms = useMemo(() => rooms.filter(r => r.ac_type === "normal"), [rooms]);
@@ -245,6 +297,7 @@ const AdminDashboard = () => {
               { id: "students", label: "People", icon: Users },
               { id: "rooms", label: "Rooms", icon: DoorOpen },
               { id: "wardens", label: "Security", icon: ShieldCheck },
+              { id: "appFees", label: "Fee Summary", icon: IndianRupee },
               { id: "updates", label: "News", icon: Megaphone }
             ].map((tab) => (
               <button
@@ -273,20 +326,77 @@ const AdminDashboard = () => {
               className="space-y-12"
             >
               {/* Ultra Clean Insight Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                  { label: "Residents", value: stats.totalStudents, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-                  { label: "Assets", value: `₹${stats.totalCollection.toLocaleString()}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10" },
-                  { label: "Occupancy", value: `${stats.occupancyRate}%`, icon: TrendingUp, color: "text-orange-500", bg: "bg-orange-500/10" }
+                  { label: "Total Residents", value: stats.totalStudents, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10", detail: `${stats.boysCount} Boys · ${stats.girlsCount} Girls` },
+                  { label: "Revenue Portfolios", value: `₹${stats.totalCollection.toLocaleString()}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10", detail: "Active Collections" },
+                  { label: "Occupancy Sync", value: `${stats.occupancyRate}%`, icon: TrendingUp, color: "text-orange-500", bg: "bg-orange-500/10", detail: "Capacity Utilization" },
+                  { label: "Active Admissions", value: applications.filter(a => a.application_fee_status === "paid").length, icon: IndianRupee, color: "text-purple-500", bg: "bg-purple-500/10", detail: "Registration Fees" }
                 ].map((item, idx) => (
-                  <Card key={idx} className="group relative rounded-[2.5rem] border-0 bg-white dark:bg-[#1C1C1E] p-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all">
-                    <div className={`w-14 h-14 ${item.bg} rounded-2xl flex items-center justify-center mb-6`}>
-                      <item.icon className={`w-6 h-6 ${item.color}`} />
+                  <Card key={idx} className="group relative rounded-[2rem] border-0 bg-white dark:bg-[#1C1C1E] p-8 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.1)] transition-all">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`w-12 h-12 ${item.bg} rounded-2xl flex items-center justify-center`}>
+                        <item.icon className={`w-6 h-6 ${item.color}`} />
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] font-bold opacity-40 uppercase tracking-tighter bg-transparent border-0">Live Audit</Badge>
                     </div>
-                    <p className="text-sm font-semibold text-muted-foreground tracking-tight">{item.label}</p>
-                    <h3 className="text-5xl font-bold tracking-tighter mt-1">{item.value}</h3>
+                    <p className="text-4xl font-black tracking-tight mb-1">{item.value}</p>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground opacity-60 tracking-widest mb-2">{item.label}</p>
+                    <p className="text-[11px] font-bold text-primary/70">{item.detail}</p>
                   </Card>
                 ))}
+              </div>
+
+              {/* Branch Wise Distribution */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Branch Wise Ecosystem</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">Visualizing {stats.totalStudents} Active Residents</p>
+                  </div>
+                  <Badge variant="outline" className="rounded-full font-bold px-4 border-primary/20 text-primary">Consolidated Gender Split Audit</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                  {Object.entries(stats.branchStats).map(([branch, data], idx) => (
+                    <motion.div
+                      key={branch}
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="p-8 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] border border-black/[0.02] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:-translate-y-1 transition-all group overflow-hidden relative"
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[4rem] group-hover:scale-110 transition-transform -z-10" />
+                      
+                      <p className="text-xs font-black text-muted-foreground uppercase opacity-40 group-hover:opacity-100 transition-opacity mb-2 tracking-widest">{branch}</p>
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-4xl font-black">{data.total}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Joined</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter mb-4">
+                        <div className="flex items-center gap-1.5 text-blue-500">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          {data.male} Boys
+                        </div>
+                        <div className="flex items-center gap-1.5 text-pink-500">
+                          <div className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+                          {data.female} Girls
+                        </div>
+                      </div>
+
+                      <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                        <div 
+                          className="h-full bg-blue-500 transition-all duration-1000" 
+                          style={{ width: `${data.total > 0 ? (data.male / data.total) * 100 : 0}%` }}
+                        />
+                        <div 
+                          className="h-full bg-pink-500 transition-all duration-1000" 
+                          style={{ width: `${data.total > 0 ? (data.female / data.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -318,7 +428,7 @@ const AdminDashboard = () => {
                            </div>
                         </div>
                         <Button onClick={fetchStudents} disabled={!selectedBranch || !selectedYear || isLoading} className="w-full h-16 rounded-[1.5rem] text-lg font-bold bg-[#0071E3] hover:bg-[#0077ED] transition-all shadow-xl shadow-blue-500/20">
-                          {isLoading ? <Loader2 className="animate-spin" /> : "Sync Database"}
+                           {isLoading ? <Loader2 className="animate-spin" /> : "Sync Database"}
                         </Button>
                      </div>
                   </Card>
@@ -439,21 +549,33 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {[{ title: "Atmosphere Plus (AC)", color: "text-blue-500", rooms: acRooms }, { title: "Standard Configuration", color: "text-orange-500", rooms: normalRooms }].map((block, i) => (
-                   <div key={i} className="space-y-3">
-                      <h3 className="text-lg font-bold px-3">{block.title}</h3>
-                      <div className="bg-white dark:bg-[#1C1C1E] rounded-[1.25rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-                        <Table>
-                          <TableHeader className="bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0"><TableRow className="border-0"><TableHead className="px-6 py-2.5 font-bold uppercase text-[8px] opacity-60">Room</TableHead><TableHead className="font-bold uppercase text-[8px] opacity-60">Floor</TableHead><TableHead className="text-center font-bold uppercase text-[8px] opacity-60">Status</TableHead></TableRow></TableHeader>
-                          <TableBody>{block.rooms.map(r => (
-                            <TableRow key={r.id} className="border-b border-black/[0.03] dark:border-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                              <TableCell className="px-6 py-2.5"><span className={`text-base font-bold ${block.color}`}>{r.room_number}</span></TableCell>
-                              <TableCell className="font-semibold text-muted-foreground text-xs">Floor {r.floor_number}</TableCell>
-                              <TableCell className="text-center font-bold"><span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#2C2C2E] text-[10px]">{getActualOccupied(r.room_number)}</span></TableCell>
-                            </TableRow>
-                          ))}</TableBody>
-                        </Table>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {[{ title: "Atmosphere Plus (AC)", color: "text-blue-500", rooms: acRooms, bg: "bg-blue-500/5" }, { title: "Standard Configuration", color: "text-orange-500", rooms: normalRooms, bg: "bg-orange-500/5" }].map((block, i) => (
+                   <div key={i} className="space-y-6">
+                      <div className="flex items-center justify-between px-4">
+                        <h3 className="text-xl font-black uppercase tracking-tight">{block.title}</h3>
+                        <Badge variant="secondary" className="rounded-full font-bold">{block.rooms.length} Units</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {block.rooms.map(r => {
+                          const occupied = getActualOccupied(r.room_number);
+                          return (
+                            <div key={r.id} className="p-6 rounded-[2rem] bg-white dark:bg-[#1C1C1E] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-black/[0.02]">
+                              <div className="flex justify-between items-start mb-4">
+                                <span className={`text-2xl font-black ${block.color}`}>{r.room_number}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground opacity-60">F{r.floor_number}</span>
+                              </div>
+                              <div className="flex gap-1 mb-2">
+                                {[...Array(r.total_beds)].map((_, i) => (
+                                  <div key={i} className={`h-1.5 flex-1 rounded-full ${i < occupied ? "bg-primary" : "bg-muted"}`} />
+                                ))}
+                              </div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                                {occupied} / {r.total_beds} Occupied
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                    </div>
                 ))}
@@ -480,6 +602,78 @@ const AdminDashboard = () => {
                <div className="bg-white dark:bg-[#1C1C1E] rounded-[3rem] p-10 shadow-2xl border border-black/[0.02]"><UpdatesManagement authorName={admin?.name || "Admin"} role="admin" /></div>
             </motion.div>
           )}
+
+          {activeView === "appFees" && (
+            <motion.div key="appFees" className="space-y-10">
+               <div className="bg-white dark:bg-[#1C1C1E] p-10 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <button onClick={() => setActiveView("dashboard")} className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] hover:opacity-70 transition-all"><ArrowLeft/></button>
+                    <div>
+                      <h2 className="text-3xl font-bold tracking-tight">Application Fee Summary</h2>
+                      <p className="text-sm text-muted-foreground">{applications.filter(a => a.application_fee_status === "paid").length} Total Payments Collected (₹100 Each)</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-500/10 text-green-600 border-0 px-6 py-2 rounded-full font-bold">Total: ₹{applications.filter(a => a.application_fee_status === "paid").length * 100}</Badge>
+               </div>
+               
+               <div className="bg-white dark:bg-[#1C1C1E] rounded-[3rem] p-10 shadow-2xl border border-black/[0.02] overflow-x-auto">
+                 <Table>
+                   <TableHeader className="bg-[#F5F5F7] dark:bg-[#2C2C2E] border-0 rounded-2xl">
+                     <TableRow className="border-0">
+                       <TableHead className="font-bold uppercase text-[10px] opacity-60">Student Name</TableHead>
+                       <TableHead className="font-bold uppercase text-[10px] opacity-60">Booking Details</TableHead>
+                       <TableHead className="font-bold uppercase text-[10px] opacity-60">Allotted Room</TableHead>
+                       <TableHead className="font-bold uppercase text-[10px] opacity-60">Payment Info</TableHead>
+                       <TableHead className="font-bold uppercase text-[10px] opacity-60 text-right">Warden Status</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {applications
+                       .filter(app => app.application_fee_status === "paid")
+                       .map((app) => {
+                         const matchedStudent = allStudents.find(s => s.roll_number === (app.phone_number || "").toUpperCase().trim() || (s.email && s.email === app.email));
+                         return (
+                           <TableRow key={app.id} className="border-b border-black/[0.03] dark:border-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.01]">
+                             <TableCell className="py-6">
+                               <p className="font-bold text-lg">{app.student_name}</p>
+                               <p className="text-xs text-muted-foreground uppercase">{app.branch}</p>
+                             </TableCell>
+                             <TableCell>
+                               <p className="text-sm font-semibold">{app.room_type?.toUpperCase()} ROOM</p>
+                               <p className="text-xs text-muted-foreground">{app.ac_type === 'ac' ? 'Air Conditioned' : 'Non-AC'}</p>
+                             </TableCell>
+                             <TableCell>
+                               <Badge className={`${matchedStudent?.hostel_room_number ? "bg-blue-500" : "bg-slate-300 dark:bg-[#2C2C2E]"} text-white border-0`}>
+                                 {matchedStudent?.hostel_room_number || "PENDING"}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <p className="text-[10px] font-black uppercase text-green-600">PAID ₹100</p>
+                               <p className="text-[10px] font-mono text-muted-foreground truncate max-w-[100px]">{app.application_fee_transaction_id}</p>
+                             </TableCell>
+                             <TableCell className="text-right">
+                               <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter border ${
+                                 app.status === 'accepted' || app.status === 'approved' ? "bg-green-500/10 text-green-600 border-green-500/20" : 
+                                 app.status === 'rejected' ? "bg-red-500/10 text-red-600 border-red-500/20" : 
+                                 "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                               }`}>
+                                 {app.status === 'accepted' || app.status === 'approved' ? "Approved & Paid" : 
+                                  app.status === 'rejected' ? "Rejected" : "Pending Decision"}
+                               </span>
+                             </TableCell>
+                           </TableRow>
+                         );
+                       })}
+                     {applications.filter(a => a.application_fee_status === "paid").length === 0 && (
+                       <TableRow>
+                         <TableCell colSpan={5} className="py-20 text-center text-muted-foreground italic">No application fee records found</TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+            </motion.div>
+           )}
         </AnimatePresence>
       </main>
 

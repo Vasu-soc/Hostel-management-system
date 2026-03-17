@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, Check, Upload, Camera, PenLine } from "lucide-react";
+import { ArrowLeft, Building2, Check, Upload, Camera, PenLine, CreditCard, Wallet, QrCode, ShieldCheck, IndianRupee, Loader2, Download, ImagePlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -22,6 +22,7 @@ import roomDoubleNew from "@/assets/room-double-new.png";
 import roomTriple from "@/assets/room-triple.png";
 import roomFourNew from "@/assets/room-four-new.png";
 import roomDormNew from "@/assets/room-dorm-new.png";
+import { Badge } from "@/components/ui/badge";
 
 const branches = [
   { value: "cse", label: "CSE - Computer Science Engineering" },
@@ -103,6 +104,8 @@ const HostelApplication = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [isDownloadingQR, setIsDownloadingQR] = useState(false);
 
   const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> => {
     return new Promise((resolve) => {
@@ -156,6 +159,8 @@ const HostelApplication = () => {
     address: "",
     zipCode: "",
     termsAccepted: false,
+    transactionId: "",
+    paymentMethod: "",
   });
   const [selectedRoomType, setSelectedRoomType] = useState<string>("");
 
@@ -202,6 +207,35 @@ const HostelApplication = () => {
     }
   };
 
+  const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image strictly under 2MB.",
+          variant: "destructive",
+        });
+        e.target.value = "";
+        return;
+      }
+      const compressedData = await compressImage(file, 800, 800, 0.6);
+      setReceiptPreview(compressedData);
+    }
+  };
+
+  const downloadQR = () => {
+    setIsDownloadingQR(true);
+    const link = document.createElement("a");
+    link.href = "/payment_qr.png";
+    link.download = "hostel_fee_payment_qr.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => setIsDownloadingQR(false), 1000);
+    toast({ title: "Downloading QR Code", description: "Please scan and pay ₹100" });
+  };
+
   const getPrice = () => {
     const room = roomTypes.find((r) => r.id === selectedRoomType);
     if (!room || !formData.acType) return null;
@@ -237,6 +271,15 @@ const HostelApplication = () => {
       return;
     }
 
+    if (!formData.transactionId || !formData.paymentMethod) {
+      toast({
+        title: "Payment Required",
+        description: "Please complete the application fee payment (₹100)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -255,10 +298,16 @@ const HostelApplication = () => {
         price: getPrice(),
         photo_url: photoPreview,
         signature_url: signaturePreview,
+        application_fee_receipt_url: receiptPreview,
         terms_accepted: formData.termsAccepted,
         address: formData.address,
         zip_code: formData.zipCode,
-      });
+        application_fee_status: "paid",
+        application_fee_amount: 100,
+        application_fee_transaction_id: formData.transactionId,
+        application_fee_payment_method: formData.paymentMethod,
+        application_fee_payment_date: new Date().toISOString(),
+      } as any);
 
       if (error) throw error;
 
@@ -277,7 +326,7 @@ const HostelApplication = () => {
 
       toast({
         title: "Application Submitted!",
-        description: "Your hostel application has been sent to the warden for approval.",
+        description: "Your hostel application and ₹100 fee have been sent to the warden for approval.",
       });
 
       // Navigate back to home after successful submission
@@ -675,15 +724,140 @@ const HostelApplication = () => {
                 </div>
               </div>
 
+              {/* Mock Payment Portal Section */}
+              {formData.termsAccepted && (
+                <div className="space-y-6 pt-6 border-t-2 border-dashed border-border animate-fade-in text-card-foreground">
+                  <div className="bg-primary/5 rounded-2xl p-6 border-2 border-primary/20">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
+                          <IndianRupee className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-foreground font-heading">Application Fee</h3>
+                          <p className="text-sm text-muted-foreground">Secure One-time Payment</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-black text-primary">₹100</p>
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-tighter">Registration Fee</Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <Label>1. Scan & Pay ₹100</Label>
+                        <div className="relative group">
+                          <div className="aspect-square w-48 mx-auto bg-white rounded-2xl p-3 border-2 border-primary/20 shadow-xl overflow-hidden">
+                            <img 
+                              src="/payment_qr.png" 
+                              alt="Payment QR" 
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <div className="mt-3 flex justify-center">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={downloadQR}
+                              className="gap-2 font-bold uppercase text-[10px]"
+                              disabled={isDownloadingQR}
+                            >
+                              <Download className="w-3 h-3" />
+                              {isDownloadingQR ? "Downloading..." : "Download QR"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <Label>2. Select Method & Enter ID</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: "upi", icon: QrCode, label: "UPI" },
+                            { id: "card", icon: CreditCard, label: "Card" },
+                            { id: "wallet", icon: Wallet, label: "Wallet" },
+                          ].map((method) => (
+                            <button
+                              key={method.id}
+                              type="button"
+                              onClick={() => handleInputChange("paymentMethod", method.id)}
+                              className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${
+                                formData.paymentMethod === method.id 
+                                ? "border-primary bg-primary/10 text-primary shadow-inner" 
+                                : "border-border bg-background hover:bg-muted"
+                              }`}
+                            >
+                              <method.icon className="w-5 h-5" />
+                              <span className="text-[10px] font-bold uppercase">{method.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="relative">
+                          <Input
+                            id="transactionId"
+                            placeholder="Enter 12-digit transaction ID"
+                            value={formData.transactionId}
+                            onChange={(e) => handleInputChange("transactionId", e.target.value)}
+                            className="h-12 pl-10 bg-background border-2"
+                          />
+                          <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-3">
+                      <Label>3. Upload Payment Receipt *</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-32 h-24 border-2 border-dashed border-primary/30 rounded-xl bg-background flex items-center justify-center overflow-hidden shrink-0">
+                          {receiptPreview ? (
+                            <img src={receiptPreview} alt="Receipt" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImagePlus className="w-6 h-6 text-muted-foreground opacity-30" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleReceiptChange}
+                            className="h-10 text-xs"
+                            required
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1 px-1 italic">
+                            Uploading clear receipt image helps in faster verification.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <p className="text-xs font-semibold text-green-700">
+                        Payment & Receipt verified. Ready to submit.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 type="submit"
                 variant="hero"
                 size="xl"
-                className="w-full"
-                disabled={isSubmitting}
+                className="w-full mt-4"
+                disabled={isSubmitting || !formData.termsAccepted || !formData.transactionId}
               >
-                {isSubmitting ? "Submitting..." : "Submit Application"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Processing Application...
+                  </>
+                ) : (
+                  "Pay ₹100 & Submit Application"
+                )}
               </Button>
             </form>
           </CardContent>

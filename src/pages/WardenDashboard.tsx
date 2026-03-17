@@ -42,6 +42,10 @@ import {
   Bell,
   LayoutGrid,
   Camera,
+  IndianRupee,
+  Eye,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +78,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -103,6 +107,7 @@ const WardenDashboard = () => {
   const [signaturePreview, setSignaturePreview] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState<string | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [isFeatureVisionOpen, setIsFeatureVisionOpen] = useState(false);
   const signatureInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -282,7 +287,7 @@ const WardenDashboard = () => {
 
   const fetchApplications = async (gender: string | null) => {
     // Omit large base64 string columns (photo_url, signature_url) for initial fast loading
-    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price, floor_preference, address, zip_code").order("created_at", { ascending: false });
+    let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price, floor_preference, address, zip_code, application_fee_status, application_fee_amount, application_fee_transaction_id, application_fee_payment_method, application_fee_payment_date, application_fee_receipt_url").order("created_at", { ascending: false });
     if (gender) query = query.ilike("gender", gender);
     const { data } = await query;
     if (data) setApplications(data as any[]);
@@ -1045,6 +1050,7 @@ const WardenDashboard = () => {
     { id: "paymentSubmissions" as TabType, label: "Student Payments", icon: CreditCard },
     { id: "updates" as TabType, label: "Hostel Updates", icon: Bell },
     { id: "albumUpdate" as TabType, label: "Album Update", icon: Camera },
+    { id: "appFees" as TabType, label: "Applications Fee", icon: IndianRupee, count: applications.filter(app => app.application_fee_status === "paid" && app.status === "pending").length },
     { id: "recycleBin" as TabType, label: "Recycle Bin", icon: Trash2 },
   ];
 
@@ -1142,6 +1148,106 @@ const WardenDashboard = () => {
             ))}
           </div>
         </div>
+
+        {/* Applications Fee Tab */}
+        {activeTab === "appFees" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Application Fee Payments</h2>
+              <Badge variant="secondary" className="px-4 py-1 bg-primary/10 text-primary border-primary/20">
+                ₹{applications.filter(app => app.application_fee_status === "paid").length * 100} Total Collected
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {applications
+                .filter(app => app.application_fee_status === "paid")
+                .map((app) => (
+                  <Card key={app.id} className="border-2 border-primary/20 bg-card hover:shadow-lg transition-all group">
+                    <CardHeader className="pb-2 border-b border-primary/5 flex flex-row items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <IndianRupee className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base font-bold truncate max-w-[150px]">{app.student_name}</CardTitle>
+                          <p className="text-[10px] text-muted-foreground uppercase font-black">{app.branch}</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-500 hover:bg-green-600 border-0">₹100</Badge>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground font-medium">Transaction ID:</span>
+                        <span className="font-mono font-bold text-primary truncate max-w-[120px]">{app.application_fee_transaction_id}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground font-medium">Method:</span>
+                        <span className="font-bold uppercase text-foreground">{app.application_fee_payment_method}</span>
+                      </div>
+                      <div className="flex justify-between text-xs pb-2">
+                        <span className="text-muted-foreground font-medium">Date:</span>
+                        <span className="font-bold text-foreground">
+                          {app.application_fee_payment_date ? new Date(app.application_fee_payment_date).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+
+                      {app.application_fee_receipt_url && (
+                        <div className="pt-2 animate-fade-in group/receipt relative mt-2">
+                           <div className="w-full h-32 rounded-xl overflow-hidden border-2 border-primary/10 bg-muted mb-2 relative">
+                             <img 
+                               src={app.application_fee_receipt_url} 
+                               alt="Payment Receipt" 
+                               className="w-full h-full object-cover group-hover/receipt:scale-105 transition-transform duration-500 cursor-pointer"
+                               onClick={() => setSelectedReceipt(app.application_fee_receipt_url)}
+                             />
+                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/receipt:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                               <Button 
+                                 variant="secondary" 
+                                 size="sm" 
+                                 className="h-8 rounded-lg text-[10px] font-bold uppercase"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setSelectedReceipt(app.application_fee_receipt_url);
+                                 }}
+                               >
+                                 <ExternalLink className="w-3 h-3 mr-1" /> Full View
+                               </Button>
+                             </div>
+                           </div>
+                           <p className="text-[9px] text-center font-bold text-primary uppercase tracking-tighter bg-primary/5 py-1 rounded-lg">
+                             Click image to verify UTR details
+                           </p>
+                        </div>
+                      )}
+                      
+                      <div className="pt-3 border-t border-primary/5 flex justify-between items-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border ${getStatusColor(app.status)}`}>
+                          App Status: {app.status || 'Pending'}
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-[10px] font-bold uppercase hover:bg-primary hover:text-white"
+                          onClick={() => handleApplicationClick(app)}
+                        >
+                          View App
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+              {applications.filter(app => app.application_fee_status === "paid").length === 0 && (
+                <div className="col-span-full py-20 text-center bg-muted/30 rounded-3xl border-2 border-dashed border-border">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-50 font-black italic text-primary">₹</div>
+                  <h3 className="text-lg font-bold text-muted-foreground">No application fees received yet</h3>
+                  <p className="text-sm text-muted-foreground px-10">Application fees of ₹100 from student submissions will appear here.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
@@ -1870,11 +1976,30 @@ const WardenDashboard = () => {
                   </p>
                 </div>
                 <div className="detail-item col-span-2 fee-section">
-                  <p className="detail-label text-sm text-muted-foreground">Total Fee</p>
+                  <p className="detail-label text-sm text-muted-foreground">Total Hostel Fee</p>
                   <p className="detail-value font-semibold text-primary text-lg">
                     ₹{selectedApplication.price?.toLocaleString()}
                   </p>
                 </div>
+
+                {selectedApplication.application_fee_status === "paid" && (
+                  <div className="col-span-2 bg-green-500/10 p-4 rounded-xl border border-green-500/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-green-700 uppercase">Application Fee Paid</p>
+                      <Badge variant="outline" className="bg-green-500 text-white border-0">₹100</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div>
+                        <p className="text-muted-foreground uppercase">Transaction ID</p>
+                        <p className="font-mono font-bold text-foreground truncate">{selectedApplication.application_fee_transaction_id}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-muted-foreground uppercase">Method</p>
+                        <p className="font-bold text-foreground uppercase">{selectedApplication.application_fee_payment_method}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {selectedApplication.status === "pending" && (
@@ -2156,7 +2281,59 @@ const WardenDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div >
+
+      {/* Full View Receipt Dialog */}
+      <Dialog open={!!selectedReceipt} onOpenChange={() => setSelectedReceipt(null)}>
+        <DialogContent className="max-w-3xl bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl border-0 rounded-[2rem] p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="p-6 bg-primary/5 border-b border-primary/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl font-bold">Payment Receipt Breakdown</DialogTitle>
+                <DialogDescription className="text-xs font-medium text-muted-foreground mt-1">
+                  Enlarged evidence for UTR & Transaction Verification
+                </DialogDescription>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setSelectedReceipt(null)}
+                className="rounded-full hover:bg-primary/10"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="p-6">
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/20 bg-muted shadow-inner">
+              {selectedReceipt && (
+                <img 
+                  src={selectedReceipt} 
+                  alt="Full Receipt" 
+                  className="w-full h-auto object-contain max-h-[70vh]"
+                />
+              )}
+            </div>
+            <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-foreground">Verification Secure</p>
+                <p className="text-[10px] text-muted-foreground">Compare the Transaction ID on the image above with the dashboard record.</p>
+              </div>
+              <Button 
+                variant="hero" 
+                size="sm" 
+                className="ml-auto h-8 text-[10px]"
+                onClick={() => setSelectedReceipt(null)}
+              >
+                Confirm & Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
