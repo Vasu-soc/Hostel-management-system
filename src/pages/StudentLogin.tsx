@@ -79,7 +79,7 @@ const StudentLogin = () => {
     studentName: "",
     email: "",
     year: "",
-    validityFrom: "2024",
+    validityFrom: "2026",
     validityTo: "2028",
     gender: gender === "boys" ? "male" : "female",
     roomNumber: "",

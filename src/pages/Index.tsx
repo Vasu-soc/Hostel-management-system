@@ -370,7 +370,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-muted-foreground text-sm border-t border-border bg-card/50 backdrop-blur-sm">
-        <p>© 2024 Geethanjali Institute of Science & Technology. All rights reserved.</p>
+        <p>© 2026 Geethanjali Institute of Science & Technology. All rights reserved.</p>
       </footer>
 
       {/* Hostel Rules Dialog */}

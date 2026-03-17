@@ -244,7 +244,7 @@ const AlbumManagement = ({ wardenId, wardenType }: { wardenId: string; wardenTyp
                 Event Name
               </Label>
               <Input 
-                placeholder="e.g. Fresher's Day 2024" 
+                placeholder="e.g. Fresher's Day 2026" 
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
                 className="bg-background/50"
