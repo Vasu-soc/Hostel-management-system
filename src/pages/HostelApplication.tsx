@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +114,8 @@ const HostelApplication = () => {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isPaymentVerified, setIsPaymentVerified] = useState(false);
 
   const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> => {
     return new Promise((resolve) => {
@@ -229,8 +231,25 @@ const HostelApplication = () => {
       }
       const compressedData = await compressImage(file, 800, 800, 0.6);
       setReceiptPreview(compressedData);
+      
+      // Reset verification state when receipt changes
+      setIsPaymentVerified(false);
     }
   };
+
+  // Effect to handle payment verification simulation
+  useEffect(() => {
+    if (formData.transactionId && receiptPreview && !isPaymentVerified && !isVerifyingPayment) {
+      setIsVerifyingPayment(true);
+      const timer = setTimeout(() => {
+        setIsVerifyingPayment(false);
+        setIsPaymentVerified(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else if (!formData.transactionId || !receiptPreview) {
+      if (isPaymentVerified) setIsPaymentVerified(false);
+    }
+  }, [formData.transactionId, receiptPreview]);
 
   const downloadQR = () => {
     setIsDownloadingQR(true);
@@ -849,12 +868,23 @@ const HostelApplication = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <p className="text-xs font-semibold text-green-700">
-                        Payment & Receipt verified. Ready to submit.
-                      </p>
-                    </div>
+                    {isVerifyingPayment && (
+                      <div className="mt-6 flex items-center justify-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/20 animate-pulse">
+                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                        <p className="text-xs font-semibold text-primary">
+                          Verifying Payment Details...
+                        </p>
+                      </div>
+                    )}
+
+                    {isPaymentVerified && !isVerifyingPayment && (
+                      <div className="mt-6 flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-xl border border-green-500/20 animate-fade-in">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <p className="text-xs font-semibold text-green-700">
+                          Payment & Receipt verified. Ready to submit.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -865,7 +895,7 @@ const HostelApplication = () => {
                 variant="hero"
                 size="xl"
                 className="w-full mt-4"
-                disabled={isSubmitting || !formData.termsAccepted || !formData.transactionId}
+                disabled={isSubmitting || !formData.termsAccepted || !isPaymentVerified}
               >
                 {isSubmitting ? (
                   <>
@@ -873,7 +903,7 @@ const HostelApplication = () => {
                     Processing Application...
                   </>
                 ) : (
-                  "Pay ₹100 & Submit Application"
+                  isPaymentVerified ? "Submit Application" : "Pay ₹100 & Submit Application"
                 )}
               </Button>
             </form>
