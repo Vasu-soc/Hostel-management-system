@@ -165,7 +165,7 @@ const HostelApplication = () => {
     parentPhoneNumber: "",
     roomType: "",
     acType: "",
-    months: 12,
+    months: 1,
     floorPreference: "any",
     address: "",
     zipCode: "",
@@ -814,7 +814,7 @@ const HostelApplication = () => {
                       </div>
 
                       <div className="space-y-4">
-                        <Label>2. Select Method & Enter ID</Label>
+                        <Label>2. Select Method & Enter ID *</Label>
                         <div className="grid grid-cols-3 gap-2">
                           {[
                             { id: "upi", icon: QrCode, label: "UPI" },
@@ -843,6 +843,7 @@ const HostelApplication = () => {
                             value={formData.transactionId}
                             onChange={(e) => handleInputChange("transactionId", e.target.value)}
                             className="h-12 pl-10 bg-background border-2"
+                            required
                           />
                           <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         </div>
