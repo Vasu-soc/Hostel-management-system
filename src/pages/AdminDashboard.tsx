@@ -415,8 +415,10 @@ const AdminDashboard = () => {
                       <p className="text-sm text-muted-foreground">Active residents per department</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {Object.entries(stats.branchStats).slice(0, 6).map(([branch, data]) => (
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {Object.entries(stats.branchStats)
+                      .filter(([_, data]) => data.total > 0)
+                      .map(([branch, data]) => (
                       <div key={branch} className="p-4 rounded-xl bg-muted/30 border border-border group hover:bg-muted/50 transition-colors">
                         <span className="text-xs font-black text-muted-foreground uppercase">{branch}</span>
                         <div className="flex items-baseline gap-2 mt-1">
