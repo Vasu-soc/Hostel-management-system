@@ -585,6 +585,9 @@ const StudentLogin = () => {
 
       setActiveTab("login");
       setLoginData({ ...loginData, rollNumber: registerData.rollNumber.toUpperCase() });
+      
+      // Update URL to switch to login mode after successful registration
+      navigate(`/student-login?gender=${gender}&mode=login`, { replace: true });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Registration failed";
       logger.error("student_registration", registerData.rollNumber.toUpperCase(), "failure");
@@ -745,11 +748,8 @@ const StudentLogin = () => {
                 </Button>
               </form>
             ) : (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8">
-                  <TabsTrigger value="login" className="font-bold">Login</TabsTrigger>
-                  <TabsTrigger value="register" className="font-bold">Register</TabsTrigger>
-                </TabsList>
+              <Tabs value={mode === "register" ? "register" : "login"} className="w-full">
+                {/* TabsList hidden for single-view experience as per user request */}
 
                 <TabsContent value="login" className="space-y-6">
                   <div className="flex items-center justify-between border-b-2 border-primary/10 pb-4">
