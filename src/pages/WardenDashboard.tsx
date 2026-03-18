@@ -233,14 +233,18 @@ const WardenDashboard = () => {
               </tr>
               <tr>
                 <td class="label">Proposed Duration</td>
-                <td class="value">${selectedApplication.months} Months</td>
+                <td class="value">
+                  ${selectedApplication.months >= 12 
+                    ? (selectedApplication.months / 12) + " Year" + (selectedApplication.months > 12 ? "s" : "") + ` (${selectedApplication.months} Months)`
+                    : selectedApplication.months + " Months"}
+                </td>
               </tr>
               <tr>
                 <td class="label">Floor Preference</td>
                 <td class="value">${selectedApplication.floor_preference === 'any' ? 'Any Floor' : selectedApplication.floor_preference + ' Floor'}</td>
               </tr>
               <tr>
-                <td class="label">Total Annual Fee</td>
+                <td class="label">Annual Hostel Fee</td>
                 <td class="value" style="font-weight: bold; color: #000;">₹ ${selectedApplication.price?.toLocaleString()}</td>
               </tr>
             </table>

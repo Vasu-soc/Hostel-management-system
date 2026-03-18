@@ -93,7 +93,7 @@ const roomTypes = [
   },
 ];
 
-const monthOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const monthOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24, 36, 48];
 
 const termsAndConditions = [
   "Follow hostel timings strictly (In by 9 PM, Out by 6 AM)",
@@ -268,7 +268,9 @@ const HostelApplication = () => {
     const room = roomTypes.find((r) => r.id === selectedRoomType);
     if (!room || !formData.acType) return null;
     const pricePerMonth = formData.acType === "ac" ? room.acPricePerMonth : room.normalPricePerMonth;
-    return pricePerMonth * formData.months;
+    // As per user request, fee is shown year-wise (max 12 months calculation) even for 2, 3, 4 year selections
+    const effectiveMonths = formData.months >= 12 ? 12 : formData.months;
+    return pricePerMonth * effectiveMonths;
   };
 
   const getPricePerMonth = () => {
@@ -683,7 +685,10 @@ const HostelApplication = () => {
                             <SelectContent className="bg-popover border-2 border-border z-50">
                               {monthOptions.map((month) => (
                                 <SelectItem key={month} value={month.toString()}>
-                                  {month} {month === 1 ? "Month" : "Months"}
+                                  {month === 24 ? "2 Years" : 
+                                   month === 36 ? "3 Years" : 
+                                   month === 48 ? "4 Years" : 
+                                   `${month} ${month === 1 ? "Month" : "Months"}`}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -714,7 +719,7 @@ const HostelApplication = () => {
                           Price per month: <span className="font-semibold text-foreground">₹{getPricePerMonth()?.toLocaleString()}</span>
                         </p>
                         <p className="text-lg font-semibold text-foreground mt-1">
-                          Total for {formData.months} {formData.months === 1 ? "month" : "months"}:{" "}
+                          {formData.months >= 12 ? "Total Annual Fee" : `Total for ${formData.months} months`}:{" "}
                           <span className="text-primary">₹{getPrice()?.toLocaleString()}</span>
                         </p>
                       </div>
