@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -273,6 +274,9 @@ const PendingRoomsDashboard = ({ rooms, students = [] }: PendingRoomsDashboardPr
               <User className="w-5 h-5 text-primary" />
               Student Profile
             </DialogTitle>
+            <DialogDescription>
+              Detailed information about the selected student.
+            </DialogDescription>
           </DialogHeader>
           {selectedStudent && (
             <div className="space-y-4 pt-2">
@@ -396,6 +400,10 @@ const PendingRoomsDashboard = ({ rooms, students = [] }: PendingRoomsDashboardPr
       {/* Enlarged Photo Dialog */}
       <Dialog open={!!enlargedPhotoUrl} onOpenChange={() => setEnlargedPhotoUrl(null)}>
         <DialogContent className="max-w-md p-2">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Enlarged Photo View</DialogTitle>
+            <DialogDescription>Full view of the student photo</DialogDescription>
+          </DialogHeader>
           {enlargedPhotoUrl && (
             <img
               src={enlargedPhotoUrl}

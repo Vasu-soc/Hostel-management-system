@@ -375,7 +375,7 @@ const Index = () => {
 
       {/* Hostel Rules Dialog */}
       <Dialog open={rulesDialogOpen} onOpenChange={setRulesDialogOpen}>
-        <DialogContent 
+        <DialogContent
           aria-describedby={undefined}
           className="max-w-lg max-h-[80vh] overflow-y-auto"
         >

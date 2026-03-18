@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
 import {
@@ -922,6 +923,9 @@ const QRZoomModal = ({ open, onOpenChange }: { open: boolean, onOpenChange: (ope
       <div className="relative w-[90vw] max-w-[450px] aspect-square bg-white rounded-[2.5rem] p-6 shadow-2xl animate-in zoom-in-95 duration-300">
         <DialogHeader className="absolute -top-12 left-0 right-0 flex-row justify-between items-center px-4">
           <DialogTitle className="text-white text-lg font-black tracking-tight drop-shadow-md">SCAN TO PAY</DialogTitle>
+          <DialogDescription className="sr-only">
+            Scan the QR code to pay the registration fee.
+          </DialogDescription>
           <DialogClose asChild>
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full w-10 h-10">
               <X className="w-6 h-6" />

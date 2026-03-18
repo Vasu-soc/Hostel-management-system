@@ -11,15 +11,15 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  Menu, 
-  Users, 
-  Home, 
-  UserPlus, 
-  Shield, 
-  ShieldCheck, 
-  LogIn, 
-  FileText, 
+import {
+  Menu,
+  Users,
+  Home,
+  UserPlus,
+  Shield,
+  ShieldCheck,
+  LogIn,
+  FileText,
   Pill,
   GraduationCap,
   ChevronDown
@@ -129,26 +129,26 @@ const CollegeHeader = () => {
             <div className="relative w-full max-w-[95%] h-[1.8px] mt-4 mb-3 overflow-hidden rounded-full">
               {/* Visible Saturated Base - Stronger for light theme */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/40 dark:via-primary/20 to-transparent"></div>
-              
+
               {/* The Wave Flow - High-Contrast Light Streak */}
-              <motion.div 
-                animate={{ 
-                  x: ["-100%", "250%"] 
+              <motion.div
+                animate={{
+                  x: ["-100%", "250%"]
                 }}
-                transition={{ 
-                  duration: 2.5, 
-                  repeat: Infinity, 
-                  ease: "linear" 
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "linear"
                 }}
                 className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white dark:via-white/80 to-transparent opacity-100 blur-[1px]"
               />
-              
+
               {/* High-Gloss Center Point */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-[15%] h-full bg-primary/60 dark:bg-primary/30 blur-[2px] shadow-[0_0_15px_rgba(var(--primary),0.5)]"></div>
               </div>
             </div>
-            
+
             {/* Quick Navigation Links with Dropdowns */}
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-3 sm:mt-4 pb-1">
               {isHomePage && (
@@ -245,8 +245,8 @@ const CollegeHeader = () => {
                     <Menu className="h-4 w-4 sm:h-6 sm:w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent 
-                  side="right" 
+                <SheetContent
+                  side="right"
                   className="w-[85vw] sm:w-[400px] border-l-2 border-primary/20 bg-card/95 backdrop-blur-xl p-0 overflow-hidden"
                   aria-describedby={undefined}
                 >

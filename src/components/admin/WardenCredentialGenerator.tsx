@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -347,10 +348,10 @@ const WardenCredentialGenerator = ({ adminId }: WardenCredentialGeneratorProps) 
       <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-success" />
-              Registration Link Generated
-            </DialogTitle>
+            <DialogTitle>Registration Link Generated</DialogTitle>
+            <DialogDescription>
+              A new registration token has been created. Share this link with the warden.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="p-4 bg-muted rounded-lg break-all">

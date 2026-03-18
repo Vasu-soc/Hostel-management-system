@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Camera, Settings, Activity } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 import NotificationBell from "./NotificationBell";
 import { motion } from "framer-motion";
@@ -130,6 +130,10 @@ const DashboardHeader = ({
 
       <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
         <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none overflow-hidden flex items-center justify-center">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Profile Photo View</DialogTitle>
+            <DialogDescription>Full view of user profile photo</DialogDescription>
+          </DialogHeader>
           {userPhotoUrl && (
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}

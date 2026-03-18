@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
@@ -241,6 +241,9 @@ const PaymentSubmissionsDashboard = ({ wardenType }: PaymentSubmissionsDashboard
                 <CreditCard className="w-5 h-5 text-primary" />
                 Payment Submission Details
               </DialogTitle>
+              <DialogDescription>
+                Verify student fee payment details and receipt image.
+              </DialogDescription>
             </DialogHeader>
             
             <div className="grid grid-cols-2 gap-4 mt-4">
