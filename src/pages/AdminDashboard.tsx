@@ -287,6 +287,7 @@ const AdminDashboard = () => {
         userSubtitle={<Badge variant="outline" className="text-xs">System Administrator</Badge>}
         onLogout={handleLogout}
         showPhoto={false}
+        staticPosition={true}
       />
 
       {/* Classic Navigation Bar */}

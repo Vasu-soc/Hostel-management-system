@@ -87,7 +87,7 @@ const CollegeHeader = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full header-dynamic-bg shadow-xl border-b border-primary/20 transition-all duration-500">
+    <header className="relative z-50 w-full header-dynamic-bg shadow-xl border-b border-primary/20 transition-all duration-500">
       <div className="container mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-5">
         <div className="flex items-center justify-between gap-2 sm:gap-4 md:gap-6">
           {/* Logo with GIST Text below */}

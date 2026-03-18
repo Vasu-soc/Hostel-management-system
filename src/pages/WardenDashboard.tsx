@@ -1071,6 +1071,7 @@ const WardenDashboard = () => {
         userSubtitle={`${warden.warden_type === "boys" ? "Boys" : "Girls"} Hostel Warden`}
         onLogout={handleLogout}
         showPhoto={false}
+        staticPosition={true}
         extraActions={
           <Button
             variant="ghost"
@@ -1083,10 +1084,10 @@ const WardenDashboard = () => {
           </Button>
         }
       />
-
       {/* Tab Navigation */}
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 items-center">
+      {/* Classic Navigation Bar */}
+      <div className="sticky top-0 z-30 w-full bg-background/80 backdrop-blur-md border-b border-border transition-all">
+        <div className="container mx-auto px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar items-center justify-center">
           {/* Master "All Features" Toggle with Hover Vision Preview */}
           <HoverCard openDelay={200}>
             <HoverCardTrigger asChild>
@@ -1129,12 +1130,14 @@ const WardenDashboard = () => {
 
           <div className="h-6 w-[1.5px] bg-border mx-1 shrink-0" />
 
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar items-center">
             {tabs.map((tab) => (
               <Button
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "outline"}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                }}
                 className="relative whitespace-nowrap h-9 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all active:scale-95"
               >
                 <tab.icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
@@ -1148,10 +1151,13 @@ const WardenDashboard = () => {
             ))}
           </div>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-4">
         {/* Applications Fee Tab */}
         {activeTab === "appFees" && (
           <div className="space-y-6">
+
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-foreground">Application Fee Payments</h2>
               <Badge variant="secondary" className="px-4 py-1 bg-primary/10 text-primary border-primary/20">

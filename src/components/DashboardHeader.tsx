@@ -20,6 +20,7 @@ interface DashboardHeaderProps {
   extraActions?: React.ReactNode;
   beforeTitleAction?: React.ReactNode;
   stickyOffset?: string;
+  staticPosition?: boolean;
 }
 
 const DashboardHeader = ({
@@ -36,6 +37,7 @@ const DashboardHeader = ({
   extraActions,
   beforeTitleAction,
   stickyOffset = "top-0",
+  staticPosition = false,
 }: DashboardHeaderProps) => {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
 
@@ -49,7 +51,7 @@ const DashboardHeader = ({
 
   return (
     <>
-      <div className={`sticky ${stickyOffset} z-40 w-full bg-background/60 backdrop-blur-2xl border-b border-primary/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-500`}>
+      <div className={`${staticPosition ? "relative" : `sticky ${stickyOffset}`} z-40 w-full bg-background/60 backdrop-blur-2xl border-b border-primary/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-500`}>
         <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between gap-4">
           {/* User Info Section */}
           <div className="flex items-center gap-3 min-w-0">
