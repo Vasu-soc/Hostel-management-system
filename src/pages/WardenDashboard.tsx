@@ -46,7 +46,11 @@ import {
   Eye,
   ExternalLink,
   ShieldCheck,
+  Clock,
+  BookOpen,
+  Info,
 } from "lucide-react";
+import RoomAttendance from "@/components/warden/RoomAttendance";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { localApi } from "@/lib/localStudentApi";
@@ -64,6 +68,9 @@ import DashboardHeader from "@/components/DashboardHeader";
 import UpdatesManagement from "@/components/UpdatesManagement";
 import RecycleBin from "@/components/warden/RecycleBin";
 import AlbumManagement from "@/components/warden/AlbumManagement";
+import AttendanceReports from "@/components/warden/AttendanceReports";
+import BranchMarksUpload from "@/components/warden/BranchMarksUpload";
+import LeaveExtensions from "@/components/warden/LeaveExtensions";
 import {
   HoverCard,
   HoverCardContent,
@@ -78,7 +85,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "materials" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "studyMaterial" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees" | "attendance" | "marksUpload" | "leaveExtensions" | "complaints" | "profile";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -95,8 +102,11 @@ const WardenDashboard = () => {
   const [materials, setMaterials] = useState<any[]>([]);
   const [electricalIssues, setElectricalIssues] = useState<any[]>([]);
   const [foodIssues, setFoodIssues] = useState<any[]>([]);
+  const [roomIssues, setRoomIssues] = useState<any[]>([]);
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
   const [updates, setUpdates] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [activeAttendance, setActiveAttendance] = useState<any[]>([]);
 
   // Dialog states
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
@@ -344,14 +354,16 @@ const WardenDashboard = () => {
     const medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
 
     if (gender) {
-      const [{ data: elecData }, { data: foodData }, { data: medicalData, error: medicalError }] = await Promise.all([
+      const [{ data: elecData }, { data: foodData }, { data: roomData }, { data: medicalData, error: medicalError }] = await Promise.all([
         elecQuery.ilike("students.gender", gender),
         foodQuery.ilike("students.gender", gender),
+        supabase.from("room_issues").select("*, students!inner(gender)").ilike("students.gender", gender).order("created_at", { ascending: false }),
         medicalQuery.ilike("students.gender", gender)
       ]);
 
       if (elecData) setElectricalIssues(elecData as any[]);
       if (foodData) setFoodIssues(foodData as any[]);
+      if (roomData) setRoomIssues(roomData as any[]);
 
       if (medicalError) {
         console.error("Medical alerts fetch failed:", medicalError.message);
@@ -360,14 +372,16 @@ const WardenDashboard = () => {
         setMedicalAlerts(medicalData || []);
       }
     } else {
-      const [{ data: elecData }, { data: foodData }, { data: medicalData, error: medicalError }] = await Promise.all([
+      const [{ data: elecData }, { data: foodData }, { data: roomData }, { data: medicalData, error: medicalError }] = await Promise.all([
         elecQuery,
         foodQuery,
+        supabase.from("room_issues").select("*, students!inner(gender)").order("created_at", { ascending: false }),
         medicalQuery
       ]);
 
       if (elecData) setElectricalIssues(elecData as any[]);
       if (foodData) setFoodIssues(foodData as any[]);
+      if (roomData) setRoomIssues(roomData as any[]);
 
       if (medicalError) {
         console.error("Medical alerts fetch failed:", medicalError.message);
@@ -393,6 +407,25 @@ const WardenDashboard = () => {
     }
   };
 
+  const fetchNotifications = async () => {
+    // Implement fetching notifications if needed
+    // For now, it's just a placeholder
+    // const { data, error } = await supabase.from("notifications").select("*").order("created_at", { ascending: false });
+    // if (data) setNotifications(data);
+  };
+
+  const fetchTodayAttendance = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('daily_attendance')
+      .select('*')
+      .eq('attendance_date', today)
+      .eq('status', 'present');
+    if (!error && data) {
+      setActiveAttendance(data);
+    }
+  };
+
   const fetchAllData = async () => {
     if (!warden) return;
 
@@ -407,7 +440,9 @@ const WardenDashboard = () => {
       fetchRooms(isBoys, isGirls),
       fetchGatePasses(studentGender),
       fetchIssues(studentGender),
-      fetchMaterials()
+      fetchMaterials(),
+      fetchNotifications(),
+      fetchTodayAttendance()
     ]);
   };
 
@@ -468,6 +503,10 @@ const WardenDashboard = () => {
         .on("postgres_changes", { event: "*", schema: "public", table: "study_materials" }, () => {
           console.log("Real-time: study_materials changed");
           fetchMaterials();
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "daily_attendance" }, () => {
+          console.log("Real-time: daily_attendance changed");
+          fetchTodayAttendance();
         })
         .subscribe((status) => {
           console.log("Real-time subscription status:", status);
@@ -1046,7 +1085,7 @@ const WardenDashboard = () => {
     { id: "gatepasses" as TabType, label: "Gate Passes", icon: DoorOpen, count: pendingGatePasses.length },
     { id: "rooms" as TabType, label: "Hostel Rooms", icon: Building2 },
     { id: "allotment" as TabType, label: "Room Allotment", icon: Users, count: pendingStudents.length },
-    { id: "materials" as TabType, label: "Study Materials", icon: Upload },
+    { id: "studyMaterial" as TabType, label: "Study Materials", icon: BookOpen },
     { id: "issues" as TabType, label: "Issues", icon: AlertTriangle, count: pendingElectrical.length + pendingFood.length },
     { id: "foodSelection" as TabType, label: "Food Selection", icon: Utensils },
     { id: "medicines" as TabType, label: "Medicines", icon: Pill },
@@ -1055,6 +1094,9 @@ const WardenDashboard = () => {
     { id: "updates" as TabType, label: "Hostel Updates", icon: Bell },
     { id: "albumUpdate" as TabType, label: "Album Update", icon: Camera },
     { id: "appFees" as TabType, label: "Applications Fee", icon: IndianRupee, count: applications.filter(app => app.application_fee_status === "paid" && app.status === "pending").length },
+    { id: "attendance" as TabType, label: "Attendance", icon: Users },
+    { id: "marksUpload" as TabType, label: "Marks Upload", icon: FileText },
+    { id: "leaveExtensions" as TabType, label: "Leave Exts.", icon: Clock },
     { id: "recycleBin" as TabType, label: "Recycle Bin", icon: Trash2 },
   ];
 
@@ -1287,9 +1329,10 @@ const WardenDashboard = () => {
               const leaveCount = outRolls.size;
               const presentCount = Math.max(0, totalAllotted - leaveCount);
               const isBoys = warden?.warden_type === "boys";
+              const messCount = activeAttendance.length;
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-2 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-2 animate-fade-in">
                   <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg border-0 hover:shadow-indigo-500/30 transition-shadow transition-transform hover:-translate-y-1">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-indigo-100 flex items-center justify-between font-medium">
@@ -1313,6 +1356,19 @@ const WardenDashboard = () => {
                     <CardContent>
                       <div className="text-4xl font-black">{presentCount}</div>
                       <p className="text-emerald-100/80 text-sm mt-1">Students inside hostel</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg border-0 hover:shadow-orange-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-orange-100 flex items-center justify-between font-medium">
+                        Mess Food Count
+                        <Utensils className="w-5 h-5 text-orange-200" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-black">{messCount}</div>
+                      <p className="text-orange-100/80 text-sm mt-1">Total meals to prepare for today</p>
                     </CardContent>
                   </Card>
 
@@ -1710,8 +1766,13 @@ const WardenDashboard = () => {
           </div>
         )}
 
+        {/* Room Attendance Tab */}
+        {activeTab === "attendance" && (
+          <RoomAttendance rooms={rooms} students={students} wardenId={warden?.id} />
+        )}
+
         {/* Study Materials Tab */}
-        {activeTab === "materials" && (
+        {activeTab === "studyMaterial" && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-foreground">Upload Study Materials</h2>
             <StudyMaterialUpload materials={materials} wardenId={warden.id} onRefresh={fetchAllData} />
@@ -1725,6 +1786,7 @@ const WardenDashboard = () => {
             <IssueReports
               electricalIssues={electricalIssues}
               foodIssues={foodIssues}
+              roomIssues={roomIssues}
               medicalAlerts={medicalAlerts}
               onRefresh={fetchAllData}
             />
@@ -1767,6 +1829,27 @@ const WardenDashboard = () => {
         {activeTab === "albumUpdate" && (
           <div className="animate-in fade-in duration-500">
             <AlbumManagement wardenId={warden.id} wardenType={warden.warden_type} />
+          </div>
+        )}
+
+        {/* Attendance Reports Tab */}
+        {activeTab === "attendance" && (
+          <div className="animate-in fade-in duration-500">
+            <AttendanceReports students={students.filter(s => s.room_allotted)} wardenId={warden.id} wardenType={warden.warden_type} />
+          </div>
+        )}
+
+        {/* Branch Marks Upload Tab */}
+        {activeTab === "marksUpload" && (
+          <div className="animate-in fade-in duration-500">
+            <BranchMarksUpload wardenId={warden.id} />
+          </div>
+        )}
+
+        {/* Leave Extensions Tab */}
+        {activeTab === "leaveExtensions" && (
+          <div className="animate-in fade-in duration-500">
+            <LeaveExtensions />
           </div>
         )}
       </div>
@@ -2053,23 +2136,78 @@ const WardenDashboard = () => {
             const studentData = students.find((s: any) => s.roll_number === selectedGatePass.roll_number);
             return (
               <div className="space-y-4 pt-4">
-                {/* Student Photo for Identity Verification */}
-                {studentData?.photo_url && (
-                  <div className="flex justify-center">
-                    <div className="relative">
-                      <img
-                        src={studentData.photo_url}
-                        alt={`${selectedGatePass.student_name}'s photo`}
-                        className="w-28 h-28 object-cover rounded-lg border-2 border-primary shadow-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => setEnlargedPhotoUrl(studentData.photo_url)}
-                        title="Click to enlarge"
-                      />
-                      <p className="text-xs text-center text-muted-foreground mt-2">
-                        Click photo to enlarge for verification
-                      </p>
+                {/* Mandatory Photos for Identity Verification */}
+                <div className="flex flex-col space-y-3 pb-4 border-b border-border/50">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground text-center flex items-center justify-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    Identity Verification Photos
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* Student Photo */}
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="relative group">
+                        {studentData?.photo_url ? (
+                          <img
+                            src={studentData.photo_url}
+                            alt="Student"
+                            className="w-24 h-24 object-cover rounded-xl border-2 border-primary shadow-sm cursor-pointer hover:ring-4 ring-primary/20 transition-all"
+                            onClick={() => setEnlargedPhotoUrl(studentData.photo_url)}
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/30 text-muted-foreground">
+                            <User className="w-8 h-8" />
+                          </div>
+                        )}
+                        <span className="absolute -bottom-2 -right-2 bg-primary text-white p-1 rounded-full shadow-lg">
+                          <Check className="w-3 h-3" />
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Student</span>
+                    </div>
+
+                    {/* Parent Photo */}
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="relative group">
+                        {studentData?.parent_photo_url ? (
+                          <img
+                            src={studentData.parent_photo_url}
+                            alt="Parent"
+                            className="w-24 h-24 object-cover rounded-xl border-2 border-purple-500 shadow-sm cursor-pointer hover:ring-4 ring-purple-500/20 transition-all"
+                            onClick={() => setEnlargedPhotoUrl(studentData.parent_photo_url)}
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/30 text-muted-foreground">
+                            <Users className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Parent</span>
+                    </div>
+
+                    {/* Guardian Photo */}
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="relative group">
+                        {studentData?.guardian_photo_url ? (
+                          <img
+                            src={studentData.guardian_photo_url}
+                            alt="Guardian"
+                            className="w-24 h-24 object-cover rounded-xl border-2 border-pink-500 shadow-sm cursor-pointer hover:ring-4 ring-pink-500/20 transition-all"
+                            onClick={() => setEnlargedPhotoUrl(studentData.guardian_photo_url)}
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/30 text-muted-foreground">
+                            <Users className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Guardian</span>
                     </div>
                   </div>
-                )}
+                  <p className="text-[10px] text-center text-muted-foreground italic flex items-center justify-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Click any photo to enlarge for careful verification
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Student Name</p>

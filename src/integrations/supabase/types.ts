@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      branch_marks: {
+        Row: {
+          id: string
+          branch: string
+          year: string
+          title: string
+          date: string
+          file_url: string
+          created_at: string
+          warden_id: string | null
+        }
+        Insert: {
+          id?: string
+          branch: string
+          year: string
+          title: string
+          date: string
+          file_url: string
+          created_at?: string
+          warden_id?: string | null
+        }
+        Update: {
+          id?: string
+          branch?: string
+          year?: string
+          title?: string
+          date?: string
+          file_url?: string
+          created_at?: string
+          warden_id?: string | null
+        }
+        Relationships: []
+      }
+      attendance_reports: {
+        Row: {
+          id: string
+          student_id: string
+          student_name: string
+          roll_number: string
+          date: string
+          status: string
+          file_url: string | null
+          created_at: string
+          warden_type: string | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          student_name: string
+          roll_number: string
+          date: string
+          status: string
+          file_url?: string | null
+          created_at?: string
+          warden_type?: string | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          student_name?: string
+          roll_number?: string
+          date?: string
+          status?: string
+          file_url?: string | null
+          created_at?: string
+          warden_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_reports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       admins: {
         Row: {
           created_at: string
@@ -51,6 +128,7 @@ export type Database = {
           status: string | null
           student_id: string | null
           student_name: string
+          issue_type: string | null
         }
         Insert: {
           created_at?: string
@@ -61,6 +139,7 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           student_name: string
+          issue_type?: string | null
         }
         Update: {
           created_at?: string
@@ -71,6 +150,7 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           student_name?: string
+          issue_type?: string | null
         }
         Relationships: [
           {
@@ -126,6 +206,7 @@ export type Database = {
           status: string | null
           student_id: string | null
           student_name: string
+          issue_type: string | null
         }
         Insert: {
           created_at?: string
@@ -135,6 +216,7 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           student_name: string
+          issue_type?: string | null
         }
         Update: {
           created_at?: string
@@ -144,10 +226,55 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           student_name?: string
+          issue_type?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "food_issues_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_issues: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          issue_type: string
+          roll_number: string
+          room_number: string
+          status: string | null
+          student_id: string | null
+          student_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          issue_type: string
+          roll_number: string
+          room_number: string
+          status?: string | null
+          student_id?: string | null
+          student_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          issue_type?: string
+          roll_number?: string
+          room_number?: string
+          status?: string | null
+          student_id?: string | null
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_issues_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -189,6 +316,94 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_attendance: {
+        Row: {
+          id: string
+          student_id: string
+          roll_number: string
+          room_number: string
+          status: string
+          attendance_date: string
+          warden_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          roll_number: string
+          room_number: string
+          status?: string
+          attendance_date?: string
+          warden_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          roll_number?: string
+          room_number?: string
+          status?: string
+          attendance_date?: string
+          warden_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_attendance_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_extensions: {
+        Row: {
+          id: string
+          student_id: string
+          roll_number: string
+          gate_pass_id: string
+          reason: string
+          number_of_days: number
+          proof_url: string
+          status: string
+          extension_from: string | null
+          extension_to: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          roll_number: string
+          gate_pass_id: string
+          reason: string
+          number_of_days: number
+          proof_url: string
+          status?: string
+          extension_from?: string | null
+          extension_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          roll_number?: string
+          gate_pass_id?: string
+          reason?: string
+          number_of_days?: number
+          proof_url?: string
+          status?: string
+          extension_from?: string | null
+          extension_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       gate_passes: {
         Row: {
@@ -446,6 +661,7 @@ export type Database = {
           parent_name: string
           password: string
           student_roll_number: string
+          photo_url: string | null
         }
         Insert: {
           created_at?: string
@@ -454,6 +670,7 @@ export type Database = {
           parent_name: string
           password: string
           student_roll_number: string
+          photo_url?: string | null
         }
         Update: {
           created_at?: string
@@ -462,6 +679,7 @@ export type Database = {
           parent_name?: string
           password?: string
           student_roll_number?: string
+          photo_url?: string | null
         }
         Relationships: []
       }
@@ -677,6 +895,8 @@ export type Database = {
           validity_from: string | null
           validity_to: string | null
           year: string
+          parent_photo_url: string | null
+          guardian_photo_url: string | null
         }
         Insert: {
           branch: string
@@ -701,6 +921,8 @@ export type Database = {
           validity_from?: string | null
           validity_to?: string | null
           year: string
+          parent_photo_url?: string | null
+          guardian_photo_url?: string | null
         }
         Update: {
           branch?: string
@@ -725,6 +947,8 @@ export type Database = {
           validity_from?: string | null
           validity_to?: string | null
           year?: string
+          parent_photo_url?: string | null
+          guardian_photo_url?: string | null
         }
         Relationships: []
       }

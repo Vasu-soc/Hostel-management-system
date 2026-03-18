@@ -158,7 +158,7 @@ const Index = () => {
         {/* Welcome Title */}
         <div className="text-center mb-10 animate-fade-in">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3">
-             <span className="text-gradient">GEETHANJALI HOSTEL</span> <span className="italic">(GIST)</span>
+            <span className="text-gradient">WELCOME TO GEETHANJALI HOSTEL</span> <span className="italic">(GIST)</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-black uppercase tracking-widest text-[10px] sm:text-xs">
             Official Management Portal for Geethanjali Institute of Science & Technology

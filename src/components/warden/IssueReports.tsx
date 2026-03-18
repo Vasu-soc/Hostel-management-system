@@ -15,6 +15,7 @@ interface ElectricalIssue {
   roll_number: string;
   room_number: string;
   description: string;
+  issue_type?: string;
   status: string;
   created_at: string;
 }
@@ -25,6 +26,7 @@ interface FoodIssue {
   student_name: string;
   roll_number: string;
   description: string;
+  issue_type?: string;
   status: string;
   created_at: string;
 }
@@ -40,29 +42,45 @@ interface MedicalAlert {
   created_at: string;
 }
 
+interface RoomIssue {
+  id: string;
+  student_id: string;
+  student_name: string;
+  roll_number: string;
+  room_number: string;
+  issue_type: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
 interface IssueReportsProps {
-  electricalIssues: ElectricalIssue[];
-  foodIssues: FoodIssue[];
+  electricalIssues: (ElectricalIssue & { issue_type?: string })[];
+  foodIssues: (FoodIssue & { issue_type?: string })[];
+  roomIssues: RoomIssue[];
   medicalAlerts: MedicalAlert[];
   onRefresh: () => void;
 }
 
 const AUTO_REMOVE_MS = 800;
 
-const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }: IssueReportsProps) => {
+const IssueReports = ({ electricalIssues, foodIssues, roomIssues, medicalAlerts, onRefresh }: IssueReportsProps) => {
   const { toast } = useToast();
   const [selectedElectricalIssue, setSelectedElectricalIssue] = useState<ElectricalIssue | null>(null);
   const [selectedFoodIssue, setSelectedFoodIssue] = useState<FoodIssue | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Local copies so we can immediately update UI (green) and then auto-remove.
-  const [localElectrical, setLocalElectrical] = useState<ElectricalIssue[]>(electricalIssues);
-  const [localFood, setLocalFood] = useState<FoodIssue[]>(foodIssues);
-  const [localMedical, setLocalMedical] = useState<MedicalAlert[]>(medicalAlerts);
+  const [localElectrical, setLocalElectrical] = useState(electricalIssues);
+  const [localFood, setLocalFood] = useState(foodIssues);
+  const [localRoom, setLocalRoom] = useState(roomIssues);
+  const [localMedical, setLocalMedical] = useState(medicalAlerts);
   const [selectedMedicalAlert, setSelectedMedicalAlert] = useState<MedicalAlert | null>(null);
+  const [selectedRoomIssue, setSelectedRoomIssue] = useState<RoomIssue | null>(null);
 
   useEffect(() => setLocalElectrical(electricalIssues), [electricalIssues]);
   useEffect(() => setLocalFood(foodIssues), [foodIssues]);
+  useEffect(() => setLocalRoom(roomIssues), [roomIssues]);
   useEffect(() => setLocalMedical(medicalAlerts), [medicalAlerts]);
 
   const removeElectrical = (id: string) =>
@@ -132,42 +150,58 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
       .eq("id", id);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update issue",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
       setIsProcessing(false);
       return;
     }
 
-    // Insert notification
     if (issue?.student_id) {
       await supabase.from("notifications").insert({
         student_id: issue.student_id,
         title: `Food Issue ${status === "resolved" ? "Solved" : "Rejected"}`,
-        message: `Your food issue "${issue.description}" has been ${status === "resolved" ? "solved" : "rejected"} by the warden.`,
+        message: `Your food issue "${issue.issue_type || issue.description}" has been ${status === "resolved" ? "solved" : "rejected"}.`,
         type: "food"
       });
     }
 
     setLocalFood((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
-
-    toast({
-      title: status === "resolved" ? "Issue Resolved" : "Issue Rejected",
-      description:
-        status === "resolved"
-          ? "The food issue has been resolved successfully."
-          : "The food issue has been rejected.",
-    });
-
+    toast({ title: status === "resolved" ? "Resolved" : "Rejected" });
     setSelectedFoodIssue(null);
+    window.setTimeout(() => { removeFood(id); onRefresh(); }, AUTO_REMOVE_MS);
+    setIsProcessing(false);
+  };
 
-    window.setTimeout(() => {
-      removeFood(id);
-      onRefresh();
+  const handleRoomAction = async (id: string, status: "resolved" | "rejected") => {
+    setIsProcessing(true);
+    const issue = localRoom.find(i => i.id === id);
+
+    const { error } = await supabase
+      .from("room_issues")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setIsProcessing(false);
+      return;
+    }
+
+    if (issue?.student_id) {
+      await supabase.from("notifications").insert({
+        student_id: issue.student_id,
+        title: `Room Issue ${status === "resolved" ? "Solved" : "Rejected"}`,
+        message: `Your room issue "${issue.issue_type}" has been ${status === "resolved" ? "solved" : "rejected"}.`,
+        type: "room"
+      });
+    }
+
+    setLocalRoom((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
+    toast({ title: status === "resolved" ? "Resolved" : "Rejected" });
+    setSelectedRoomIssue(null);
+    window.setTimeout(() => { 
+      setLocalRoom(prev => prev.filter(i => i.id !== id));
+      onRefresh(); 
     }, AUTO_REMOVE_MS);
-
     setIsProcessing(false);
   };
 
@@ -237,7 +271,7 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
 
   return (
     <Tabs defaultValue="electrical" className="space-y-4">
-      <TabsList className="grid w-full max-w-lg grid-cols-3">
+      <TabsList className="grid w-full max-w-2xl grid-cols-4">
         <TabsTrigger value="electrical" className="relative">
           <Zap className="w-4 h-4 mr-2" />
           Electrical
@@ -253,6 +287,15 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
           {pendingFood.length > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning text-warning-foreground text-xs flex items-center justify-center">
               {pendingFood.length}
+            </span>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="room" className="relative">
+          <Pill className="w-4 h-4 mr-2" />
+          Room
+          {localRoom.filter(i => (i.status || "pending") === "pending").length > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning text-warning-foreground text-xs flex items-center justify-center">
+              {localRoom.filter(i => (i.status || "pending") === "pending").length}
             </span>
           )}
         </TabsTrigger>
@@ -294,10 +337,14 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Type:</span>
+                      <span className="font-bold text-primary">{issue.issue_type || "General"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
                       <span className="text-muted-foreground">Room:</span>
                       <span className="font-medium">{issue.room_number}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{issue.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 italic">{issue.description || "No comments"}</p>
                     <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
                   </div>
                 </CardContent>
@@ -333,7 +380,11 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground truncate">{issue.description}</p>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Type:</span>
+                      <span className="font-bold text-primary">{issue.issue_type || "General"}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 italic">{issue.description || "No comments"}</p>
                     <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
                   </div>
                 </CardContent>
@@ -421,8 +472,12 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 </div>
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Issue Description</p>
-                <p className="font-medium mt-1">{selectedElectricalIssue.description}</p>
+                <p className="text-muted-foreground text-sm uppercase font-bold">Issue Type</p>
+                <p className="font-bold text-primary">{selectedElectricalIssue.issue_type || "General"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Optional Comments</p>
+                <p className="font-medium mt-1 text-sm italic">{selectedElectricalIssue.description || "No additional comments provided."}</p>
               </div>
 
               {(selectedElectricalIssue.status || "pending") === "pending" && (
@@ -478,8 +533,12 @@ const IssueReports = ({ electricalIssues, foodIssues, medicalAlerts, onRefresh }
                 </div>
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Issue Description</p>
-                <p className="font-medium mt-1">{selectedFoodIssue.description}</p>
+                <p className="text-muted-foreground text-sm uppercase font-bold">Issue Type</p>
+                <p className="font-bold text-primary">{selectedFoodIssue.issue_type || "General"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Optional Comments</p>
+                <p className="font-medium mt-1 text-sm italic">{selectedFoodIssue.description || "No additional comments provided."}</p>
               </div>
 
               {(selectedFoodIssue.status || "pending") === "pending" && (

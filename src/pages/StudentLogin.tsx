@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, UserPlus, Eye, EyeOff, Camera, Upload, LogIn, Sparkles, ShieldCheck, Check, X } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Eye, EyeOff, Camera, Upload, LogIn, Sparkles, ShieldCheck, Check, X, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -89,9 +89,13 @@ const StudentLogin = () => {
     confirmPassword: "",
   });
 
-  // Photo upload state
+  // Photo upload states
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [parentPhotoFile, setParentPhotoFile] = useState<File | null>(null);
+  const [parentPhotoPreview, setParentPhotoPreview] = useState<string>("");
+  const [guardianPhotoFile, setGuardianPhotoFile] = useState<File | null>(null);
+  const [guardianPhotoPreview, setGuardianPhotoPreview] = useState<string>("");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const getPasswordStrength = (pass: string) => {
@@ -124,7 +128,7 @@ const StudentLogin = () => {
 
   const strength = getPasswordStrength(registerData.password);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'student' | 'parent' | 'guardian') => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 3 * 1024 * 1024) {
@@ -136,10 +140,19 @@ const StudentLogin = () => {
         e.target.value = "";
         return;
       }
-      setPhotoFile(file);
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
+        if (type === 'student') {
+          setPhotoFile(file);
+          setPhotoPreview(reader.result as string);
+        } else if (type === 'parent') {
+          setParentPhotoFile(file);
+          setParentPhotoPreview(reader.result as string);
+        } else if (type === 'guardian') {
+          setGuardianPhotoFile(file);
+          setGuardianPhotoPreview(reader.result as string);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -527,32 +540,55 @@ const StudentLogin = () => {
         }
       }
 
-      // Upload photo if provided
-      let photoUrl: string | null = null;
-      if (photoFile) {
-        setIsUploadingPhoto(true);
-        const fileExt = photoFile.name.split('.').pop();
-        const fileName = `${registerData.rollNumber.toUpperCase()}_${Date.now()}.${fileExt}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('student-photos')
-          .upload(fileName, photoFile);
-
-        if (uploadError) {
-          console.error('Photo upload error:', uploadError);
-          toast({
-            title: "Photo Upload Warning",
-            description: "Could not upload photo, but registration will continue",
-            variant: "destructive",
-          });
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('student-photos')
-            .getPublicUrl(fileName);
-          photoUrl = urlData.publicUrl;
-        }
-        setIsUploadingPhoto(false);
+      // Validate mandatory photos
+      if (!photoFile || !parentPhotoFile || !guardianPhotoFile) {
+        toast({
+          title: "Missing Photos",
+          description: "Please upload mandatory student, parent, and guardian photos.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
       }
+
+      // Upload photos
+      let photoUrl: string | null = null;
+      let parentPhotoUrl: string | null = null;
+      let guardianPhotoUrl: string | null = null;
+
+      setIsUploadingPhoto(true);
+
+      const uploadOne = async (file: File, prefix: string) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${prefix}_${registerData.rollNumber.toUpperCase()}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('student-photos')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('student-photos')
+          .getPublicUrl(fileName);
+        return urlData.publicUrl;
+      };
+
+      try {
+        if (photoFile) photoUrl = await uploadOne(photoFile, 'STUDENT');
+        if (parentPhotoFile) parentPhotoUrl = await uploadOne(parentPhotoFile, 'PARENT');
+        if (guardianPhotoFile) guardianPhotoUrl = await uploadOne(guardianPhotoFile, 'GUARDIAN');
+      } catch (uploadError) {
+        console.error('Photo upload error:', uploadError);
+        toast({
+          title: "Photo Upload Failed",
+          description: "Mandatory photos could not be uploaded. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        setIsUploadingPhoto(false);
+        return;
+      }
+      setIsUploadingPhoto(false);
       const selectedRoomData = availableRooms.find(r => r.room_number === registerData.roomNumber);
       const fee = selectedRoomData ? getRoomFee(selectedRoomData) : 100000;
 
@@ -573,6 +609,8 @@ const StudentLogin = () => {
         paid_fee: 0,
         password: registerData.password,
         photo_url: photoUrl,
+        parent_photo_url: parentPhotoUrl,
+        guardian_photo_url: guardianPhotoUrl,
       });
 
       if (error) throw error;
@@ -821,30 +859,81 @@ const StudentLogin = () => {
                   </div>
 
                   <form onSubmit={handleRegister} className="space-y-4">
-                    {/* Photo Upload */}
-                    <div className="flex flex-col items-center space-y-2 pb-4">
-                      <div className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center overflow-hidden bg-muted">
-                        {photoPreview ? (
-                          <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <Camera className="w-8 h-8 text-muted-foreground" />
-                        )}
+                    {/* Photos Upload Section */}
+                    <div className="space-y-4 py-2 border-b border-border pb-6">
+                      <Label className="text-center block text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-2">
+                        <Camera className="w-4 h-4" />
+                        Mandatory Profile Photos
+                      </Label>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Student Photo */}
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className={`w-20 h-20 rounded-xl border-2 border-dashed ${photoPreview ? 'border-primary' : 'border-muted-foreground/30'} flex items-center justify-center overflow-hidden bg-muted group relative`}>
+                            {photoPreview ? (
+                              <img src={photoPreview} alt="Student" className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-6 h-6 text-muted-foreground" />
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Upload className="w-5 h-5 text-white" />
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoChange(e, 'student')}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              id="student-photo"
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Student*</span>
+                        </div>
+
+                        {/* Parent Photo */}
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className={`w-20 h-20 rounded-xl border-2 border-dashed ${parentPhotoPreview ? 'border-primary' : 'border-muted-foreground/30'} flex items-center justify-center overflow-hidden bg-muted group relative`}>
+                            {parentPhotoPreview ? (
+                              <img src={parentPhotoPreview} alt="Parent" className="w-full h-full object-cover" />
+                            ) : (
+                              <Users className="w-6 h-6 text-muted-foreground" />
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Upload className="w-5 h-5 text-white" />
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoChange(e, 'parent')}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              id="parent-photo"
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Parent*</span>
+                        </div>
+
+                        {/* Guardian Photo */}
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className={`w-20 h-20 rounded-xl border-2 border-dashed ${guardianPhotoPreview ? 'border-primary' : 'border-muted-foreground/30'} flex items-center justify-center overflow-hidden bg-muted group relative`}>
+                            {guardianPhotoPreview ? (
+                              <img src={guardianPhotoPreview} alt="Guardian" className="w-full h-full object-cover" />
+                            ) : (
+                              <ShieldCheck className="w-6 h-6 text-muted-foreground" />
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Upload className="w-5 h-5 text-white" />
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoChange(e, 'guardian')}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              id="guardian-photo"
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Guardian*</span>
+                        </div>
                       </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoChange}
-                        className="hidden"
-                        id="photo-upload"
-                      />
-                      <label htmlFor="photo-upload">
-                        <Button type="button" variant="outline" size="sm" asChild>
-                          <span>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Photo
-                          </span>
-                        </Button>
-                      </label>
+                      <p className="text-[9px] text-center text-muted-foreground italic">All photos must be strictly under 3MB and in JPG/PNG format.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

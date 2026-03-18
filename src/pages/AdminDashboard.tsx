@@ -35,7 +35,7 @@ import {
   Users, DoorOpen, ShieldCheck, Megaphone, Wallet, 
   TrendingUp, CheckCircle2, ChevronRight, Search, 
   Trash2, BarChart3, XCircle, Info, Activity,
-  ExternalLink
+  ExternalLink, Utensils
 } from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -92,6 +92,7 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
+  const [messCount, setMessCount] = useState<number>(0);
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
@@ -112,6 +113,7 @@ const AdminDashboard = () => {
     fetchRooms();
     fetchAllStudents();
     fetchApplications();
+    fetchMessCount();
 
     const channel = supabase
       .channel("admin-changes")
@@ -123,6 +125,7 @@ const AdminDashboard = () => {
         }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "hostel_applications" }, fetchApplications)
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_attendance" }, fetchMessCount)
       .subscribe();
 
     return () => {
@@ -136,6 +139,16 @@ const AdminDashboard = () => {
       .select("*")
       .order("created_at", { ascending: false });
     if (data) setApplications(data);
+  };
+
+  const fetchMessCount = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { count, error } = await supabase
+      .from("daily_attendance")
+      .select("*", { count: 'exact', head: true })
+      .eq("attendance_date", today)
+      .eq("status", "present");
+    if (!error) setMessCount(count || 0);
   };
 
   const fetchAllStudents = async () => {
@@ -327,11 +340,12 @@ const AdminDashboard = () => {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="space-y-12"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[
                   { label: "Total Students", value: stats.totalStudents, icon: Users, color: "text-blue-500", detail: `${stats.boysCount} Boys · ${stats.girlsCount} Girls` },
                   { label: "Total Collection", value: `₹${stats.totalCollection.toLocaleString()}`, icon: IndianRupee, color: "text-green-500", detail: "Paid Fees" },
                   { label: "Occupancy Rate", value: `${stats.occupancyRate}%`, icon: TrendingUp, color: "text-orange-500", detail: "Room Usage" },
+                  { label: "Mess Food Count", value: messCount, icon: Utensils, color: "text-red-500", detail: "Meals for Today" },
                   { label: "App Fee Paid", value: applications.filter(a => a.application_fee_status === "paid").length, icon: CheckCircle2, color: "text-purple-500", detail: "Verified Applications" }
                 ].map((item, idx) => (
                   <Card key={idx} className="p-6">

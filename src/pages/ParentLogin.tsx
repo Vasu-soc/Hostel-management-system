@@ -41,6 +41,32 @@ const ParentLogin = () => {
     password: "",
   });
 
+  // Photo upload state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 3 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image strictly under 3MB.",
+          variant: "destructive",
+        });
+        e.target.value = "";
+        return;
+      }
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordData, setForgotPasswordData] = useState({ mobileNumber: "", email: "" });
@@ -238,14 +264,50 @@ const ParentLogin = () => {
         return;
       }
 
+      // Upload photo if provided
+      let photoUrl: string | null = null;
+      if (photoFile) {
+        setIsUploadingPhoto(true);
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `PARENT_${registerData.mobileNumber}_${Date.now()}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('student-photos')
+          .upload(fileName, photoFile);
+
+        if (uploadError) {
+          console.error('Photo upload error:', uploadError);
+          toast({
+            title: "Photo Upload Warning",
+            description: "Could not upload photo, but registration will continue",
+            variant: "destructive",
+          });
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('student-photos')
+            .getPublicUrl(fileName);
+          photoUrl = urlData.publicUrl;
+        }
+        setIsUploadingPhoto(false);
+      }
+
       const { error } = await supabase.from("parents").insert({
         parent_name: registerData.parentName.trim(),
         mobile_number: registerData.mobileNumber,
         student_roll_number: registerData.studentRollNumber.toUpperCase(),
         password: registerData.password,
+        photo_url: photoUrl,
       });
 
       if (error) throw error;
+
+      // Also update student's parent_photo_url for gate pass verification
+      if (photoUrl) {
+        await supabase
+          .from("students")
+          .update({ parent_photo_url: photoUrl })
+          .eq("roll_number", registerData.studentRollNumber.toUpperCase());
+      }
 
       logger.info("parent_registration", registerData.mobileNumber, "success");
       toast({
@@ -416,6 +478,31 @@ const ParentLogin = () => {
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-4">
+                  {/* Parent Photo Upload */}
+                  <div className="flex flex-col items-center space-y-2 pb-4">
+                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-purple-500/30 flex items-center justify-center overflow-hidden bg-muted group relative">
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Parent" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-8 h-8 text-muted-foreground" />
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <UserPlus className="w-6 h-6 text-white" />
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        id="parent-photo-upload"
+                      />
+                    </div>
+                    <Label htmlFor="parent-photo-upload" className="text-xs font-bold text-purple-600 uppercase tracking-wider">
+                      Upload Parent Photo *
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground italic">Strictly under 3MB</p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="parentName">Parent Name *</Label>
                     <Input

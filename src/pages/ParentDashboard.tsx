@@ -10,8 +10,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar, Clock } from "lucide-react";
+import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar, Clock, ExternalLink, FileText, User, DoorOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { LeaveExtensionDialog } from "@/components/LeaveExtensionDialog";
 import { getParentSession, clearParentSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -45,6 +46,10 @@ const ParentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
   const [feeTransactions, setFeeTransactions] = useState<any[]>([]);
+  const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
+  const [branchMarks, setBranchMarks] = useState<any[]>([]);
+  const [gatePasses, setGatePasses] = useState<any[]>([]);
+  const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = useState(false);
 
@@ -69,6 +74,10 @@ const ParentDashboard = () => {
       setStudent(data);
       fetchMedicalAlerts(rollNumber);
       fetchFeeTransactions(data.id);
+      fetchAttendanceReports(rollNumber);
+      fetchBranchMarks(data.branch, data.year);
+      fetchGatePasses(rollNumber);
+      fetchLeaveExtensions(rollNumber);
     }
     setLoading(false);
   };
@@ -107,6 +116,63 @@ const ParentDashboard = () => {
       setFeeTransactions(data);
     }
   };
+
+  const fetchAttendanceReports = async (rollNumber: string) => {
+    const { data, error } = await supabase
+      .from("attendance_reports")
+      .select("*")
+      .eq("roll_number", rollNumber)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setAttendanceReports(data);
+    }
+  };
+
+  const fetchBranchMarks = async (branch: string, year: string) => {
+    if (!branch || !year) return;
+    const { data, error } = await supabase
+      .from("branch_marks")
+      .select("*")
+      .eq("branch", branch)
+      .eq("year", year)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setBranchMarks(data);
+    }
+  };
+
+  const fetchGatePasses = async (rollNumber: string) => {
+    const { data, error } = await supabase
+      .from("gate_passes")
+      .select("*")
+      .eq("roll_number", rollNumber)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setGatePasses(data);
+    }
+  };
+
+  const fetchLeaveExtensions = async (rollNumber: string) => {
+    const { data, error } = await supabase
+      .from("leave_extensions")
+      .select("*")
+      .eq("roll_number", rollNumber)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setLeaveExtensions(data);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const s = status?.toLowerCase();
+    if (s === "approved") return <Badge className="bg-success hover:bg-success/90">Approved</Badge>;
+    if (s === "rejected") return <Badge variant="destructive">Rejected</Badge>;
+    return <Badge variant="secondary">Pending</Badge>;
+  };
+
+  const latestGatePass = gatePasses[0];
 
   // Real-time subscription for student updates
   useEffect(() => {
@@ -171,6 +237,42 @@ const ParentDashboard = () => {
       supabase.removeChannel(channel);
     };
   }, [student?.id]);
+
+  useEffect(() => {
+    if (!parent?.student_roll_number) return;
+
+    const channel = supabase
+      .channel("parent-gatepasses-leave")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "gate_passes",
+          filter: `roll_number=eq.${parent.student_roll_number}`,
+        },
+        () => {
+          fetchGatePasses(parent.student_roll_number);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "leave_extensions",
+          filter: `roll_number=eq.${parent.student_roll_number}`,
+        },
+        () => {
+          fetchLeaveExtensions(parent.student_roll_number);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [parent?.student_roll_number]);
 
   const handleLogout = () => {
     const parent = getParentSession();
@@ -391,7 +493,62 @@ const ParentDashboard = () => {
           </div>
 
           {/* Remarks - Right Panel */}
-          <Card className="border-2 border-border">
+          <div className="space-y-6">
+            {/* Gate Pass Status Section */}
+            <Card className="border-2 border-border shadow-md">
+              <CardHeader className="text-center border-b border-border py-4 bg-muted/30">
+                <CardTitle className="text-xl flex items-center justify-center gap-2">
+                  <DoorOpen className="w-5 h-5 text-primary" />
+                  Gate Pass Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {latestGatePass ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-center mb-4 italic">
+                       {getStatusBadge(latestGatePass.status as string)}
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Out Date</span><span className="font-medium">{latestGatePass.out_date}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">In Date</span><span className="font-medium">{latestGatePass.in_date}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Purpose</span><span className="text-right max-w-[60%] font-medium">{latestGatePass.purpose}</span></div>
+                    </div>
+
+                    {/* Leave Extension Section */}
+                    {latestGatePass.status === "approved" && (
+                      <div className="pt-4 border-t border-border mt-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Leave Extensions</p>
+                        {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id).map(ext => (
+                          <div key={ext.id} className="p-3 bg-muted rounded-lg mb-3 border border-border">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="font-bold text-sm">Ext: {ext.number_of_days} Days</span>
+                              {getStatusBadge(ext.status)}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mb-1">
+                              {ext.extension_from} to {ext.extension_to}
+                            </div>
+                            <p className="text-xs italic">"{ext.reason}"</p>
+                          </div>
+                        ))}
+                        
+                        {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id && ext.status === 'pending').length === 0 && (
+                          <LeaveExtensionDialog 
+                            studentId={student.id} 
+                            rollNumber={student.roll_number} 
+                            gatePassId={latestGatePass.id as string} 
+                            onSuccess={() => fetchLeaveExtensions(student.roll_number)} 
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">No gate pass requests yet</div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-border">
             <CardHeader className="border-b border-border">
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-primary" />
@@ -455,6 +612,54 @@ const ParentDashboard = () => {
               )}
             </CardContent>
           </Card>
+
+          <Card className="border-2 border-border shadow-sm">
+            <CardHeader className="pb-3 border-b border-border"><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" />Attendance Reports</CardTitle></CardHeader>
+            <CardContent className="space-y-2 pt-4 max-h-60 overflow-y-auto">
+              {attendanceReports.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No attendance reports available.</p>
+              ) : (
+                attendanceReports.map((report) => (
+                  <div key={report.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-bold text-sm">{report.date}</span>
+                      <Badge variant={report.status === 'Present' ? 'default' : report.status === 'Absent' ? 'destructive' : 'secondary'} className="text-[10px]">
+                        {report.status}
+                      </Badge>
+                    </div>
+                    {report.file_url && (
+                      <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(report.file_url, '_blank')}>
+                        <ExternalLink className="w-3 h-3 mr-1" /> View Document
+                      </Button>
+                    )}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {branchMarks.length > 0 && (
+            <Card className="border-2 border-border shadow-sm">
+              <CardHeader className="pb-3 border-b border-border"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Branch Marks List</CardTitle></CardHeader>
+              <CardContent className="space-y-2 pt-4 max-h-60 overflow-y-auto">
+                {branchMarks.map((mark) => (
+                  <div key={mark.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-bold text-sm">{mark.title}</span>
+                      <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-background">
+                        {mark.date}
+                      </Badge>
+                    </div>
+                    <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(mark.file_url, '_blank')}>
+                      <ExternalLink className="w-3 h-3 mr-1" /> View PDF
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          </div>
         </div>
 
         {/* Student Info Card */}

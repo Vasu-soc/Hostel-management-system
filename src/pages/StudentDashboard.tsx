@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { LeaveExtensionDialog } from "@/components/LeaveExtensionDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -71,11 +73,15 @@ const StudentDashboard = () => {
   const [student, setStudent] = useState<StudentSession | null>(null);
   const [isDefaultPassword, setIsDefaultPassword] = useState(false);
   const [gatePasses, setGatePasses] = useState<Record<string, unknown>[]>([]);
+  const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
   const [feeTransactions, setFeeTransactions] = useState<Record<string, unknown>[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<Record<string, unknown>[]>([]);
-  const [electricalDialogOpen, setElectricalDialogOpen] = useState(false);
-  const [foodDialogOpen, setFoodDialogOpen] = useState(false);
+  const [branchMarks, setBranchMarks] = useState<any[]>([]);
+  const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
+  const [issueReportDialogOpen, setIssueReportDialogOpen] = useState(false);
   const [medicalDialogOpen, setMedicalDialogOpen] = useState(false);
+  const [issueCategory, setIssueCategory] = useState<"food" | "electrical" | "room" | "">("");
+  const [selectedSubOption, setSelectedSubOption] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
   const [medicalIssueType, setMedicalIssueType] = useState("");
   const [foodSelectionDialogOpen, setFoodSelectionDialogOpen] = useState(false);
@@ -157,7 +163,9 @@ const StudentDashboard = () => {
     refreshStudentData(session.id);
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
+    loadAttendanceReports(session.id);
     loadStudyMaterials(session.branch, session.year);
+    loadBranchMarks(session.branch, session.year);
     fetchMedicines();
 
     // Subscribe to medicine updates
@@ -246,7 +254,7 @@ const StudentDashboard = () => {
           setStudent((prev) => {
             const updated = (prev ? { ...prev, ...payload.new } : { ...payload.new, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }) as StudentSession;
             // Also sync real-time changes to sessionStorage
-            sessionStorage.setItem('currentStudent', JSON.stringify(updated));
+            sessionStorage.setItem("currentStudent", JSON.stringify(updated));
             return updated;
           });
           // CRITICAL: Refresh transactions when student record updates!
@@ -343,18 +351,48 @@ const StudentDashboard = () => {
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
-  const loadGatePasses = async (rollNumber: string) => {
-    const { data } = await supabase
-      .from("gate_passes")
-      .select("*")
-      .eq("roll_number", rollNumber)
-      .order("created_at", { ascending: false });
-    if (data) {
-      setGatePasses(data as Record<string, unknown>[]);
-      // Load warden signature if latest gate pass is approved
-      if (data[0] && data[0].status === "approved") {
-        loadWardenSignature();
+  const loadAttendanceReports = async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('attendance_reports')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error("Failed to fetch attendance reports:", error.message);
+        return;
       }
+      setAttendanceReports(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const loadGatePasses = async (rollNumber: string) => {
+    try {
+      const { data } = await supabase
+        .from("gate_passes")
+        .select("*")
+        .eq("roll_number", rollNumber)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setGatePasses(data as Record<string, unknown>[]);
+        // Load warden signature if latest gate pass is approved
+        if (data[0] && data[0].status === "approved") {
+          loadWardenSignature();
+        }
+      }
+
+      const { data: extData } = await supabase
+        .from("leave_extensions")
+        .select("*")
+        .eq("roll_number", rollNumber)
+        .order("created_at", { ascending: false });
+
+      if (extData) setLeaveExtensions(extData);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -384,6 +422,23 @@ const StudentDashboard = () => {
     } catch (e) {
       console.error("Failed to load study materials", e);
       setStudyMaterials([]);
+    }
+  };
+
+  const loadBranchMarks = async (branch: string, year: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('branch_marks')
+        .select('*')
+        .eq('branch', branch)
+        .eq('year', year)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBranchMarks(data || []);
+    } catch (e) {
+      console.error("Failed to load branch marks", e);
+      setBranchMarks([]);
     }
   };
 
@@ -449,49 +504,68 @@ const StudentDashboard = () => {
     setGatePassForm({ email: "", studentMobile: "", parentMobile: "", outDate: "", inDate: "", outTime: "", inTime: "", purpose: "" });
   };
 
-  const handleIssueSubmit = async (type: "electrical" | "food") => {
-    if (!student) return;
-
-    // Validate issue description
-    const validation = issueReportSchema.safeParse({ description: issueDescription });
-    if (!validation.success) {
-      toast({
-        title: "Validation Error",
-        description: formatValidationErrors(validation.error),
-        variant: "destructive"
-      });
+  const handleIssueSubmit = async () => {
+    if (!student || !issueCategory || !selectedSubOption) {
+      toast({ title: "Validation Error", description: "Please select a category and sub-option.", variant: "destructive" });
       return;
     }
 
-    const table = type === "electrical" ? "electrical_issues" : "food_issues";
-    const insertData = type === "electrical"
-      ? { student_id: student.id, student_name: student.student_name, roll_number: student.roll_number, room_number: student.hostel_room_number || "N/A", description: issueDescription.trim() }
-      : { student_id: student.id, student_name: student.student_name, roll_number: student.roll_number, description: issueDescription.trim() };
+    // Validate issue description (optional, but if provided, must meet schema)
+    if (issueDescription.trim().length > 0 && issueDescription.trim().length < 5) {
+      toast({ title: "Validation Error", description: "Comments must be at least 5 characters if provided.", variant: "destructive" });
+      return;
+    }
 
-    const { error } = await supabase.from(table).insert(insertData);
+    const tableMap = {
+      food: "food_issues",
+      electrical: "electrical_issues",
+      room: "room_issues"
+    };
+
+    const table = tableMap[issueCategory as keyof typeof tableMap];
+    
+    const baseData = {
+      student_id: student.id,
+      student_name: student.student_name,
+      roll_number: student.roll_number,
+      issue_type: selectedSubOption,
+      description: issueDescription.trim() || null,
+      status: "pending"
+    };
+
+    const insertData = issueCategory === "food" 
+      ? baseData 
+      : { ...baseData, room_number: student.hostel_room_number || "N/A" };
+
+    const { error } = await (supabase as any).from(table).insert(insertData);
+    
     if (error) {
-      logger.error(`${type}_issue_report`, student.roll_number, "failure");
+      logger.error(`${issueCategory}_issue_report`, student.roll_number, "failure");
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    logger.info(`${type}_issue_report`, student.roll_number, "success");
+    logger.info(`${issueCategory}_issue_report`, student.roll_number, "success");
 
-    // Send notification to warden email (fire and forget)
+    // Send notification to warden email
     supabase.functions.invoke("send-request-notification", {
       body: {
-        type: type === "electrical" ? "electrical_issue" : "food_issue",
+        type: `${issueCategory}_issue`,
         studentName: student.student_name,
         rollNumber: student.roll_number,
         roomNumber: student.hostel_room_number || "N/A",
-        description: issueDescription.trim(),
+        issueType: selectedSubOption,
+        description: issueDescription.trim() || "No additional comments",
       },
     }).catch((err) => console.error("Failed to send notification:", err));
 
-    toast({ title: "Issue Reported", description: `Your ${type} issue has been reported` });
+    toast({ title: "Issue Reported", description: `Your ${issueCategory} issue has been reported.` });
+    
+    // Reset form
     setIssueDescription("");
-    setElectricalDialogOpen(false);
-    setFoodDialogOpen(false);
+    setSelectedSubOption("");
+    setIssueCategory("");
+    setIssueReportDialogOpen(false);
   };
 
   const handleMedicalAlertSubmit = async () => {
@@ -862,19 +936,88 @@ const StudentDashboard = () => {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={electricalDialogOpen} onOpenChange={setElectricalDialogOpen}>
-                <DialogTrigger asChild><Button variant="outline" className="w-full justify-start h-14 glare-hover"><Zap className="w-5 h-5 mr-3 text-warning" />Room Electrical Problem</Button></DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Report Electrical Problem</DialogTitle></DialogHeader>
+              <Dialog open={issueReportDialogOpen} onOpenChange={setIssueReportDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start h-14 glare-hover border-primary/30 hover:bg-primary/10">
+                    <Zap className="w-5 h-5 mr-3 text-warning" />
+                    Report an Issue
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-primary" />
+                      Report Hostel Issue
+                    </DialogTitle>
+                  </DialogHeader>
                   <div className="space-y-4 pt-4">
-                    <Textarea
-                      placeholder="Describe the issue (min 5 characters)..."
-                      value={issueDescription}
-                      onChange={(e) => setIssueDescription(e.target.value)}
-                      rows={4}
-                    />
-                    <p className="text-xs text-muted-foreground">{issueDescription.length}/1000 characters</p>
-                    <Button onClick={() => handleIssueSubmit("electrical")} className="w-full" variant="hero">Submit Report</Button>
+                    <div className="space-y-2">
+                      <Label>Issue Category</Label>
+                      <Select 
+                        value={issueCategory} 
+                        onValueChange={(val: "food" | "electrical" | "room") => {
+                          setIssueCategory(val);
+                          setSelectedSubOption("");
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="food">Food Issues</SelectItem>
+                          <SelectItem value="electrical">Electrical Issues</SelectItem>
+                          <SelectItem value="room">Room Issues</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {issueCategory && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <Label>Specific Issue</Label>
+                        <Select value={selectedSubOption} onValueChange={setSelectedSubOption}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Sub-option" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {issueCategory === "food" && (
+                              <>
+                                <SelectItem value="Food Quality">Food Quality</SelectItem>
+                                <SelectItem value="Food Quantity">Food Quantity</SelectItem>
+                                <SelectItem value="Mess Cleanliness">Mess Cleanliness</SelectItem>
+                                <SelectItem value="Delay in Service">Delay in Service</SelectItem>
+                              </>
+                            )}
+                            {issueCategory === "electrical" && (
+                              <>
+                                <SelectItem value="Power Failure">Power Failure</SelectItem>
+                                <SelectItem value="Bulb/Light Problem">Bulb/Light Problem</SelectItem>
+                                <SelectItem value="Fan Issue">Fan Issue</SelectItem>
+                                <SelectItem value="Charging Point Problem">Charging Point Problem</SelectItem>
+                              </>
+                            )}
+                            {issueCategory === "room" && (
+                              <>
+                                <SelectItem value="Room Cleaning">Room Cleaning</SelectItem>
+                                <SelectItem value="Furniture Repair">Furniture Repair</SelectItem>
+                                <SelectItem value="Door/Window Problem">Door/Window Problem</SelectItem>
+                                <SelectItem value="Pest Control">Pest Control</SelectItem>
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+
+
+                    <Button 
+                      onClick={handleIssueSubmit} 
+                      className="w-full mt-2" 
+                      variant="hero"
+                      disabled={!issueCategory || !selectedSubOption}
+                    >
+                      Submit Report
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -896,7 +1039,7 @@ const StudentDashboard = () => {
                   <div className="space-y-4 pt-4">
                     <p className="text-sm text-muted-foreground">Select your current meal choice, which helps the warden in planning.</p>
                     <div className="grid grid-cols-1 gap-3">
-                      {["Chicken Biryani", "Veg Meals", "Chapati", "Dosa", "Other"].map((type) => (
+                      {["Chicken Biryani", "Veg Meals", "Chapati", "Dosa"].map((type) => (
                         <Button
                           key={type}
                           variant={selectedFoodItem === type ? "hero" : "outline"}
@@ -907,13 +1050,6 @@ const StudentDashboard = () => {
                         </Button>
                       ))}
                     </div>
-                    {selectedFoodItem === "Other" && (
-                      <Input
-                        placeholder="Please specify your food selection..."
-                        className="mt-2"
-                        onChange={(e) => setSelectedFoodItem(e.target.value)}
-                      />
-                    )}
                     <Button
                       onClick={handleFoodSelectionSubmit}
                       className="w-full mt-4"
@@ -926,22 +1062,7 @@ const StudentDashboard = () => {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={foodDialogOpen} onOpenChange={setFoodDialogOpen}>
-                <DialogTrigger asChild><Button variant="outline" className="w-full justify-start h-14 glare-hover"><UtensilsCrossed className="w-5 h-5 mr-3 text-primary" />Food Issue Reporting</Button></DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Report Food Issue</DialogTitle></DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <Textarea
-                      placeholder="Describe the issue (min 5 characters)..."
-                      value={issueDescription}
-                      onChange={(e) => setIssueDescription(e.target.value)}
-                      rows={4}
-                    />
-                    <p className="text-xs text-muted-foreground">{issueDescription.length}/1000 characters</p>
-                    <Button onClick={() => handleIssueSubmit("food")} className="w-full" variant="hero">Submit Report</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+
 
               <Dialog open={medicalDialogOpen} onOpenChange={setMedicalDialogOpen}>
                 <DialogTrigger asChild>
@@ -990,6 +1111,31 @@ const StudentDashboard = () => {
                 </DialogContent>
               </Dialog>
             </div>
+
+            <Card className="border-2 border-border shadow-sm">
+              <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" />Attendance Reports</CardTitle></CardHeader>
+              <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+                {attendanceReports.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No attendance reports available.</p>
+                ) : (
+                  attendanceReports.map((report) => (
+                    <div key={report.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-sm">{report.date}</span>
+                        <Badge variant={report.status === 'Present' ? 'default' : report.status === 'Absent' ? 'destructive' : 'secondary'} className="text-[10px]">
+                          {report.status}
+                        </Badge>
+                      </div>
+                      {report.file_url && (
+                        <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(report.file_url, '_blank')}>
+                          <ExternalLink className="w-3 h-3 mr-1" /> View Document
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
 
           </div>
 
@@ -1086,6 +1232,28 @@ const StudentDashboard = () => {
                 </CardContent>
               </Card>
             )}
+
+            {branchMarks.length > 0 && (
+              <Card className="border-2 border-border shadow-sm">
+                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Branch Marks</CardTitle></CardHeader>
+                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+                  {branchMarks.map((mark) => (
+                    <div key={mark.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-sm">{mark.title}</span>
+                        <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-background">
+                          {mark.date}
+                        </Badge>
+                      </div>
+                      <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(mark.file_url, '_blank')}>
+                        <ExternalLink className="w-3 h-3 mr-1" /> View PDF
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
           </div>
 
           {/* Right Column - Gate Pass Status */}
@@ -1210,6 +1378,33 @@ const StudentDashboard = () => {
                         </Button>
                       </div>
                     )}
+                    
+                    {/* Leave Extension Section */}
+                    {latestGatePass.status === "approved" && (
+                      <div className="pt-4 border-t border-border mt-4">
+                        {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id).map(ext => (
+                          <div key={ext.id} className="p-3 bg-muted rounded-lg mb-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="font-medium text-sm">Extension: {ext.number_of_days} Days</span>
+                              <Badge variant={ext.status === 'approved' ? 'default' : ext.status === 'rejected' ? 'destructive' : 'secondary'} className="text-[10px]">
+                                {ext.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Reason: {ext.reason}</p>
+                          </div>
+                        ))}
+                        
+                        {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id && ext.status === 'pending').length === 0 && (
+                          <LeaveExtensionDialog 
+                            studentId={student.id} 
+                            rollNumber={student.roll_number} 
+                            gatePassId={latestGatePass.id as string} 
+                            onSuccess={() => loadGatePasses(student.roll_number)} 
+                          />
+                        )}
+                      </div>
+                    )}
+
                   </div>
                 ) : (
                   <div className="text-center text-muted-foreground py-8">No gate pass requests yet</div>
