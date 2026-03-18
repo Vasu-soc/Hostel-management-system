@@ -22,7 +22,9 @@ import {
   FileText,
   Pill,
   GraduationCap,
-  ChevronDown
+  ChevronDown,
+  Bed,
+  Layers
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,6 +37,7 @@ import ThemeToggle from "./ThemeToggle";
 import HostelAlbumGallery from "./HostelAlbumGallery";
 import gisteduLogo from "@/assets/gistedu-logo.png";
 import { motion } from "framer-motion";
+import HostelBedDetails from "./HostelBedDetails";
 
 const loginOptions = [
   {
@@ -74,6 +77,7 @@ const navigationLogins = [
 
 const CollegeHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [bedsDialogOpen, setBedsDialogOpen] = useState(false);
   const [medicines, setMedicines] = useState<any[]>([]);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
@@ -175,6 +179,14 @@ const CollegeHeader = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
+                  <button 
+                    onClick={() => setBedsDialogOpen(true)}
+                    className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/20 border-2 border-orange-500/40 hover:bg-orange-500/30 hover:border-orange-500/60 hover:shadow-[0_0_15px_rgba(249,115,22,0.2)] hover:-translate-y-0.5 transition-all text-[10px] md:text-xs font-black italic tracking-widest text-orange-600 group outline-none"
+                  >
+                    <Bed className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    <span>BEDS</span>
+                  </button>
+
                   <Link to="/hostel-application" className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-success/20 border-2 border-success/40 hover:bg-success/30 hover:border-success/60 hover:shadow-[0_0_15px_rgba(var(--success),0.2)] hover:-translate-y-0.5 transition-all text-[10px] md:text-xs font-black italic tracking-widest text-success group">
                     <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                     <span>HOSTEL APPLICATION FORM</span>
@@ -267,6 +279,26 @@ const CollegeHeader = () => {
                   <div className="p-6">
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 gap-3">
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setBedsDialogOpen(true);
+                          }}
+                          className="group text-left"
+                        >
+                          <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-card hover:border-orange-500/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                            <div className={`p-3 rounded-xl bg-card shadow-sm group-hover:bg-orange-500 group-hover:scale-110 transition-all duration-300`}>
+                              <Bed className={`w-6 h-6 text-orange-500 group-hover:text-white`} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-lg group-hover:text-orange-600 transition-colors uppercase italic tracking-wider">Beds Availability</span>
+                              <span className="text-xs text-muted-foreground font-medium">Check floor-wise live status</span>
+                            </div>
+                            <div className="ml-auto opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                              <Layers className="w-5 h-5 text-orange-500" />
+                            </div>
+                          </div>
+                        </button>
                         {loginOptions.map((option) => (
                           <Link
                             key={option.path}
@@ -314,6 +346,7 @@ const CollegeHeader = () => {
           )}
         </div>
       </div>
+      <HostelBedDetails open={bedsDialogOpen} onOpenChange={setBedsDialogOpen} />
     </header>
   );
 };

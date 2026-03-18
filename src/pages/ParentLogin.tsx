@@ -255,6 +255,9 @@ const ParentLogin = () => {
 
       setActiveTab("login");
       setLoginData({ ...loginData, mobileNumber: registerData.mobileNumber });
+      
+      // Update URL to switch to login mode after successful registration
+      navigate(`/parent-login?mode=login`, { replace: true });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Registration failed";
       logger.error("parent_registration", registerData.mobileNumber, "failure");
@@ -289,23 +292,8 @@ const ParentLogin = () => {
           </CardHeader>
 
           <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50 rounded-2xl border border-border mb-8">
-                <TabsTrigger
-                  value="login"
-                  className="rounded-xl data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 font-bold text-base gap-2"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </TabsTrigger>
-                <TabsTrigger
-                  value="register"
-                  className="rounded-xl data-[state=active]:bg-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 font-bold text-base gap-2"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Register
-                </TabsTrigger>
-              </TabsList>
+            <Tabs value={mode === "register" ? "register" : "login"} className="w-full">
+              {/* TabsList hidden for single-view experience as per user request */}
 
               <TabsContent value="login" className="space-y-6">
                 <div className="flex items-center justify-between border-b-2 border-purple-500/10 pb-4">
