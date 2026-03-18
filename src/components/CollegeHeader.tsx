@@ -179,7 +179,7 @@ const CollegeHeader = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  <button 
+                  <button
                     onClick={() => setBedsDialogOpen(true)}
                     className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/20 border-2 border-orange-500/40 hover:bg-orange-500/30 hover:border-orange-500/60 hover:shadow-[0_0_15px_rgba(249,115,22,0.2)] hover:-translate-y-0.5 transition-all text-[10px] md:text-xs font-black italic tracking-widest text-orange-600 group outline-none"
                   >

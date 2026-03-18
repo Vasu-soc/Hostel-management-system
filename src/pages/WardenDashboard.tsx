@@ -114,7 +114,7 @@ const WardenDashboard = () => {
 
   const handlePrint = () => {
     if (!selectedApplication) return;
-    
+
     const matchedStudent = students.find(s => s.roll_number === (selectedApplication.phone_number || "").toUpperCase().trim() || (s.email && s.email === selectedApplication.email));
     const allocatedRoom = (selectedApplication.status === "accepted" || selectedApplication.status === "approved" || selectedApplication.status === "allotted") && matchedStudent?.hostel_room_number ? matchedStudent.hostel_room_number : "PENDING";
     const appPhoto = appImages[selectedApplication.id]?.photo_url || selectedApplication.photo_url;
@@ -234,9 +234,9 @@ const WardenDashboard = () => {
               <tr>
                 <td class="label">Proposed Duration</td>
                 <td class="value">
-                  ${selectedApplication.months >= 12 
-                    ? (selectedApplication.months / 12) + " Year" + (selectedApplication.months > 12 ? "s" : "") + ` (${selectedApplication.months} Months)`
-                    : selectedApplication.months + " Months"}
+                  ${selectedApplication.months >= 12
+          ? (selectedApplication.months / 12) + " Year" + (selectedApplication.months > 12 ? "s" : "") + ` (${selectedApplication.months} Months)`
+          : selectedApplication.months + " Months"}
                 </td>
               </tr>
               <tr>
@@ -1108,11 +1108,11 @@ const WardenDashboard = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
                   <LayoutGrid className="w-5 h-5 text-primary" />
-                <h4 className="font-black italic text-sm text-primary">HOME VISION PREVIEW</h4>
+                  <h4 className="font-black italic text-sm text-primary">HOME VISION PREVIEW</h4>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {tabs.map((tab) => (
-                    <div 
+                    <div
                       key={tab.id}
                       onClick={() => {
                         setActiveTab(tab.id);
@@ -1204,40 +1204,40 @@ const WardenDashboard = () => {
 
                       {app.application_fee_receipt_url && (
                         <div className="pt-2 animate-fade-in group/receipt relative mt-2">
-                           <div className="w-full h-32 rounded-xl overflow-hidden border-2 border-primary/10 bg-muted mb-2 relative">
-                             <img 
-                               src={app.application_fee_receipt_url} 
-                               alt="Payment Receipt" 
-                               className="w-full h-full object-cover group-hover/receipt:scale-105 transition-transform duration-500 cursor-pointer"
-                               onClick={() => setSelectedReceipt(app.application_fee_receipt_url)}
-                             />
-                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/receipt:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                               <Button 
-                                 variant="secondary" 
-                                 size="sm" 
-                                 className="h-8 rounded-lg text-[10px] font-bold uppercase"
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   setSelectedReceipt(app.application_fee_receipt_url);
-                                 }}
-                               >
-                                 <ExternalLink className="w-3 h-3 mr-1" /> Full View
-                               </Button>
-                             </div>
-                           </div>
-                           <p className="text-[9px] text-center font-bold text-primary uppercase tracking-tighter bg-primary/5 py-1 rounded-lg">
-                             Click image to verify UTR details
-                           </p>
+                          <div className="w-full h-32 rounded-xl overflow-hidden border-2 border-primary/10 bg-muted mb-2 relative">
+                            <img
+                              src={app.application_fee_receipt_url}
+                              alt="Payment Receipt"
+                              className="w-full h-full object-cover group-hover/receipt:scale-105 transition-transform duration-500 cursor-pointer"
+                              onClick={() => setSelectedReceipt(app.application_fee_receipt_url)}
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/receipt:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="h-8 rounded-lg text-[10px] font-bold uppercase"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedReceipt(app.application_fee_receipt_url);
+                                }}
+                              >
+                                <ExternalLink className="w-3 h-3 mr-1" /> Full View
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-center font-bold text-primary uppercase tracking-tighter bg-primary/5 py-1 rounded-lg">
+                            Click image to verify UTR details
+                          </p>
                         </div>
                       )}
-                      
+
                       <div className="pt-3 border-t border-primary/5 flex justify-between items-center">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border ${getStatusColor(app.status)}`}>
                           App Status: {app.status || 'Pending'}
                         </span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-7 text-[10px] font-bold uppercase hover:bg-primary hover:text-white"
                           onClick={() => handleApplicationClick(app)}
                         >
@@ -1796,23 +1796,20 @@ const WardenDashboard = () => {
                     setIsFeatureVisionOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`group relative flex flex-col items-center justify-center p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
-                    activeTab === tab.id 
-                    ? "border-primary bg-primary/5 shadow-xl shadow-primary/10" 
-                    : "border-border bg-muted/20 hover:border-primary/40 hover:bg-card"
-                  }`}
+                  className={`group relative flex flex-col items-center justify-center p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${activeTab === tab.id
+                      ? "border-primary bg-primary/5 shadow-xl shadow-primary/10"
+                      : "border-border bg-muted/20 hover:border-primary/40 hover:bg-card"
+                    }`}
                 >
-                  <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-500 mb-2 sm:mb-4 ${
-                    activeTab === tab.id 
-                    ? "bg-primary text-primary-foreground scale-110 rotate-3 shadow-lg" 
-                    : "bg-background text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:rotate-6 shadow-md"
-                  }`}>
+                  <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-500 mb-2 sm:mb-4 ${activeTab === tab.id
+                      ? "bg-primary text-primary-foreground scale-110 rotate-3 shadow-lg"
+                      : "bg-background text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:rotate-6 shadow-md"
+                    }`}>
                     <tab.icon className="w-6 h-6 sm:w-8 sm:h-8" />
                   </div>
-                  
-                  <span className={`font-black italic text-center text-[10px] sm:text-sm transition-colors duration-300 ${
-                    activeTab === tab.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                  }`}>
+
+                  <span className={`font-black italic text-center text-[10px] sm:text-sm transition-colors duration-300 ${activeTab === tab.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    }`}>
                     {tab.label.toUpperCase()}
                   </span>
 
@@ -1821,7 +1818,7 @@ const WardenDashboard = () => {
                       {tab.count}
                     </span>
                   )}
-                  
+
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
                 </button>
               ))}
@@ -1912,7 +1909,7 @@ const WardenDashboard = () => {
                       </div>
                     ) : (
                       <div className="w-full max-w-[250px] h-24 sm:w-48 sm:h-20 bg-muted/30 flex items-center justify-center rounded-xl border-2 border-dashed border-border group hover:border-primary/30 transition-colors">
-                         <div className="text-center">
+                        <div className="text-center">
                           <PenTool className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
                           <span className="text-[10px] text-muted-foreground font-black uppercase">No Signature</span>
                         </div>
@@ -2303,9 +2300,9 @@ const WardenDashboard = () => {
                   Enlarged evidence for UTR & Transaction Verification
                 </DialogDescription>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setSelectedReceipt(null)}
                 className="rounded-full hover:bg-primary/10"
               >
@@ -2316,9 +2313,9 @@ const WardenDashboard = () => {
           <div className="p-6">
             <div className="rounded-2xl overflow-hidden border-2 border-primary/20 bg-muted shadow-inner">
               {selectedReceipt && (
-                <img 
-                  src={selectedReceipt} 
-                  alt="Full Receipt" 
+                <img
+                  src={selectedReceipt}
+                  alt="Full Receipt"
                   className="w-full h-auto object-contain max-h-[70vh]"
                 />
               )}
@@ -2331,9 +2328,9 @@ const WardenDashboard = () => {
                 <p className="text-xs font-bold text-foreground">Verification Secure</p>
                 <p className="text-[10px] text-muted-foreground">Compare the Transaction ID on the image above with the dashboard record.</p>
               </div>
-              <Button 
-                variant="hero" 
-                size="sm" 
+              <Button
+                variant="hero"
+                size="sm"
                 className="ml-auto h-8 text-[10px]"
                 onClick={() => setSelectedReceipt(null)}
               >
