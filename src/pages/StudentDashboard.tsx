@@ -1307,11 +1307,11 @@ const StudentDashboard = () => {
           </DialogHeader>
           <form onSubmit={handleSettingsSubmit} className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="settingsRollNumber">Roll Number (Username)</Label>
+              <Label htmlFor="settingsRollNumber">Roll/Mobile Number (Username)</Label>
               <Input
                 id="settingsRollNumber"
                 value={settingsForm.rollNumber}
-                onChange={(e) => setSettingsForm({ ...settingsForm, rollNumber: e.target.value })}
+                onChange={(e) => setSettingsForm({ ...settingsForm, rollNumber: e.target.value.toUpperCase() })}
               />
               <p className="text-xs text-muted-foreground">If you registered with a mobile number, you can update it to your Roll Number here.</p>
             </div>

@@ -6,9 +6,9 @@ const phoneRegex = /^[0-9]{10}$/;
 // Student Registration Schema
 export const studentRegistrationSchema = z.object({
   rollNumber: z.string()
-    .min(5, "Roll number must be at least 5 characters")
-    .max(20, "Roll number must not exceed 20 characters")
-    .regex(/^[A-Z0-9]+$/, "Roll number can only contain uppercase letters and numbers"),
+    .min(5, "Roll/Mobile number must be at least 5 characters")
+    .max(20, "Roll/Mobile number must not exceed 20 characters")
+    .regex(/^[A-Z0-9]+$/, "Roll/Mobile number can only contain uppercase letters and numbers"),
   studentName: z.string()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name must not exceed 100 characters")
@@ -31,8 +31,8 @@ export const studentRegistrationSchema = z.object({
 // Student Login Schema
 export const studentLoginSchema = z.object({
   rollNumber: z.string()
-    .min(1, "Roll number is required")
-    .max(20, "Roll number is too long"),
+    .min(1, "Roll/Mobile number is required")
+    .max(20, "Roll/Mobile number is too long"),
   password: z.string()
     .min(1, "Password is required")
     .max(100, "Password is too long"),

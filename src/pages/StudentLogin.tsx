@@ -764,10 +764,10 @@ const StudentLogin = () => {
 
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="rollNumber">Roll Number / Mobile Number (Username)</Label>
+                      <Label htmlFor="rollNumber">Roll Number / Mobile Number</Label>
                       <Input
                         id="rollNumber"
-                        placeholder="Enter Roll No. or Mobile No."
+                        placeholder="e.g. 21GK1A0501 or 9876543210"
                         value={loginData.rollNumber}
                         onChange={(e) => setLoginData({ ...loginData, rollNumber: e.target.value.toUpperCase() })}
                         className="h-12"
@@ -849,13 +849,14 @@ const StudentLogin = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="regRollNumber">Roll Number *</Label>
+                        <Label htmlFor="regRollNumber">Roll Number / Mobile Number *</Label>
                         <Input
                           id="regRollNumber"
-                          placeholder="e.g. 21GK1A0501"
+                          placeholder="e.g. 21GK1A0501 or 9876543210"
                           value={registerData.rollNumber}
                           onChange={(e) => setRegisterData({ ...registerData, rollNumber: e.target.value.toUpperCase() })}
                         />
+                        <p className="text-[10px] text-muted-foreground italic">Use Mobile Number if Roll Number isn't issued yet.</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="studentName">Student Name *</Label>
