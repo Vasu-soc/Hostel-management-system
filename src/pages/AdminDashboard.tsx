@@ -340,13 +340,14 @@ const AdminDashboard = () => {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="space-y-12"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 {[
-                  { label: "Total Students", value: stats.totalStudents, icon: Users, color: "text-blue-500", detail: `${stats.boysCount} Boys · ${stats.girlsCount} Girls` },
-                  { label: "Total Collection", value: `₹${stats.totalCollection.toLocaleString()}`, icon: IndianRupee, color: "text-green-500", detail: "Paid Fees" },
-                  { label: "Occupancy Rate", value: `${stats.occupancyRate}%`, icon: TrendingUp, color: "text-orange-500", detail: "Room Usage" },
-                  { label: "Mess Food Count", value: messCount, icon: Utensils, color: "text-red-500", detail: "Meals for Today" },
-                  { label: "App Fee Paid", value: applications.filter(a => a.application_fee_status === "paid").length, icon: CheckCircle2, color: "text-purple-500", detail: "Verified Applications" }
+                  { label: "Total Students", value: stats.totalStudents, icon: Users, color: "text-blue-600", detail: "Registered Active" },
+                  { label: "Total Boys", value: stats.boysCount, icon: User, color: "text-indigo-600", detail: `${stats.totalStudents > 0 ? Math.round((stats.boysCount / stats.totalStudents) * 100) : 0}% of Total` },
+                  { label: "Total Girls", value: stats.girlsCount, icon: User, color: "text-pink-600", detail: `${stats.totalStudents > 0 ? Math.round((stats.girlsCount / stats.totalStudents) * 100) : 0}% of Total` },
+                  { label: "Total Collection", value: `₹${stats.totalCollection.toLocaleString()}`, icon: IndianRupee, color: "text-emerald-600", detail: "Paid Fees" },
+                  { label: "Mess Count", value: messCount, icon: Utensils, color: "text-orange-600", detail: "Meals for Today" },
+                  { label: "App Fee Paid", value: applications.filter(a => a.application_fee_status === "paid").length, icon: CheckCircle2, color: "text-purple-600", detail: "Verified Apps" }
                 ].map((item, idx) => (
                   <Card key={idx} className="p-6">
                     <div className="flex items-center gap-4">
@@ -363,43 +364,76 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              {/* Branch Wise Distribution */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+              {/* Insights & Distributions */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* Gender Insights */}
+                <Card className="p-6 col-span-1 border-2 border-primary/5 shadow-sm">
                   <div>
-                    <h3 className="text-lg font-bold">Branch Wise Distribution</h3>
-                    <p className="text-sm text-muted-foreground">Detailed breakdown of active residents</p>
+                    <h3 className="text-lg font-bold">Gender Ratio</h3>
+                    <p className="text-sm text-muted-foreground">Resident breakdown by gender</p>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                  {Object.entries(stats.branchStats).map(([branch, data], idx) => (
-                    <Card key={branch} className="p-4 relative overflow-hidden group">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase">{branch}</span>
-                        <div className="flex items-baseline gap-2 mt-1">
-                          <span className="text-2xl font-bold">{data.total}</span>
-                          <span className="text-[10px] font-medium text-muted-foreground uppercase">Residents</span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center text-[10px] font-semibold mt-3">
-                          <span className="text-blue-500">{data.male} Boys</span>
-                          <span className="text-pink-500">{data.female} Girls</span>
-                        </div>
+                  <div className="mt-8 relative flex flex-col items-center">
+                    <div className="h-40 w-40 rounded-full border-[10px] border-muted flex items-center justify-center relative overflow-hidden">
+                       <div 
+                        className="absolute inset-0 bg-indigo-500 origin-bottom transition-all duration-1000" 
+                        style={{ height: `${stats.totalStudents > 0 ? (stats.boysCount / stats.totalStudents) * 100 : 0}%`, top: 'auto', bottom: 0 }}
+                       />
+                       <div 
+                        className="absolute inset-0 bg-pink-500 origin-top transition-all duration-1000" 
+                        style={{ height: `${stats.totalStudents > 0 ? (stats.girlsCount / stats.totalStudents) * 100 : 0}%`, bottom: 'auto', top: 0 }}
+                       />
+                       <div className="z-10 bg-card w-24 h-24 rounded-full flex flex-col items-center justify-center shadow-inner">
+                         <span className="text-2xl font-black">{(stats.totalStudents > 0 ? (stats.boysCount/stats.totalStudents)*100 : 0).toFixed(0)}%</span>
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Boys</span>
+                       </div>
+                    </div>
 
-                        <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden flex">
-                          <div 
-                            className="h-full bg-blue-500" 
-                            style={{ width: `${data.total > 0 ? (data.male / data.total) * 100 : 0}%` }}
-                          />
-                          <div 
-                            className="h-full bg-pink-500" 
-                            style={{ width: `${data.total > 0 ? (data.female / data.total) * 100 : 0}%` }}
-                          />
+                    <div className="mt-8 w-full space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/20">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-indigo-500" />
+                          <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">Boys</span>
+                        </div>
+                        <span className="text-lg font-black text-indigo-800 dark:text-indigo-300">{stats.boysCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-pink-50 dark:bg-pink-900/10 border border-pink-100 dark:border-pink-900/20">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-pink-500" />
+                          <span className="text-sm font-bold text-pink-700 dark:text-pink-400">Girls</span>
+                        </div>
+                        <span className="text-lg font-black text-pink-800 dark:text-pink-300">{stats.girlsCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Branch Wise Distribution */}
+                <Card className="p-6 col-span-2 border-2 border-primary/5 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg font-bold">Branch Wise Distribution</h3>
+                      <p className="text-sm text-muted-foreground">Active residents per department</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {Object.entries(stats.branchStats).slice(0, 6).map(([branch, data]) => (
+                      <div key={branch} className="p-4 rounded-xl bg-muted/30 border border-border group hover:bg-muted/50 transition-colors">
+                        <span className="text-xs font-black text-muted-foreground uppercase">{branch}</span>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-xl font-bold">{data.total}</span>
+                          <span className="text-[10px] font-medium text-muted-foreground">STUDENTS</span>
+                        </div>
+                        <div className="w-full h-1 bg-muted rounded-full mt-3 overflow-hidden flex">
+                          <div className="h-full bg-indigo-500" style={{ width: `${data.total > 0 ? (data.male / data.total) * 100 : 0}%` }} />
+                          <div className="h-full bg-pink-500" style={{ width: `${data.total > 0 ? (data.female / data.total) * 100 : 0}%` }} />
                         </div>
                       </div>
-                    </Card>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-dashed flex justify-end">
+                     <Button variant="link" size="sm" onClick={() => setActiveView("students")} className="text-primary font-bold">View Detailed List <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                  </div>
+                </Card>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

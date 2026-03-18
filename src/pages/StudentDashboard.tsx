@@ -529,7 +529,7 @@ const StudentDashboard = () => {
       student_name: student.student_name,
       roll_number: student.roll_number,
       issue_type: selectedSubOption,
-      description: issueDescription.trim() || null,
+      description: issueDescription.trim() || `Issue: ${selectedSubOption}`,
       status: "pending"
     };
 
@@ -1008,11 +1008,21 @@ const StudentDashboard = () => {
                       </div>
                     )}
 
-
+                    {issueCategory && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-4 mt-4">
+                        <Label>Additional Details (Recommended)</Label>
+                        <Textarea 
+                          placeholder="Please provide more details about the issue..." 
+                          value={issueDescription}
+                          onChange={(e) => setIssueDescription(e.target.value)}
+                          className="min-h-[100px] border-primary/20 bg-white"
+                        />
+                      </div>
+                    )}
 
                     <Button 
                       onClick={handleIssueSubmit} 
-                      className="w-full mt-2" 
+                      className="w-full mt-6" 
                       variant="hero"
                       disabled={!issueCategory || !selectedSubOption}
                     >
