@@ -1065,7 +1065,7 @@ const WardenDashboard = () => {
 
       {/* Enhanced Top Bar */}
       <DashboardHeader
-        title="Warden Dashboard"
+        title="Warden Home Page"
         titleColor={warden.warden_type === "boys" ? "text-accent" : "text-primary"}
         userName={warden.name}
         userSubtitle={`${warden.warden_type === "boys" ? "Boys" : "Girls"} Hostel Warden`}
@@ -1078,7 +1078,7 @@ const WardenDashboard = () => {
             size="icon"
             onClick={() => setIsFeatureVisionOpen(true)}
             className="text-primary hover:bg-primary/10 transition-all hover:scale-110 active:scale-95"
-            title="Warden Feature Vision"
+            title="Warden Home Vision"
           >
             <LayoutGrid className="w-5 h-5" />
           </Button>
@@ -1104,7 +1104,7 @@ const WardenDashboard = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
                   <LayoutGrid className="w-5 h-5 text-primary" />
-                  <h4 className="font-black italic text-sm text-primary">FEATURE VISION PREVIEW</h4>
+                <h4 className="font-black italic text-sm text-primary">HOME VISION PREVIEW</h4>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {tabs.map((tab) => (
@@ -1775,7 +1775,7 @@ const WardenDashboard = () => {
               <div className="p-3 bg-primary rounded-2xl text-primary-foreground shadow-lg shadow-primary/20">
                 <LayoutGrid className="w-8 h-8" />
               </div>
-              WARDEN FEATURE VISION
+              WARDEN HOME VISION
             </DialogTitle>
             <DialogDescription className="text-muted-foreground font-medium mt-1">
               Access all management tools from a single point.
