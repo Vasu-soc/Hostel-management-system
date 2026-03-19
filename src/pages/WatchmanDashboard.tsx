@@ -335,7 +335,7 @@ const WatchmanDashboard = () => {
                                  <Card className="overflow-hidden border-none shadow-2xl rounded-3xl bg-white">
                                     <div className={`p-6 pb-16 text-white text-center ${passDetails?.status === 'completed' ? 'bg-blue-600' : 'bg-primary'}`}>
                                         <Badge className="bg-white/20 hover:bg-white/30 border-none text-white text-xs mb-3 px-3 py-1 uppercase tracking-widest font-bold">
-                                            Verification Result
+                                            {passDetails?.pass_type === "leave" ? "Leave Form Result" : "Gate Pass Result"}
                                         </Badge>
                                         <h2 className="text-2xl font-black tracking-tight italic">{passDetails?.student_name}</h2>
                                         <p className="text-white/80 font-medium text-xs mb-1">{passDetails?.roll_number}</p>
@@ -383,7 +383,7 @@ const WatchmanDashboard = () => {
                                         </div>
 
                                         <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                                            <h4 className="text-[10px] uppercase font-bold text-amber-600 mb-1">Reason for Leave</h4>
+                                            <h4 className="text-[10px] uppercase font-bold text-amber-600 mb-1">{passDetails?.pass_type === "leave" ? "Reason for Leave" : "Purpose of Visit"}</h4>
                                             <p className="text-sm font-medium text-amber-900 leading-relaxed italic">
                                                 "{passDetails?.purpose}"
                                             </p>
@@ -434,7 +434,7 @@ const WatchmanDashboard = () => {
 
                                             {passDetails?.status === 'completed' && (
                                                 <div className="text-center p-6 bg-blue-50 rounded-2xl border-2 border-dashed border-blue-200">
-                                                    <h3 className="text-blue-900 font-black">PASS COMPLETED</h3>
+                                                    <h3 className="text-blue-900 font-black">{passDetails?.pass_type === "leave" ? "LEAVE COMPLETED" : "PASS COMPLETED"}</h3>
                                                     <p className="text-xs text-blue-600 mt-1">This student has already returned.</p>
                                                 </div>
                                             )}
@@ -504,7 +504,7 @@ const WatchmanDashboard = () => {
                                     <div className="flex items-center gap-2 mb-1">
                                         <p className="font-bold truncate text-neutral-900">{log.student_name}</p>
                                         <Badge className={`text-[9px] uppercase font-black tracking-tighter ${log.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-primary/10 text-primary'}`}>
-                                            {log.status === 'completed' ? 'Return' : 'Exit'}
+                                            {log.pass_type === 'leave' ? 'Leave ' : ''}{log.status === 'completed' ? 'Return' : 'Exit'}
                                         </Badge>
                                     </div>
                                     <p className="text-[10px] text-neutral-400 font-mono">{log.roll_number}</p>

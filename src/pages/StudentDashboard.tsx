@@ -91,6 +91,7 @@ const StudentDashboard = () => {
   const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "", email: "", address: "", zipCode: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
+  const [activePassType, setActivePassType] = useState<"gatepass" | "leave">("gatepass");
 
   const downloadQRCode = () => {
     const canvas = document.getElementById("qr-canvas") as HTMLCanvasElement;
@@ -526,6 +527,7 @@ const StudentDashboard = () => {
       out_time: gatePassForm.outTime || null,
       in_time: gatePassForm.inTime || null,
       purpose: gatePassForm.purpose.trim(),
+      pass_type: activePassType,
     });
 
     if (error) {
@@ -1217,8 +1219,30 @@ const StudentDashboard = () => {
 
           {/* Middle Column - Gate Pass Form */}
           <div className="space-y-6">
+            <div className="flex gap-2">
+              <Button 
+                variant={activePassType === "gatepass" ? "hero" : "outline"} 
+                className="flex-1 font-bold"
+                onClick={() => setActivePassType("gatepass")}
+              >
+                Gatepass
+              </Button>
+              <Button 
+                variant={activePassType === "leave" ? "hero" : "outline"} 
+                className="flex-1 font-bold"
+                onClick={() => setActivePassType("leave")}
+              >
+                Leave form
+              </Button>
+            </div>
+
             <Card className="border-2 border-border">
-              <CardHeader className="text-center border-b border-border"><CardTitle className="text-xl flex items-center justify-center gap-2"><Calendar className="w-5 h-5 text-primary" />Gate Pass</CardTitle></CardHeader>
+              <CardHeader className="text-center border-b border-border">
+                <CardTitle className="text-xl flex items-center justify-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  {activePassType === "gatepass" ? "Gate Pass" : "Leave Form"}
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-6">
                 <form onSubmit={handleGatePassSubmit} className="space-y-4">
                   <div className="space-y-2"><Label>Student Name</Label><Input value={student.student_name} disabled className="bg-muted" /></div>
@@ -1277,7 +1301,9 @@ const StudentDashboard = () => {
                     />
                     <p className="text-xs text-muted-foreground">{gatePassForm.purpose.length}/500 characters</p>
                   </div>
-                  <Button type="submit" variant="hero" className="w-full">Submit Gate Pass</Button>
+                  <Button type="submit" variant="hero" className="w-full">
+                    Submit {activePassType === "gatepass" ? "Gate Pass" : "Leave Form"}
+                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -1335,7 +1361,11 @@ const StudentDashboard = () => {
           {/* Right Column - Gate Pass Status */}
           <div className="space-y-6">
             <Card className="border-2 border-border">
-              <CardHeader className="text-center border-b border-border"><CardTitle className="text-xl">Gate Pass Status</CardTitle></CardHeader>
+              <CardHeader className="text-center border-b border-border">
+                <CardTitle className="text-xl">
+                  {latestGatePass?.pass_type === "leave" ? "Leave Form Status" : "Gate Pass Status"}
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-6">
                 {latestGatePass ? (
                   <div className="space-y-4">
@@ -1446,7 +1476,7 @@ const StudentDashboard = () => {
                               </head>
                               <body>
                                 <div class="header">
-                                  <h1>HOSTEL GATE PASS</h1>
+                                  <h1>HOSTEL ${latestGatePass?.pass_type === 'leave' ? 'LEAVE FORM' : 'GATE PASS'}</h1>
                                   <p>Identity Verification Document</p>
                                 </div>
                                 ${student.photo_url ? `
@@ -1486,7 +1516,7 @@ const StudentDashboard = () => {
                           }}
                         >
                           <Printer className="w-4 h-4" />
-                          Print Gate Pass
+                          Print {latestGatePass?.pass_type === "leave" ? "Leave Form" : "Gate Pass"}
                         </Button>
                       </div>
                     )}

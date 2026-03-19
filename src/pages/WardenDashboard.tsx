@@ -1561,7 +1561,7 @@ const WardenDashboard = () => {
         {activeTab === "gatepasses" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-2xl font-bold text-foreground">Gate Pass Requests</h2>
+              <h2 className="text-2xl font-bold text-foreground">Gate Pass & Leave Forms</h2>
               <div className="flex items-center gap-2">
                 {gatePasses.length > 0 && (
                   <Button
@@ -1605,7 +1605,7 @@ const WardenDashboard = () => {
               <Card className="border-2 border-dashed border-border">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No gate pass requests yet</p>
+                  <p>No gate pass or leave form requests yet</p>
                 </CardContent>
               </Card>
             ) : (
@@ -1672,6 +1672,9 @@ const WardenDashboard = () => {
                             <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(gp.status)}`}>
                               {gp.status?.charAt(0).toUpperCase() + gp.status?.slice(1)}
                             </span>
+                            {gp.pass_type === "leave" && (
+                              <Badge key="leave-badge" variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] font-bold">LEAVE</Badge>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -2127,9 +2130,9 @@ const WardenDashboard = () => {
       <Dialog open={!!selectedGatePass} onOpenChange={() => setSelectedGatePass(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Gate Pass Details</DialogTitle>
+            <DialogTitle>{selectedGatePass?.pass_type === "leave" ? "Leave Form Details" : "Gate Pass Details"}</DialogTitle>
             <DialogDescription>
-              Verify student identity and review the reason for the gate pass request.
+              Verify student identity and review the reason for the {selectedGatePass?.pass_type === "leave" ? "leave" : "gate pass"} request.
             </DialogDescription>
           </DialogHeader>
           {selectedGatePass && (() => {
