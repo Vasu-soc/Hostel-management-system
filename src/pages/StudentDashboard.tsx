@@ -1058,17 +1058,6 @@ const StudentDashboard = () => {
                       </div>
                     )}
 
-                    {issueCategory && (
-                      <div className="space-y-2 animate-in fade-in slide-in-from-top-4 mt-4">
-                        <Label>Additional Details (Recommended)</Label>
-                        <Textarea 
-                          placeholder="Please provide more details about the issue..." 
-                          value={issueDescription}
-                          onChange={(e) => setIssueDescription(e.target.value)}
-                          className="min-h-[100px] border-primary/20 bg-white"
-                        />
-                      </div>
-                    )}
 
                     <Button 
                       onClick={handleIssueSubmit} 
