@@ -78,6 +78,7 @@ const StudentDashboard = () => {
   const [studyMaterials, setStudyMaterials] = useState<Record<string, unknown>[]>([]);
   const [branchMarks, setBranchMarks] = useState<any[]>([]);
   const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [issueReportDialogOpen, setIssueReportDialogOpen] = useState(false);
   const [medicalDialogOpen, setMedicalDialogOpen] = useState(false);
   const [issueCategory, setIssueCategory] = useState<"food" | "electrical" | "room" | "">("");
@@ -164,6 +165,7 @@ const StudentDashboard = () => {
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
     loadAttendanceReports(session.id);
+    fetchTodayAttendance(session.id);
     loadStudyMaterials(session.branch, session.year);
     loadBranchMarks(session.branch, session.year);
     fetchMedicines();
@@ -301,6 +303,40 @@ const StudentDashboard = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [student?.roll_number]);
+
+  const fetchTodayAttendance = async (studentId: string) => {
+    try {
+      const today = new Date().toLocaleDateString('en-CA');
+      const { data, error } = await supabase
+        .from('daily_attendance')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('attendance_date', today)
+        .maybeSingle();
+
+      if (error) throw error;
+      setTodayAttendance(data);
+    } catch (e) {
+      console.error("Error fetching today's attendance:", e);
+    }
+  };
+
+  // Real-time: daily attendance
+  useEffect(() => {
+    if (!student?.id) return;
+    const channel = supabase
+      .channel(`daily-attendance-${student.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "daily_attendance",
+        filter: `student_id=eq.${student.id}`,
+      }, () => {
+        fetchTodayAttendance(student.id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [student?.id]);
 
   // --- Profile Photo Upload ---
   const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1124,8 +1160,26 @@ const StudentDashboard = () => {
 
             <Card className="border-2 border-border shadow-sm">
               <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" />Attendance Reports</CardTitle></CardHeader>
-              <CardContent className="space-y-2 max-h-48 overflow-y-auto">
-                {attendanceReports.length === 0 ? (
+              <CardContent className="space-y-4 max-h-60 overflow-y-auto">
+                {/* Today's Attendance Status */}
+                {todayAttendance && (
+                  <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="flex justify-between items-center">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Today's Status</p>
+                        <p className="font-bold text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                      </div>
+                      <Badge 
+                        variant={todayAttendance.status === 'present' ? 'default' : 'destructive'} 
+                        className={`text-xs px-3 py-1 font-bold uppercase tracking-wider ${todayAttendance.status === 'present' ? 'bg-success hover:bg-success' : 'bg-destructive hover:bg-destructive'}`}
+                      >
+                        {todayAttendance.status === 'present' ? 'Present' : 'Absent'}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {attendanceReports.length === 0 && !todayAttendance ? (
                   <p className="text-sm text-muted-foreground text-center py-4">No attendance reports available.</p>
                 ) : (
                   attendanceReports.map((report) => (

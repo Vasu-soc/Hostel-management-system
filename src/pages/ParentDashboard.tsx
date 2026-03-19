@@ -47,6 +47,7 @@ const ParentDashboard = () => {
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
   const [feeTransactions, setFeeTransactions] = useState<any[]>([]);
   const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [branchMarks, setBranchMarks] = useState<any[]>([]);
   const [gatePasses, setGatePasses] = useState<any[]>([]);
   const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
@@ -78,6 +79,7 @@ const ParentDashboard = () => {
       fetchBranchMarks(data.branch, data.year);
       fetchGatePasses(rollNumber);
       fetchLeaveExtensions(rollNumber);
+      fetchTodayAttendance(rollNumber);
     }
     setLoading(false);
   };
@@ -126,6 +128,23 @@ const ParentDashboard = () => {
 
     if (!error && data) {
       setAttendanceReports(data);
+    }
+  };
+
+  const fetchTodayAttendance = async (rollNumber: string) => {
+    try {
+      const today = new Date().toLocaleDateString('en-CA');
+      const { data, error } = await supabase
+        .from('daily_attendance')
+        .select('*')
+        .eq('roll_number', rollNumber)
+        .eq('attendance_date', today)
+        .maybeSingle();
+
+      if (error) throw error;
+      setTodayAttendance(data);
+    } catch (e) {
+      console.error("Parent Dashboard: Today's attendance fetch failure:", e);
     }
   };
 
@@ -205,6 +224,18 @@ const ParentDashboard = () => {
         },
         () => {
           fetchMedicalAlerts(parent.student_roll_number);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "daily_attendance",
+          filter: `roll_number=eq.${parent.student_roll_number}`,
+        },
+        () => {
+          fetchTodayAttendance(parent.student_roll_number);
         }
       )
       .subscribe();
@@ -615,8 +646,32 @@ const ParentDashboard = () => {
 
           <Card className="border-2 border-border shadow-sm">
             <CardHeader className="pb-3 border-b border-border"><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" />Attendance Reports</CardTitle></CardHeader>
-            <CardContent className="space-y-2 pt-4 max-h-60 overflow-y-auto">
-              {attendanceReports.length === 0 ? (
+            <CardContent className="space-y-4 pt-4 max-h-60 overflow-y-auto">
+              {/* Today's Daily Attendance Status */}
+              {todayAttendance && (
+                <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Today's Presence</p>
+                      <p className="font-bold text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                    </div>
+                    <Badge 
+                      variant={todayAttendance.status === 'present' ? 'default' : 'destructive'} 
+                      className={`text-xs px-3 py-1 font-bold uppercase tracking-wider ${todayAttendance.status === 'present' ? 'bg-success hover:bg-success' : 'bg-destructive hover:bg-destructive'}`}
+                    >
+                      {todayAttendance.status === 'present' ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
+                  {todayAttendance.status === 'absent' && (
+                    <p className="text-[10px] text-destructive font-semibold mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Student marked absent for today.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {attendanceReports.length === 0 && !todayAttendance ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No attendance reports available.</p>
               ) : (
                 attendanceReports.map((report) => (
