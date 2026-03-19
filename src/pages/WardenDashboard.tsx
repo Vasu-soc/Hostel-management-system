@@ -1326,10 +1326,10 @@ const WardenDashboard = () => {
                 }
               });
 
-              const leaveCount = outRolls.size;
-              const presentCount = Math.max(0, totalAllotted - leaveCount);
+              const presentCount = students.filter(s => s.status === 'IN' && s.room_allotted).length;
+              const leaveCount = students.filter(s => s.status === 'OUT' && s.room_allotted).length;
+              const activePasses = gatePasses.filter(gp => gp.status === 'approved').length;
               const isBoys = warden?.warden_type === "boys";
-              const messCount = activeAttendance.length;
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-2 animate-fade-in">
@@ -1342,46 +1342,46 @@ const WardenDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-4xl font-black">{totalAllotted}</div>
-                      <p className="text-indigo-100/80 text-sm mt-1">Total allotted students in hostel</p>
+                      <p className="text-indigo-100/80 text-sm mt-1">Total allotted students</p>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg border-0 hover:shadow-emerald-500/30 transition-shadow transition-transform hover:-translate-y-1">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-emerald-100 flex items-center justify-between font-medium">
-                        Currently Present
+                        Students Inside
                         <Home className="w-5 h-5 text-emerald-200" />
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-4xl font-black">{presentCount}</div>
-                      <p className="text-emerald-100/80 text-sm mt-1">Students inside hostel</p>
+                      <p className="text-emerald-100/80 text-sm mt-1">Currently in hostel</p>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg border-0 hover:shadow-orange-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                  <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg border-0 hover:shadow-red-500/30 transition-shadow transition-transform hover:-translate-y-1">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-orange-100 flex items-center justify-between font-medium">
-                        Mess Food Count
-                        <Utensils className="w-5 h-5 text-orange-200" />
+                      <CardTitle className="text-red-100 flex items-center justify-between font-medium">
+                        Students Outside
+                        <DoorOpen className="w-5 h-5 text-red-200" />
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-4xl font-black">{messCount}</div>
-                      <p className="text-orange-100/80 text-sm mt-1">Total meals to prepare for today</p>
+                      <div className="text-4xl font-black">{leaveCount}</div>
+                      <p className="text-red-100/80 text-sm mt-1">Current students out</p>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg border-0 hover:shadow-amber-500/30 transition-shadow transition-transform hover:-translate-y-1">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-amber-100 flex items-center justify-between font-medium">
-                        On Leave (Outing)
-                        <DoorOpen className="w-5 h-5 text-amber-200" />
+                        Active Passes
+                        <ShieldCheck className="w-5 h-5 text-amber-200" />
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-4xl font-black">{leaveCount}</div>
-                      <p className="text-amber-100/80 text-sm mt-1">Currently out on gate pass</p>
+                      <div className="text-4xl font-black">{activePasses}</div>
+                      <p className="text-amber-100/80 text-sm mt-1">Approved pending passes</p>
                     </CardContent>
                   </Card>
                 </div>

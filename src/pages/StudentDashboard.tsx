@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { QRCodeCanvas } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,10 @@ import {
   Library,
   Camera,
   User,
+  ShieldCheck,
+  ChevronDown,
+  Download,
+  Search,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,21 +52,11 @@ import { logger } from "@/lib/logger";
 const WARDEN_CONTACT = "9553866278";
 
 const hostelRules = [
-  "Students must return to hostel by 9:00 PM on weekdays and 10:00 PM on weekends.",
-  "Gate pass is mandatory for leaving the hostel premises.",
-  "Visitors are allowed only during visiting hours (4:00 PM - 6:00 PM on Sundays).",
-  "Ragging in any form is strictly prohibited and punishable.",
-  "Students must maintain silence in hostel rooms after 10:00 PM.",
-  "Consumption of alcohol, drugs, or smoking is strictly prohibited.",
-  "Students are responsible for the safety of their belongings.",
-  "Electrical appliances like heaters and irons are not allowed in rooms.",
-  "Students must keep their rooms clean and tidy at all times.",
-  "Any damage to hostel property will be charged to the student.",
-  "Students must inform warden before leaving for home/outing.",
-  "Mobile phones should be in silent mode during study hours.",
-  "Mess timings must be strictly followed.",
-  "Students must carry ID cards at all times inside hostel premises.",
-  "Parents can contact warden for any emergency situations.",
+  "Students must return to the hostel by 9:00 PM.",
+  "Quiet hours are between 10:00 PM and 6:00 AM.",
+  "Visitors are not allowed inside student rooms.",
+  "Illegal substances are strictly prohibited.",
+  "Main gate closes at 10:00 PM sharpen.",
 ];
 
 const StudentDashboard = () => {
@@ -91,10 +86,27 @@ const StudentDashboard = () => {
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [resourcesDialogOpen, setResourcesDialogOpen] = useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = useState(false);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [isPhotoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "", email: "", address: "", zipCode: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [qrZoomOpen, setQrZoomOpen] = useState(false);
+
+  const downloadQRCode = () => {
+    const canvas = document.getElementById("qr-canvas") as HTMLCanvasElement;
+    if (canvas) {
+      const pngUrl = canvas
+        .toDataURL("image/png")
+        .replace("image/png", "image/octet-stream");
+      const downloadLink = document.createElement("a");
+      downloadLink.href = pngUrl;
+      downloadLink.download = `GatePass_QR_${student?.roll_number}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      toast({ title: "QR Downloaded", description: "Gate pass QR saved to your device" });
+    }
+  };
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [medicines, setMedicines] = useState<any[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -1339,7 +1351,43 @@ const StudentDashboard = () => {
                       </div>
                     )}
                     <div className="flex justify-center mb-4">{getStatusBadge(latestGatePass.status as string)}</div>
+                    
+                    {/* Dynamic QR Code for Verification - Click to Zoom */}
+                    {latestGatePass.status === "approved" && (
+                      <div className="flex flex-col items-center gap-2 mb-6 animate-in fade-in zoom-in duration-700">
+                        <div 
+                          className="p-2 bg-white rounded-xl border border-border shadow-sm cursor-zoom-in group relative hover:ring-2 hover:ring-primary/20 transition-all" 
+                          onClick={() => setQrZoomOpen(true)}
+                        >
+                          <QRCodeCanvas 
+                            id="qr-canvas"
+                            value={latestGatePass.id as string} 
+                            size={140}
+                            level="H"
+                          />
+                          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="bg-white/90 p-1.5 rounded-full shadow-lg">
+                              <Search className="w-4 h-4 text-primary" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> Secure Gate QR
+                          </p>
+                          <Button 
+                            variant="link" 
+                            className="h-auto p-0 text-[10px] text-muted-foreground underline decoration-1"
+                            onClick={downloadQRCode}
+                          >
+                            <Download className="w-3 h-3 mr-1" /> Download QR
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2 text-sm">
+                       <div className="flex justify-between"><span className="text-muted-foreground">Pass ID</span><span className="font-mono text-[10px] font-bold text-primary uppercase select-all">{latestGatePass.id as string}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Student Name</span><span className="font-medium">{student.student_name}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Roll Number</span><span>{student.roll_number}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Branch</span><span>{student.branch?.toUpperCase()}</span></div>
@@ -1546,7 +1594,7 @@ const StudentDashboard = () => {
       </Dialog >
 
       {/* Photo Zoom Dialog */}
-      < Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen} >
+      <Dialog open={isPhotoDialogOpen} onOpenChange={setPhotoDialogOpen}>
         <DialogContent className="max-w-md p-2 bg-card">
           {student?.photo_url && (
             <img
@@ -1614,8 +1662,28 @@ const StudentDashboard = () => {
             </Button>
           </form>
         </DialogContent>
-      </Dialog >
-    </div >
+      </Dialog>
+
+      {/* QR Zoom Dialog */}
+      <Dialog open={qrZoomOpen} onOpenChange={setQrZoomOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] w-fit p-6 rounded-3xl border-none shadow-2xl flex flex-col items-center">
+          <div className="bg-white p-6 rounded-[2.5rem] border-4 border-primary/10 shadow-inner">
+            <QRCodeCanvas 
+              value={(gatePasses[0] as any)?.id || ""} 
+              size={280}
+              level="H"
+            />
+          </div>
+          <div className="text-center mt-4">
+            <h3 className="text-xl font-black italic tracking-tight">{student.student_name}</h3>
+            <p className="text-xs text-muted-foreground font-mono font-bold uppercase select-all">{(gatePasses[0] as any)?.id}</p>
+          </div>
+          <Button className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20 mt-6" onClick={() => setQrZoomOpen(false)}>
+            Close Pass
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

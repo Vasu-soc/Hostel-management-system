@@ -49,6 +49,14 @@ export interface AdminSession {
   expiresAt: number;
 }
 
+export interface WatchmanSession {
+  id: string;
+  username: string;
+  name: string;
+  mobile_number: string | null;
+  expiresAt: number;
+}
+
 const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours
 
 // Remove password from any object
@@ -208,10 +216,45 @@ export const clearAdminSession = (): void => {
   sessionStorage.removeItem('admin');
 };
 
+// Watchman session management
+export const setWatchmanSession = (watchman: Record<string, unknown>): void => {
+  const safeData = sanitizeUserData(watchman);
+  const session: WatchmanSession = {
+    id: safeData.id as string,
+    username: safeData.username as string,
+    name: safeData.name as string,
+    mobile_number: safeData.mobile_number as string | null,
+    expiresAt: Date.now() + SESSION_DURATION,
+  };
+  sessionStorage.setItem('currentWatchman', JSON.stringify(session));
+};
+
+export const getWatchmanSession = (): WatchmanSession | null => {
+  const data = sessionStorage.getItem('currentWatchman');
+  if (!data) return null;
+  
+  try {
+    const session: WatchmanSession = JSON.parse(data);
+    if (Date.now() > session.expiresAt) {
+      clearWatchmanSession();
+      return null;
+    }
+    return session;
+  } catch {
+    clearWatchmanSession();
+    return null;
+  }
+};
+
+export const clearWatchmanSession = (): void => {
+  sessionStorage.removeItem('currentWatchman');
+};
+
 // Clear all sessions
 export const clearAllSessions = (): void => {
   clearStudentSession();
   clearWardenSession();
   clearParentSession();
   clearAdminSession();
+  clearWatchmanSession();
 };

@@ -66,6 +66,14 @@ interface Student {
   email: string | null;
 }
 
+interface Watchman {
+  id: string;
+  name: string;
+  mobile_number: string | null;
+  username: string;
+  password?: string;
+}
+
 interface Room {
   id: string;
   room_number: string;
@@ -88,7 +96,7 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "updates" | "appFees">("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "watchmen" | "updates" | "appFees">("dashboard");
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
@@ -102,6 +110,9 @@ const AdminDashboard = () => {
     new_payment: 0,
   });
   const [feeHistory, setFeeHistory] = useState<any[]>([]);
+  const [watchmen, setWatchmen] = useState<Watchman[]>([]);
+  const [watchmanDialogOpen, setWatchmanDialogOpen] = useState(false);
+  const [newWatchman, setNewWatchman] = useState({ name: "", mobile_number: "", username: "", password: "" });
 
   useEffect(() => {
     const session = getAdminSession();
@@ -114,10 +125,12 @@ const AdminDashboard = () => {
     fetchAllStudents();
     fetchApplications();
     fetchMessCount();
+    fetchWatchmen();
 
-    const channel = supabase
+    const channel = (supabase as any)
       .channel("admin-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, fetchRooms)
+      .on("postgres_changes", { event: "*", schema: "public", table: "watchmen" }, fetchWatchmen)
       .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => {
         fetchAllStudents();
         if (selectedBranch && selectedYear) {
@@ -158,6 +171,11 @@ const AdminDashboard = () => {
 
   const getActualOccupied = (roomNumber: string) => {
     return allStudents.filter(s => s.hostel_room_number === roomNumber).length;
+  };
+
+  const fetchWatchmen = async () => {
+    const { data } = await (supabase as any).from("watchmen").select("*");
+    if (data) setWatchmen(data as Watchman[]);
   };
 
   const fetchRooms = async () => {
@@ -280,6 +298,28 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddWatchman = async () => {
+    if (!newWatchman.name || !newWatchman.username || !newWatchman.password) return;
+    const { error } = await (supabase as any).from("watchmen").insert([newWatchman]);
+    if (!error) {
+      toast({ title: "Watchman Created" });
+      setWatchmanDialogOpen(false);
+      setNewWatchman({ name: "", mobile_number: "", username: "", password: "" });
+      fetchWatchmen();
+    } else {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteWatchman = async (id: string) => {
+    if (!confirm("Delete this watchman?")) return;
+    const { error } = await (supabase as any).from("watchmen").delete().eq("id", id);
+    if (!error) {
+      toast({ title: "Watchman Deleted" });
+      fetchWatchmen();
+    }
+  };
+
   const handleLogout = () => {
     clearAdminSession();
     navigate("/admin-login");
@@ -312,6 +352,7 @@ const AdminDashboard = () => {
               { id: "students", label: "Students", icon: Users },
               { id: "rooms", label: "Rooms", icon: DoorOpen },
               { id: "wardens", label: "Wardens", icon: ShieldCheck },
+              { id: "watchmen", label: "Watchmen", icon: ShieldCheck },
               { id: "appFees", label: "Fee Summary", icon: IndianRupee },
               { id: "updates", label: "Updates", icon: Megaphone }
             ].map((tab) => (
@@ -640,6 +681,73 @@ const AdminDashboard = () => {
                <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
                  <WardenApproval />
                </div>
+            </motion.div>
+          )}
+
+          {activeView === "watchmen" && (
+            <motion.div key="watchmen" className="space-y-6">
+               <Card className="p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                     <Button variant="ghost" size="icon" onClick={() => setActiveView("dashboard")}><ArrowLeft className="w-5 h-5"/></Button>
+                     <h2 className="text-xl font-bold">Watchman Management</h2>
+                  </div>
+                  <Button onClick={() => setWatchmanDialogOpen(true)}>Add New Watchman</Button>
+               </Card>
+               
+               <Card className="overflow-hidden">
+                 <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead>Serial No</TableHead>
+                        <TableHead>Full Name</TableHead>
+                        <TableHead>Username (ID)</TableHead>
+                        <TableHead>Password</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {watchmen.map((w, idx) => (
+                        <TableRow key={w.id}>
+                          <TableCell className="font-bold"> {idx + 1} </TableCell>
+                          <TableCell className="font-bold">{w.name}</TableCell>
+                          <TableCell>{w.username}</TableCell>
+                          <TableCell className="font-mono text-xs">{w.password}</TableCell>
+                          <TableCell className="text-right">
+                             <Button variant="ghost" size="icon" onClick={() => handleDeleteWatchman(w.id)} className="text-red-500">
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {watchmen.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-10 opacity-50">No Watchmen registered yet</TableCell></TableRow>}
+                    </TableBody>
+                 </Table>
+               </Card>
+
+               <Dialog open={watchmanDialogOpen} onOpenChange={setWatchmanDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Register New Watchman</DialogTitle></DialogHeader>
+                    <div className="space-y-4 pt-4">
+                       <div className="space-y-2">
+                          <Label>Watchman Name</Label>
+                          <Input value={newWatchman.name} onChange={(e) => setNewWatchman({...newWatchman, name: e.target.value})} placeholder="e.g. Ramesh Singh"/>
+                       </div>
+                       <div className="space-y-2">
+                          <Label>Mobile Number</Label>
+                          <Input value={newWatchman.mobile_number} onChange={(e) => setNewWatchman({...newWatchman, mobile_number: e.target.value})} placeholder="Mobile..."/>
+                       </div>
+                       <div className="space-y-2">
+                          <Label>Username</Label>
+                          <Input value={newWatchman.username} onChange={(e) => setNewWatchman({...newWatchman, username: e.target.value})} placeholder="Unique username"/>
+                       </div>
+                       <div className="space-y-2">
+                          <Label>Password</Label>
+                          <Input value={newWatchman.password} onChange={(e) => setNewWatchman({...newWatchman, password: e.target.value})} placeholder="Set password"/>
+                       </div>
+                       <Button className="w-full h-12 rounded-xl" onClick={handleAddWatchman}>Create Account</Button>
+                    </div>
+                  </DialogContent>
+               </Dialog>
             </motion.div>
           )}
 

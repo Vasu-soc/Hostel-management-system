@@ -19,6 +19,9 @@ import ParentDashboard from "./pages/ParentDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
+import GatePassVerification from "./pages/GatePassVerification";
+import WatchmanLogin from "./pages/WatchmanLogin";
+import WatchmanDashboard from "./pages/WatchmanDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +69,9 @@ const App = () => {
                   <Route path="/admin-login" element={<AdminLogin />} />
                   <Route path="/admin-dashboard" element={<AdminDashboard />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/gate-pass/:passId" element={<GatePassVerification />} />
+                  <Route path="/watchman-login" element={<WatchmanLogin />} />
+                  <Route path="/watchman-dashboard" element={<WatchmanDashboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
