@@ -500,6 +500,10 @@ const WardenDashboard = () => {
           console.log("Real-time: medical_alerts changed");
           fetchIssues(studentGender);
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "room_issues" }, () => {
+           console.log("Real-time: room_issues changed");
+           fetchIssues(studentGender);
+         })
         .on("postgres_changes", { event: "*", schema: "public", table: "study_materials" }, () => {
           console.log("Real-time: study_materials changed");
           fetchMaterials();
@@ -508,6 +512,14 @@ const WardenDashboard = () => {
           console.log("Real-time: daily_attendance changed");
           fetchTodayAttendance();
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "fee_transactions" }, () => {
+           console.log("Real-time: fee_transactions changed");
+           fetchAllData();
+         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "payment_submissions" }, () => {
+           console.log("Real-time: payment_submissions changed");
+           fetchAllData();
+         })
         .subscribe((status) => {
           console.log("Real-time subscription status:", status);
         });
