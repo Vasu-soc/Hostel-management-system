@@ -56,6 +56,91 @@ const WatchmanDashboard = () => {
     const isInitializing = useRef(false);
     const stopInProgress = useRef(false);
 
+    const initScanner = async () => {
+         if (isScanning && !isInitializing.current) {
+             isInitializing.current = true;
+             setCameraError(null);
+             
+             try {
+                 // 1. Wait for reader element with a loop
+                 let readerElement = document.getElementById("reader");
+                 let attempts = 0;
+                 while (!readerElement && attempts < 10) {
+                     await new Promise(r => setTimeout(r, 200));
+                     readerElement = document.getElementById("reader");
+                     attempts++;
+                 }
+
+                 if (!readerElement) {
+                     setCameraError("Scanner preview area not ready. Please try again.");
+                     isInitializing.current = false;
+                     return;
+                 }
+
+                 // 2. Check if browser supports camera
+                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    setCameraError("Your browser doesn't support camera access. Please use Chrome or Safari.");
+                    isInitializing.current = false;
+                    return;
+                 }
+
+                 // 3. Stop existing if any
+                 if (scannerRef.current) {
+                     try {
+                        if (scannerRef.current.isScanning) {
+                            await scannerRef.current.stop();
+                            setIsCameraActive(false);
+                        }
+                     } catch (e) {}
+                 }
+
+                 const html5QrCode = new Html5Qrcode("reader");
+                 scannerRef.current = html5QrCode;
+
+                 // 4. Start the camera - this triggers the permission prompt
+                 const config = { 
+                     fps: 10,
+                     qrbox: { width: 250, height: 250 },
+                     aspectRatio: 1.0
+                 };
+                 
+                 await html5QrCode.start(
+                     { facingMode: facingMode }, 
+                     config, 
+                     onScanSuccess, 
+                     () => {} // Silent scan errors
+                 ).then(() => {
+                    setIsCameraActive(true);
+                    setCameraError(null);
+                 }).catch(err => {
+                    console.error("Scanner Error:", err);
+                    
+                    let msg = "Could not access camera.";
+                    const errStr = String(err).toLowerCase();
+                    
+                    if (errStr.includes("notallowed") || errStr.includes("permission")) {
+                        msg = "Permission denied. Please allow camera access in your browser settings.";
+                    } else if (errStr.includes("notfound")) {
+                        msg = "No camera found on this device.";
+                    } else if (errStr.includes("notreadable") || errStr.includes("in use")) {
+                        msg = "Camera is already in use by another app or tab.";
+                    } else if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                        msg = "Camera requires HTTPS. Please ensure you are using a secure connection.";
+                    }
+                    
+                    setCameraError(msg);
+                    toast({ title: "Scanner Error", description: msg, variant: "destructive" });
+                 });
+
+             } catch (err: any) {
+                 console.error("Fatal Camera Error:", err);
+                 setCameraError("Failed to initialize camera. Tap 'Retry' to try again.");
+             } finally {
+                 isInitializing.current = false;
+             }
+         }
+    };
+
     useEffect(() => {
         const session = getWatchmanSession();
         if (!session) {
@@ -63,88 +148,6 @@ const WatchmanDashboard = () => {
             return;
         }
         setWatchman(session);
-
-        const initScanner = async () => {
-             if (isScanning && !isInitializing.current) {
-                 isInitializing.current = true;
-                 setCameraError(null);
-                 
-                 try {
-                     // 1. Wait for reader element with a loop
-                     let readerElement = document.getElementById("reader");
-                     let attempts = 0;
-                     while (!readerElement && attempts < 10) {
-                         await new Promise(r => setTimeout(r, 200));
-                         readerElement = document.getElementById("reader");
-                         attempts++;
-                     }
-
-                     if (!readerElement) {
-                         setCameraError("Scanner preview area not ready. Please try again.");
-                         return;
-                     }
-
-                     // 2. Check if browser supports camera
-                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        setCameraError("Your browser doesn't support camera access. Please use Chrome or Safari.");
-                        return;
-                     }
-
-                     // 3. Stop existing if any
-                     if (scannerRef.current) {
-                         try {
-                            if (scannerRef.current.isScanning) {
-                                await scannerRef.current.stop();
-                                setIsCameraActive(false);
-                            }
-                         } catch (e) {}
-                     }
-
-                     const html5QrCode = new Html5Qrcode("reader");
-                     scannerRef.current = html5QrCode;
-
-                     // 4. Start the camera - this triggers the permission prompt
-                     const config = { 
-                         fps: 10,
-                         qrbox: { width: 250, height: 250 },
-                         aspectRatio: 1.0
-                     };
-                     
-                     await html5QrCode.start(
-                         { facingMode: facingMode }, 
-                         config, 
-                         onScanSuccess, 
-                         () => {} // Silent scan errors
-                     ).then(() => {
-                        setIsCameraActive(true);
-                     }).catch(err => {
-                        console.error("Scanner Error:", err);
-                        
-                        let msg = "Could not access camera.";
-                        const errStr = String(err).toLowerCase();
-                        
-                        if (errStr.includes("notallowed") || errStr.includes("permission")) {
-                            msg = "Permission denied. Please allow camera access in your browser settings.";
-                        } else if (errStr.includes("notfound")) {
-                            msg = "No camera found on this device.";
-                        } else if (errStr.includes("notreadable") || errStr.includes("in use")) {
-                            msg = "Camera is already in use by another app or tab.";
-                        } else if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-                            msg = "Camera requires HTTPS. Please ensure you are using a secure connection.";
-                        }
-                        
-                        setCameraError(msg);
-                        toast({ title: "Scanner Error", description: msg, variant: "destructive" });
-                     });
-
-                 } catch (err: any) {
-                     console.error("Fatal Camera Error:", err);
-                     setCameraError("Failed to initialize camera. Tap 'Retry' to try again.");
-                 } finally {
-                     isInitializing.current = false;
-                 }
-             }
-        };
 
         const timer = setTimeout(() => {
             initScanner();
@@ -346,17 +349,14 @@ const WatchmanDashboard = () => {
                                             {!cameraError && (
                                                 <>
                                                     <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                                                    <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">Requesting Camera...</p>
+                                                    <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">Requesting Permission...</p>
                                                     <Button 
                                                         variant="secondary" 
                                                         size="sm" 
-                                                        className="mt-2 rounded-full"
-                                                        onClick={() => {
-                                                            setIsScanning(false);
-                                                            setTimeout(() => setIsScanning(true), 100);
-                                                        }}
+                                                        className="mt-2 rounded-xl h-10 px-6 font-bold"
+                                                        onClick={() => initScanner()}
                                                     >
-                                                        Tap to Initialize
+                                                        Tap to Grant Access
                                                     </Button>
                                                 </>
                                             )}
@@ -370,11 +370,7 @@ const WatchmanDashboard = () => {
                                                     <p className="text-xs text-neutral-500 max-w-[200px]">{cameraError}</p>
                                                     <Button 
                                                         className="rounded-full px-8 bg-primary hover:bg-primary/90 mt-4"
-                                                        onClick={() => {
-                                                            setCameraError(null);
-                                                            setIsScanning(false);
-                                                            setTimeout(() => setIsScanning(true), 100);
-                                                        }}
+                                                        onClick={() => initScanner()}
                                                     >
                                                         <RefreshCw className="w-4 h-4 mr-2" />
                                                         Try Again
