@@ -62,6 +62,16 @@ const WatchmanDashboard = () => {
              setCameraError(null);
              
              try {
+                 // 0. Explicitly request camera permission FIRST to preserve user gesture token from click
+                 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                     try {
+                         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                         stream.getTracks().forEach(track => track.stop());
+                     } catch (permError) {
+                         console.warn("Pre-request permission failed:", permError);
+                     }
+                 }
+
                  // 1. Wait for reader element with a loop
                  let readerElement = document.getElementById("reader");
                  let attempts = 0;
@@ -89,15 +99,6 @@ const WatchmanDashboard = () => {
                     setCameraError("Your browser doesn't support camera access. Use Chrome, Safari, or a standalone browser.");
                     isInitializing.current = false;
                     return;
-                 }
-
-                 // 3. Explicitly request camera permission first to force mobile browsers to prompt
-                 try {
-                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                     stream.getTracks().forEach(track => track.stop());
-                     console.log("Camera permission explicitly granted");
-                 } catch (permError) {
-                     console.warn("Pre-request permission failed:", permError);
                  }
 
                  // 4. Cleanup existing instance
