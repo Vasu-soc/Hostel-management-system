@@ -585,7 +585,7 @@ const AdminDashboard = () => {
                       </Button>
                       <div>
                         <h2 className="text-xl font-bold">
-                          {selectedBranch && selectedBranch !== "all_branches" && selectedBranch !== "" ? `${selectedBranch} Students` : 
+                          {selectedBranch && selectedBranch !== "all_branches" && selectedBranch !== "" && selectedBranch !== "-" ? `${selectedBranch} Students` : 
                            selectedYear && selectedYear !== "all_years" && selectedYear !== "" ? `${selectedYear} Students` :
                            "Hostel Residents"}
                         </h2>
