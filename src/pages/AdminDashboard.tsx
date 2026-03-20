@@ -183,19 +183,28 @@ const AdminDashboard = () => {
     if (!error) setRooms((data || []) as Room[]);
   };
 
-  const fetchStudentsData = async (branch: string, year: string) => {
-    const { data, error } = await supabase
-      .from("students")
-      .select("*")
-      .ilike("branch", branch)
-      .eq("year", year);
+  const fetchStudentsData = async (branch?: string, year?: string) => {
+    let query = supabase.from("students").select("*");
+    
+    if (branch) {
+      query = query.ilike("branch", branch);
+    }
+    if (year) {
+      query = query.eq("year", year);
+    }
+    
+    const { data, error } = await query;
     if (!error) setStudents((data as Student[]) || []);
   };
 
   const fetchStudents = async () => {
-    if (!selectedBranch || !selectedYear) return;
     setIsLoading(true);
-    await fetchStudentsData(selectedBranch, selectedYear);
+    if (selectedBranch && selectedYear) {
+      await fetchStudentsData(selectedBranch, selectedYear);
+    } else {
+      // If we don't have both selected, we just show from allStudents
+      setStudents(allStudents);
+    }
     setActiveView("students");
     setIsLoading(false);
   };
@@ -325,10 +334,23 @@ const AdminDashboard = () => {
     navigate("/admin-login");
   };
 
-  const filteredStudents = students.filter(s => 
-    s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.roll_number.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStudents = useMemo(() => {
+    let list = (selectedBranch || selectedYear) ? students : allStudents;
+    
+    // Safety check: if students is empty but a filter is active, 
+    // it might be because fetchStudentsData hasn't finished.
+    // However, if we just want to filter from allStudents client-side:
+    list = allStudents.filter(s => {
+      const matchesBranch = !selectedBranch || selectedBranch === "all_branches" || (s.branch || "").toUpperCase() === selectedBranch.toUpperCase();
+      const matchesYear = !selectedYear || selectedYear === "all_years" || (s.year || "") === selectedYear;
+      return matchesBranch && matchesYear;
+    });
+
+    return list.filter(s => 
+      s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      s.roll_number.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allStudents, students, selectedBranch, selectedYear, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -504,8 +526,8 @@ const AdminDashboard = () => {
                               </Select>
                            </div>
                         </div>
-                        <Button onClick={fetchStudents} disabled={!selectedBranch || !selectedYear || isLoading} className="w-full">
-                           {isLoading ? <Loader2 className="animate-spin mr-2" /> : "Search Records"}
+                        <Button onClick={fetchStudents} disabled={isLoading} className="w-full">
+                           {isLoading ? <Loader2 className="animate-spin mr-2" /> : "View Student Records"}
                         </Button>
                      </div>
                   </Card>
@@ -549,24 +571,68 @@ const AdminDashboard = () => {
           {activeView === "students" && (
             <motion.div key="students" className="space-y-6">
               <Card className="p-6">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => setActiveView("dashboard")}>
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <div>
-                      <h2 className="text-xl font-bold">{selectedBranch} - {selectedYear}</h2>
-                      <p className="text-sm text-muted-foreground">{students.length} Total Records</p>
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <Button variant="ghost" size="icon" onClick={() => setActiveView("dashboard")}>
+                        <ArrowLeft className="w-5 h-5" />
+                      </Button>
+                      <div>
+                        <h2 className="text-xl font-bold">
+                          {selectedBranch && selectedYear ? `${selectedBranch} - ${selectedYear}` : 
+                           selectedBranch ? `${selectedBranch} Students` :
+                           selectedYear ? `${selectedYear} Students` :
+                           "All Students"}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">{filteredStudents.length} Total Records</p>
+                      </div>
+                    </div>
+                    <div className="relative w-full md:w-72">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                       <Input 
+                        placeholder="Search by name or roll number..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 h-11"
+                       />
                     </div>
                   </div>
-                  <div className="relative w-full md:w-72">
-                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                     <Input 
-                      placeholder="Search students..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                     />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-border/50">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Filter by Branch</Label>
+                      <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="All Branches" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_branches">All Branches</SelectItem>
+                          {branches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Filter by Year</Label>
+                      <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="All Years" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_years">All Years</SelectItem>
+                          {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end">
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-10 border-dashed" 
+                        onClick={() => { setSelectedBranch(""); setSelectedYear(""); setSearchQuery(""); }}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Clear All Filters
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
