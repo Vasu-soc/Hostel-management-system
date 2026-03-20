@@ -49,6 +49,7 @@ const WatchmanDashboard = () => {
     const [recentHistory, setRecentHistory] = useState<any[]>([]);
     const [cameras, setCameras] = useState<any[]>([]);
     const [cameraError, setCameraError] = useState<string | null>(null);
+    const [isCameraActive, setIsCameraActive] = useState(false);
     const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -94,6 +95,7 @@ const WatchmanDashboard = () => {
                          try {
                             if (scannerRef.current.isScanning) {
                                 await scannerRef.current.stop();
+                                setIsCameraActive(false);
                             }
                          } catch (e) {}
                      }
@@ -113,7 +115,9 @@ const WatchmanDashboard = () => {
                          config, 
                          onScanSuccess, 
                          () => {} // Silent scan errors
-                     ).catch(err => {
+                     ).then(() => {
+                        setIsCameraActive(true);
+                     }).catch(err => {
                         console.error("Scanner Error:", err);
                         
                         let msg = "Could not access camera.";
@@ -155,6 +159,7 @@ const WatchmanDashboard = () => {
                 stopInProgress.current = true;
                 scannerRef.current.stop().finally(() => {
                     stopInProgress.current = false;
+                    setIsCameraActive(false);
                 }).catch(() => {});
             }
         };
@@ -336,46 +341,48 @@ const WatchmanDashboard = () => {
                             </CardHeader>
                             <CardContent className="-mt-6 p-4 relative">
                                 <div id="reader" className="w-full overflow-hidden rounded-2xl border-2 border-primary/20 shadow-inner bg-neutral-100 min-h-[300px] h-[300px] flex items-center justify-center relative">
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4">
-                                        {!cameraError && (
-                                            <>
-                                                <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                                                <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">Warming up camera...</p>
-                                                <Button 
-                                                    variant="secondary" 
-                                                    size="sm" 
-                                                    className="mt-2 rounded-full"
-                                                    onClick={() => {
-                                                        setIsScanning(false);
-                                                        setTimeout(() => setIsScanning(true), 100);
-                                                    }}
-                                                >
-                                                    Tap to Manually Start
-                                                </Button>
-                                            </>
-                                        )}
-                                        
-                                        {cameraError && (
-                                            <>
-                                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-0 text-red-600">
-                                                    <Camera className="w-8 h-8" />
-                                                </div>
-                                                <h3 className="font-bold text-neutral-900">Camera Needed</h3>
-                                                <p className="text-xs text-neutral-500 max-w-[200px]">{cameraError}</p>
-                                                <Button 
-                                                    className="rounded-full px-8 bg-primary hover:bg-primary/90"
-                                                    onClick={() => {
-                                                        setCameraError(null);
-                                                        setIsScanning(false);
-                                                        setTimeout(() => setIsScanning(true), 100);
-                                                    }}
-                                                >
-                                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                                    Enable Camera
-                                                </Button>
-                                            </>
-                                        )}
-                                    </div>
+                                    {!isCameraActive && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4 z-10 bg-neutral-100">
+                                            {!cameraError && (
+                                                <>
+                                                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                                    <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">Requesting Camera...</p>
+                                                    <Button 
+                                                        variant="secondary" 
+                                                        size="sm" 
+                                                        className="mt-2 rounded-full"
+                                                        onClick={() => {
+                                                            setIsScanning(false);
+                                                            setTimeout(() => setIsScanning(true), 100);
+                                                        }}
+                                                    >
+                                                        Tap to Initialize
+                                                    </Button>
+                                                </>
+                                            )}
+                                            
+                                            {cameraError && (
+                                                <>
+                                                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-0 text-red-600">
+                                                        <Camera className="w-8 h-8" />
+                                                    </div>
+                                                    <h3 className="font-bold text-neutral-900">Permission Check</h3>
+                                                    <p className="text-xs text-neutral-500 max-w-[200px]">{cameraError}</p>
+                                                    <Button 
+                                                        className="rounded-full px-8 bg-primary hover:bg-primary/90 mt-4"
+                                                        onClick={() => {
+                                                            setCameraError(null);
+                                                            setIsScanning(false);
+                                                            setTimeout(() => setIsScanning(true), 100);
+                                                        }}
+                                                    >
+                                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                                        Try Again
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 {isScanning && !cameraError && (
                                     <Button 
