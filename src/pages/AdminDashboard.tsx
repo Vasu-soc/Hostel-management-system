@@ -165,8 +165,10 @@ const AdminDashboard = () => {
   };
 
   const fetchAllStudents = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase.from("students").select("*");
     if (!error && data) setAllStudents(data as Student[]);
+    setIsLoading(false);
   };
 
   const getActualOccupied = (roomNumber: string) => {
@@ -335,22 +337,26 @@ const AdminDashboard = () => {
   };
 
   const filteredStudents = useMemo(() => {
-    let list = (selectedBranch || selectedYear) ? students : allStudents;
+    // If we're searching, search from allStudents
+    // If filters are active, use those
+    let list = allStudents;
     
-    // Safety check: if students is empty but a filter is active, 
-    // it might be because fetchStudentsData hasn't finished.
-    // However, if we just want to filter from allStudents client-side:
-    list = allStudents.filter(s => {
-      const matchesBranch = !selectedBranch || selectedBranch === "all_branches" || (s.branch || "").toUpperCase() === selectedBranch.toUpperCase();
-      const matchesYear = !selectedYear || selectedYear === "all_years" || (s.year || "") === selectedYear;
-      return matchesBranch && matchesYear;
-    });
+    if (selectedBranch && selectedBranch !== "all_branches") {
+      list = list.filter(s => (s.branch || "").toUpperCase().trim() === selectedBranch.toUpperCase().trim());
+    }
+    if (selectedYear && selectedYear !== "all_years") {
+      list = list.filter(s => (s.year || "").trim() === selectedYear.trim());
+    }
 
-    return list.filter(s => 
-      s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      s.roll_number.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [allStudents, students, selectedBranch, selectedYear, searchQuery]);
+    if (searchQuery) {
+      list = list.filter(s => 
+        s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        s.roll_number.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    return list;
+  }, [allStudents, selectedBranch, selectedYear, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -579,10 +585,9 @@ const AdminDashboard = () => {
                       </Button>
                       <div>
                         <h2 className="text-xl font-bold">
-                          {selectedBranch && selectedYear ? `${selectedBranch} - ${selectedYear}` : 
-                           selectedBranch ? `${selectedBranch} Students` :
-                           selectedYear ? `${selectedYear} Students` :
-                           "All Students"}
+                          {selectedBranch && selectedBranch !== "all_branches" && selectedBranch !== "" ? `${selectedBranch} Students` : 
+                           selectedYear && selectedYear !== "all_years" && selectedYear !== "" ? `${selectedYear} Students` :
+                           "Hostel Residents"}
                         </h2>
                         <p className="text-sm text-muted-foreground">{filteredStudents.length} Total Records</p>
                       </div>
@@ -638,52 +643,70 @@ const AdminDashboard = () => {
               </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredStudents.map((student) => (
-                  <Card key={student.id} className="p-6">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="relative mb-4">
-                        {student.photo_url ? (
-                          <img src={student.photo_url} className="w-20 h-20 rounded-xl object-cover border-2 border-muted" />
-                        ) : (
-                          <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center text-muted-foreground"><User className="w-8 h-8" /></div>
-                        )}
-                        <div className="absolute -bottom-1 -right-1">
-                           {student.room_allotted ? <CheckCircle2 className="w-5 h-5 text-green-500 fill-background" /> : <XCircle className="w-5 h-5 text-red-500 fill-background" />}
+                {isLoading ? (
+                  <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Loading Records...</p>
+                  </div>
+                ) : filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => (
+                    <Card key={student.id} className="p-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="relative mb-4">
+                          {student.photo_url ? (
+                            <img src={student.photo_url} className="w-20 h-20 rounded-xl object-cover border-2 border-muted" />
+                          ) : (
+                            <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center text-muted-foreground"><User className="w-8 h-8" /></div>
+                          )}
+                          <div className="absolute -bottom-1 -right-1">
+                             {student.room_allotted ? <CheckCircle2 className="w-5 h-5 text-green-500 fill-background" /> : <XCircle className="w-5 h-5 text-red-500 fill-background" />}
+                          </div>
+                        </div>
+                        
+                        <h4 className="text-lg font-bold">{student.student_name}</h4>
+                        <p className="text-xs font-medium text-primary uppercase tracking-wider">{student.roll_number}</p>
+
+                        <div className="w-full grid grid-cols-2 gap-2 mt-4">
+                           <div className="p-2 rounded-lg bg-muted/50">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Room</p>
+                              <p className="font-bold text-sm">{student.hostel_room_number || "None"}</p>
+                           </div>
+                           <div className="p-2 rounded-lg bg-muted/50">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Gender</p>
+                              <p className="font-bold text-sm uppercase font-mono">{student.gender || "NA"}</p>
+                           </div>
+                        </div>
+
+                        <div className="w-full mt-6 pt-4 border-t border-border">
+                           <div className="flex justify-between items-center mb-4">
+                              <h5 className="font-bold text-sm flex items-center gap-2"><Wallet className="w-4 h-4" /> Fees</h5>
+                              <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => { setSelectedStudent(student); setFeeData({ total_fee: student.total_fee || 100000, paid_fee: student.paid_fee || 0, new_payment: 0 }); setFeeDialogOpen(true); fetchFeeHistory(student.id); }}>
+                                <IndianRupee className="w-3 h-3" />
+                              </Button>
+                           </div>
+                           <div className="bg-muted h-2 rounded-full overflow-hidden mb-2">
+                             <div className="h-full bg-green-500" style={{width: `${Math.min(100, ((student.paid_fee || 0) / (student.total_fee || 1)) * 100)}%`}} />
+                           </div>
+                           <div className="flex justify-between text-[10px] font-bold">
+                             <span className="text-green-600">Paid: ₹{student.paid_fee?.toLocaleString()}</span>
+                             <span className="text-red-600">Due: ₹{student.pending_fee?.toLocaleString()}</span>
+                           </div>
                         </div>
                       </div>
-                      
-                      <h4 className="text-lg font-bold">{student.student_name}</h4>
-                      <p className="text-xs font-medium text-primary uppercase tracking-wider">{student.roll_number}</p>
-
-                      <div className="w-full grid grid-cols-2 gap-2 mt-4">
-                         <div className="p-2 rounded-lg bg-muted/50">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase">Room</p>
-                            <p className="font-bold text-sm">{student.hostel_room_number || "None"}</p>
-                         </div>
-                         <div className="p-2 rounded-lg bg-muted/50">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase">Gender</p>
-                            <p className="font-bold text-sm uppercase">{student.gender}</p>
-                         </div>
-                      </div>
-
-                      <div className="w-full mt-6 pt-4 border-t border-border">
-                         <div className="flex justify-between items-center mb-4">
-                            <h5 className="font-bold text-sm flex items-center gap-2"><Wallet className="w-4 h-4" /> Fees</h5>
-                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => { setSelectedStudent(student); setFeeData({ total_fee: student.total_fee || 100000, paid_fee: student.paid_fee || 0, new_payment: 0 }); setFeeDialogOpen(true); fetchFeeHistory(student.id); }}>
-                              <IndianRupee className="w-3 h-3" />
-                            </Button>
-                         </div>
-                         <div className="bg-muted h-2 rounded-full overflow-hidden mb-2">
-                           <div className="h-full bg-green-500" style={{width: `${Math.min(100, ((student.paid_fee || 0) / (student.total_fee || 1)) * 100)}%`}} />
-                         </div>
-                         <div className="flex justify-between text-[10px] font-bold">
-                           <span className="text-green-600">Paid: ₹{student.paid_fee?.toLocaleString()}</span>
-                           <span className="text-red-600">Due: ₹{student.pending_fee?.toLocaleString()}</span>
-                         </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 bg-muted/20 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-4">
+                     <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+                        <Users className="w-10 h-10 text-muted-foreground/30" />
+                     </div>
+                     <div className="text-center">
+                        <h4 className="font-black italic text-xl uppercase tracking-tighter">No Residents Found</h4>
+                        <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">We couldn't find any students matching your current filters or search.</p>
+                     </div>
+                     <Button variant="outline" onClick={() => { setSelectedBranch(""); setSelectedYear(""); setSearchQuery(""); }} className="mt-4 rounded-xl">Clear All Filters</Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
