@@ -121,21 +121,30 @@ const WatchmanDashboard = () => {
                         throw new Error("No cameras found");
                     }
 
-                    // Try to find rear camera
+                    // Choose camera based on facingMode
                     let cameraId = cameras[0].id;
-                    const backCamera = cameras.find(c => 
-                        c.label.toLowerCase().includes('back') || 
-                        c.label.toLowerCase().includes('rear') ||
-                        c.label.toLowerCase().includes('environment')
-                    );
                     
-                    if (backCamera) cameraId = backCamera.id;
+                    if (facingMode === "environment") {
+                        const backCamera = cameras.find(c => 
+                            c.label.toLowerCase().includes('back') || 
+                            c.label.toLowerCase().includes('rear') ||
+                            c.label.toLowerCase().includes('environment')
+                        );
+                        if (backCamera) cameraId = backCamera.id;
+                    } else {
+                        const frontCamera = cameras.find(c => 
+                            c.label.toLowerCase().includes('front') || 
+                            c.label.toLowerCase().includes('user') ||
+                            c.label.toLowerCase().includes('face')
+                        );
+                        if (frontCamera) cameraId = frontCamera.id;
+                    }
                     
                     const config = { 
                         fps: 15, // Smooth scanning
                         qrbox: { width: 250, height: 250 },
                         aspectRatio: 1.0,
-                        disableFlip: true // Don't mirror back camera
+                        disableFlip: facingMode === "environment" // Don't mirror back camera
                     };
                     
                     await html5QrCode.start(
