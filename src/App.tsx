@@ -24,7 +24,6 @@ import WatchmanLogin from "./pages/WatchmanLogin";
 import WatchmanDashboard from "./pages/WatchmanDashboard";
 import NotFound from "./pages/NotFound";
 
-import InstallPrompt from "./components/InstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -55,7 +54,6 @@ const App = () => {
             <SplashScreen onComplete={handleSplashComplete} />
           ) : (
             <>
-              <InstallPrompt />
               <Toaster />
               <Sonner />
               <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
