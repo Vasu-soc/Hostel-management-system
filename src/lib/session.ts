@@ -21,6 +21,7 @@ export interface StudentSession {
   validity_to: string | null;
   remarks: string | null;
   photo_url: string | null;
+  status?: string | null;
   expiresAt: number;
 }
 
@@ -87,6 +88,7 @@ export const setStudentSession = (student: Record<string, unknown>): void => {
     validity_to: safeData.validity_to as string | null,
     remarks: safeData.remarks as string | null,
     photo_url: safeData.photo_url as string | null,
+    status: safeData.status as string | null,
     expiresAt: Date.now() + SESSION_DURATION,
   };
   sessionStorage.setItem('currentStudent', JSON.stringify(session));

@@ -75,7 +75,7 @@ const StudentDashboard = () => {
   const [feeTransactions, setFeeTransactions] = useState<Record<string, unknown>[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<Record<string, unknown>[]>([]);
   const [branchMarks, setBranchMarks] = useState<any[]>([]);
-   const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
+  const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
   const [remarks, setRemarks] = useState<any[]>([]);
@@ -183,7 +183,7 @@ const StudentDashboard = () => {
     refreshStudentData(session.id);
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
-     loadAttendanceReports(session.id);
+    loadAttendanceReports(session.id);
     fetchTodayAttendance(session.id);
     loadStudyMaterials(session.branch, session.year);
     loadBranchMarks(session.branch, session.year);
@@ -198,12 +198,12 @@ const StudentDashboard = () => {
       })
       .subscribe();
 
-     // Subscribe to medical alert updates
+    // Subscribe to medical alert updates
     const medicalChannel = supabase
       .channel("medical-alerts-student")
-      .on("postgres_changes", { 
-        event: "*", 
-        schema: "public", 
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
         table: "medical_alerts",
         filter: `student_id=eq.${session.id}`
       }, () => {
@@ -417,7 +417,7 @@ const StudentDashboard = () => {
       }
     }
     setIsUploadingPhoto(false);
-     // Reset input so same file can be re-selected
+    // Reset input so same file can be re-selected
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
@@ -538,6 +538,15 @@ const StudentDashboard = () => {
     e.preventDefault();
     if (!student) return;
 
+    if (student.status === "OUT") {
+      toast({
+        title: "Action Blocked",
+        description: "You cannot apply for a new pass while marked as OUT.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validate gate pass form
     const validation = gatePassSchema.safeParse(gatePassForm);
     if (!validation.success) {
@@ -608,7 +617,7 @@ const StudentDashboard = () => {
     };
 
     const table = tableMap[issueCategory as keyof typeof tableMap];
-    
+
     const baseData = {
       student_id: student.id,
       student_name: student.student_name,
@@ -618,12 +627,12 @@ const StudentDashboard = () => {
       status: "pending"
     };
 
-    const insertData = issueCategory === "food" 
-      ? baseData 
+    const insertData = issueCategory === "food"
+      ? baseData
       : { ...baseData, room_number: student.hostel_room_number || "N/A" };
 
     const { error } = await (supabase as any).from(table).insert(insertData);
-    
+
     if (error) {
       logger.error(`${issueCategory}_issue_report`, student.roll_number, "failure");
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -645,7 +654,7 @@ const StudentDashboard = () => {
     }).catch((err) => console.error("Failed to send notification:", err));
 
     toast({ title: "Issue Reported", description: `Your ${issueCategory} issue has been reported.` });
-    
+
     // Reset form
     setIssueDescription("");
     setSelectedSubOption("");
@@ -737,7 +746,7 @@ const StudentDashboard = () => {
     setFoodSelectionDialogOpen(false);
   };
 
-   const latestGatePass = gatePasses[0] as any | undefined;
+  const latestGatePass = gatePasses[0] as any | undefined;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -804,8 +813,8 @@ const StudentDashboard = () => {
           {/* Left Column - Features & Content */}
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'fees' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
                 onClick={() => setActiveTab(activeTab === 'fees' ? null : 'fees')}
               >
@@ -813,8 +822,8 @@ const StudentDashboard = () => {
                 <span className="text-sm">Fee Details</span>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'history' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
                 onClick={() => setActiveTab(activeTab === 'history' ? null : 'history')}
               >
@@ -822,17 +831,17 @@ const StudentDashboard = () => {
                 <span className="text-sm">History</span>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'portal' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
                 onClick={() => setActiveTab(activeTab === 'portal' ? null : 'portal')}
               >
                 <CreditCard className="w-6 h-6 text-primary" />
-                <span className="text-sm">Portal</span>
+                <span className="text-sm">Payment Portal</span>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'remarks' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
                 onClick={() => setActiveTab(activeTab === 'remarks' ? null : 'remarks')}
               >
@@ -840,8 +849,8 @@ const StudentDashboard = () => {
                 <span className="text-sm text-center">Remarks & Alerts</span>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'attendance' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
                 onClick={() => setActiveTab(activeTab === 'attendance' ? null : 'attendance')}
               >
@@ -849,8 +858,8 @@ const StudentDashboard = () => {
                 <span className="text-sm">Attendance</span>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'marks' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
                 onClick={() => setActiveTab(activeTab === 'marks' ? null : 'marks')}
               >
@@ -858,14 +867,14 @@ const StudentDashboard = () => {
                 <span className="text-sm">Branch Marks</span>
               </Button>
 
-              <LeaveExtensionDialog 
-                studentId={student.id} 
-                rollNumber={student.roll_number} 
+              <LeaveExtensionDialog
+                studentId={student.id}
+                rollNumber={student.roll_number}
                 gatePassId={latestGatePass?.id as string || ""}
                 onSuccess={() => loadGatePasses(student.roll_number)}
                 trigger={
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     disabled={!latestGatePass || latestGatePass.status !== 'approved'}
                     className={`h-24 w-full flex flex-col gap-2 items-center justify-center border-2 border-warning/20 transition-all shadow-sm hover:bg-warning/5 hover:border-warning font-bold ${(!latestGatePass || latestGatePass.status !== 'approved') ? 'opacity-50 grayscale' : ''}`}
                   >
@@ -887,12 +896,12 @@ const StudentDashboard = () => {
                     {activeTab === 'remarks' && <MessageSquare className="w-5 h-5 text-primary" />}
                     {activeTab === 'attendance' && <User className="w-5 h-5 text-primary" />}
                     {activeTab === 'marks' && <FileText className="w-5 h-5 text-primary" />}
-                    {activeTab === 'fees' ? 'Fees Overview' : 
-                     activeTab === 'history' ? 'Payment History' : 
-                     activeTab === 'portal' ? 'Payment Portal' : 
-                     activeTab === 'remarks' ? 'Remarks & Medical Alerts' : 
-                     activeTab === 'attendance' ? 'Attendance Reports' :
-                     'Branch Mark List'}
+                    {activeTab === 'fees' ? 'Fees Overview' :
+                      activeTab === 'history' ? 'Payment History' :
+                        activeTab === 'portal' ? 'Payment Portal' :
+                          activeTab === 'remarks' ? 'Remarks & Medical Alerts' :
+                            activeTab === 'attendance' ? 'Attendance Reports' :
+                              'Branch Mark List'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 max-h-[600px] overflow-y-auto">
@@ -1130,8 +1139,8 @@ const StudentDashboard = () => {
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
                       <Label>Issue Category</Label>
-                      <Select 
-                        value={issueCategory} 
+                      <Select
+                        value={issueCategory}
                         onValueChange={(val: "food" | "electrical" | "room") => {
                           setIssueCategory(val);
                           setSelectedSubOption("");
@@ -1185,9 +1194,9 @@ const StudentDashboard = () => {
                       </div>
                     )}
 
-                    <Button 
-                      onClick={handleIssueSubmit} 
-                      className="w-full mt-6" 
+                    <Button
+                      onClick={handleIssueSubmit}
+                      className="w-full mt-6"
                       variant="hero"
                       disabled={!issueCategory || !selectedSubOption}
                     >
@@ -1288,105 +1297,125 @@ const StudentDashboard = () => {
 
           {/* Middle Column - Gate Pass Form */}
           <div className="space-y-6">
-            <div className="flex gap-2">
-              <Button 
-                variant={activePassType === "gatepass" ? "hero" : "outline"} 
-                className="flex-1 font-bold"
-                onClick={() => setActivePassType("gatepass")}
-              >
-                Gatepass
-              </Button>
-              <Button 
-                variant={activePassType === "leave" ? "hero" : "outline"} 
-                className="flex-1 font-bold"
-                onClick={() => setActivePassType("leave")}
-              >
-                Leave form
-              </Button>
-            </div>
-
-            <Card className="border-2 border-border">
-              <CardHeader className="text-center border-b border-border">
-                <CardTitle className="text-xl flex items-center justify-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  {activePassType === "gatepass" ? "Gate Pass" : "Leave Form"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <form onSubmit={handleGatePassSubmit} className="space-y-4">
-                  <div className="space-y-2"><Label>Student Name</Label><Input value={student.student_name} disabled className="bg-muted" /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Roll No</Label><Input value={student.roll_number} disabled className="bg-muted" /></div>
-                    <div className="space-y-2"><Label>Branch</Label><Input value={student.branch?.toUpperCase()} disabled className="bg-muted" title={student.branch?.toUpperCase()} /></div>
+            {student.status === "OUT" ? (
+              <Card className="border-2 border-destructive bg-destructive/5 text-center shadow-lg mt-8">
+                <CardHeader>
+                  <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertCircle className="w-8 h-8 text-destructive" />
                   </div>
-                  <div className="space-y-2"><Label>Year</Label><Input value={student.year} disabled className="bg-muted" /></div>
-                  <div className="space-y-2">
-                    <Label>Email Address *</Label>
-                    <Input
-                      type="email"
-                      placeholder="email@example.com"
-                      value={gatePassForm.email || student.email || ""}
-                      onChange={(e) => setGatePassForm({ ...gatePassForm, email: e.target.value.toLowerCase() })}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Student Mobile *</Label>
-                      <Input
-                        type="tel"
-                        placeholder="10-digit number"
-                        value={gatePassForm.studentMobile}
-                        maxLength={10}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                          setGatePassForm({ ...gatePassForm, studentMobile: val });
-                        }}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Parent Mobile *</Label>
-                      <Input
-                        type="tel"
-                        placeholder="10-digit number"
-                        value={gatePassForm.parentMobile}
-                        maxLength={10}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                          setGatePassForm({ ...gatePassForm, parentMobile: val });
-                        }}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Out Date *</Label><Input type="date" value={gatePassForm.outDate} onChange={(e) => setGatePassForm({ ...gatePassForm, outDate: e.target.value })} /></div>
-                    <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />In Date *</Label><Input type="date" value={gatePassForm.inDate} onChange={(e) => setGatePassForm({ ...gatePassForm, inDate: e.target.value })} /></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />Out Time</Label><Input type="time" value={gatePassForm.outTime} onChange={(e) => setGatePassForm({ ...gatePassForm, outTime: e.target.value })} /></div>
-                    <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />In Time</Label><Input type="time" value={gatePassForm.inTime} onChange={(e) => setGatePassForm({ ...gatePassForm, inTime: e.target.value })} /></div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Purpose * (5-500 characters)</Label>
-                    <Textarea
-                      placeholder="Enter purpose..."
-                      value={gatePassForm.purpose}
-                      onChange={(e) => setGatePassForm({ ...gatePassForm, purpose: e.target.value })}
-                      rows={3}
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-muted-foreground">{gatePassForm.purpose.length}/500 characters</p>
-                  </div>
-                  <Button type="submit" variant="hero" className="w-full">
-                    Submit {activePassType === "gatepass" ? "Gate Pass" : "Leave Form"}
+                  <CardTitle className="text-xl font-bold text-destructive">Application Blocked</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm font-medium text-destructive mt-2 leading-relaxed">
+                    You are currently marked as OUT of the hostel.
+                    <br /><br />
+                    You cannot request a new Gate Pass or Leave form until you return and the watchman confirms your entry.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Button
+                    variant={activePassType === "gatepass" ? "hero" : "outline"}
+                    className="flex-1 font-bold"
+                    onClick={() => setActivePassType("gatepass")}
+                  >
+                    Gatepass
                   </Button>
-                </form>
-              </CardContent>
-            </Card>
+                  <Button
+                    variant={activePassType === "leave" ? "hero" : "outline"}
+                    className="flex-1 font-bold"
+                    onClick={() => setActivePassType("leave")}
+                  >
+                    Leave form
+                  </Button>
+                </div>
 
-             {studyMaterials.length > 0 && (
+                <Card className="border-2 border-border">
+                  <CardHeader className="text-center border-b border-border">
+                    <CardTitle className="text-xl flex items-center justify-center gap-2">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      {activePassType === "gatepass" ? "Gate Pass" : "Leave Form"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <form onSubmit={handleGatePassSubmit} className="space-y-4">
+                      <div className="space-y-2"><Label>Student Name</Label><Input value={student.student_name} disabled className="bg-muted" /></div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Roll No</Label><Input value={student.roll_number} disabled className="bg-muted" /></div>
+                        <div className="space-y-2"><Label>Branch</Label><Input value={student.branch?.toUpperCase()} disabled className="bg-muted" title={student.branch?.toUpperCase()} /></div>
+                      </div>
+                      <div className="space-y-2"><Label>Year</Label><Input value={student.year} disabled className="bg-muted" /></div>
+                      <div className="space-y-2">
+                        <Label>Email Address *</Label>
+                        <Input
+                          type="email"
+                          placeholder="email@example.com"
+                          value={gatePassForm.email || student.email || ""}
+                          onChange={(e) => setGatePassForm({ ...gatePassForm, email: e.target.value.toLowerCase() })}
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Student Mobile *</Label>
+                          <Input
+                            type="tel"
+                            placeholder="10-digit number"
+                            value={gatePassForm.studentMobile}
+                            maxLength={10}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setGatePassForm({ ...gatePassForm, studentMobile: val });
+                            }}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Parent Mobile *</Label>
+                          <Input
+                            type="tel"
+                            placeholder="10-digit number"
+                            value={gatePassForm.parentMobile}
+                            maxLength={10}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setGatePassForm({ ...gatePassForm, parentMobile: val });
+                            }}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Out Date *</Label><Input type="date" value={gatePassForm.outDate} onChange={(e) => setGatePassForm({ ...gatePassForm, outDate: e.target.value })} /></div>
+                        <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />In Date *</Label><Input type="date" value={gatePassForm.inDate} onChange={(e) => setGatePassForm({ ...gatePassForm, inDate: e.target.value })} /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />Out Time</Label><Input type="time" value={gatePassForm.outTime} onChange={(e) => setGatePassForm({ ...gatePassForm, outTime: e.target.value })} /></div>
+                        <div className="space-y-2"><Label className="flex items-center gap-1"><Clock className="w-4 h-4" />In Time</Label><Input type="time" value={gatePassForm.inTime} onChange={(e) => setGatePassForm({ ...gatePassForm, inTime: e.target.value })} /></div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Purpose * (5-500 characters)</Label>
+                        <Textarea
+                          placeholder="Enter purpose..."
+                          value={gatePassForm.purpose}
+                          onChange={(e) => setGatePassForm({ ...gatePassForm, purpose: e.target.value })}
+                          rows={3}
+                          maxLength={500}
+                        />
+                        <p className="text-xs text-muted-foreground">{gatePassForm.purpose.length}/500 characters</p>
+                      </div>
+                      <Button type="submit" variant="hero" className="w-full">
+                        Submit {activePassType === "gatepass" ? "Gate Pass" : "Leave Form"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {studyMaterials.length > 0 && (
               <Card className="border-2 border-border shadow-sm">
                 <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -1439,11 +1468,11 @@ const StudentDashboard = () => {
                       </div>
                     )}
                     <div className="flex justify-center">{getStatusBadge(latestGatePass.status as string)}</div>
-                    
+
                     {latestGatePass.status === "approved" && (
                       <div className="flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-500">
-                        <div 
-                          className="p-3 bg-white rounded-2xl border-4 border-primary/5 shadow-inner cursor-zoom-in hover:scale-[1.02] transition-transform" 
+                        <div
+                          className="p-3 bg-white rounded-2xl border-4 border-primary/5 shadow-inner cursor-zoom-in hover:scale-[1.02] transition-transform"
                           onClick={() => setQrZoomOpen(true)}
                         >
                           <QRCodeCanvas value={latestGatePass.id as string} size={140} level="H" />
@@ -1465,19 +1494,19 @@ const StudentDashboard = () => {
                     {latestGatePass.status === "approved" && (
                       <div className="space-y-4 pt-4 border-t border-border/50">
                         {/* Leave Extension Request Component */}
-                        <LeaveExtensionDialog 
-                          studentId={student.id} 
-                          rollNumber={student.roll_number} 
-                          gatePassId={latestGatePass.id as string} 
-                          onSuccess={() => loadGatePasses(student.roll_number)} 
+                        <LeaveExtensionDialog
+                          studentId={student.id}
+                          rollNumber={student.roll_number}
+                          gatePassId={latestGatePass.id as string}
+                          onSuccess={() => loadGatePasses(student.roll_number)}
                         />
-                        
+
                         {wardenSignature && (
                           <div className="flex flex-col items-center gap-1.5 p-3 bg-muted/20 rounded-xl border border-dashed border-border">
                             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Warden Signature</span>
-                            <img 
-                              src={wardenSignature} 
-                              alt="Warden Signature" 
+                            <img
+                              src={wardenSignature}
+                              alt="Warden Signature"
                               className="h-10 w-auto object-contain brightness-90 contrast-125"
                             />
                           </div>
@@ -1661,8 +1690,8 @@ const StudentDashboard = () => {
       <Dialog open={qrZoomOpen} onOpenChange={setQrZoomOpen}>
         <DialogContent className="max-w-[calc(100vw-2rem)] w-fit p-6 rounded-3xl border-none shadow-2xl flex flex-col items-center">
           <div className="bg-white p-6 rounded-[2.5rem] border-4 border-primary/10 shadow-inner">
-            <QRCodeCanvas 
-              value={(gatePasses[0] as any)?.id || ""} 
+            <QRCodeCanvas
+              value={(gatePasses[0] as any)?.id || ""}
               size={280}
               level="H"
             />
