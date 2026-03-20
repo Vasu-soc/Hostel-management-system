@@ -377,9 +377,11 @@ const WatchmanDashboard = () => {
                                 <p className="text-primary-foreground/70 text-xs">Align student QR code within the frame</p>
                             </CardHeader>
                             <CardContent className="-mt-6 p-4 relative">
-                                <div id="reader" className="w-full overflow-hidden rounded-2xl border-2 border-primary/20 shadow-inner bg-neutral-100 min-h-[300px] h-[300px] flex items-center justify-center relative">
+                                <div className="relative w-full min-h-[300px] h-[300px] bg-neutral-100 rounded-2xl border-2 border-primary/20 shadow-inner overflow-hidden">
+                                    <div id="reader" className="w-full h-full"></div>
+                                    
                                     {!isCameraActive && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4 z-10 bg-neutral-100">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4 z-10 bg-neutral-100/90 backdrop-blur-sm">
                                             {!cameraError && (
                                                 <>
                                                     <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
