@@ -3,6 +3,14 @@ import { z } from 'zod';
 // Phone number validation (10 digits)
 const phoneRegex = /^[0-9]{10}$/;
 
+export const strongPasswordValidation = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .max(100, "Password must not exceed 100 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
 // Student Registration Schema
 export const studentRegistrationSchema = z.object({
   rollNumber: z.string()
@@ -40,9 +48,7 @@ export const studentLoginSchema = z.object({
 
 // Password Setup Schema
 export const passwordSetupSchema = z.object({
-  password: z.string()
-    .min(6, "Password must be at least 6 characters")
-    .max(100, "Password must not exceed 100 characters"),
+  password: strongPasswordValidation,
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -76,9 +82,7 @@ export const wardenRegistrationSchema = z.object({
     .min(3, "Username must be at least 3 characters")
     .max(50, "Username must not exceed 50 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
-  password: z.string()
-    .min(6, "Password must be at least 6 characters")
-    .max(100, "Password must not exceed 100 characters"),
+  password: strongPasswordValidation,
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -105,9 +109,7 @@ export const parentRegistrationSchema = z.object({
   studentRollNumber: z.string()
     .min(5, "Roll number must be at least 5 characters")
     .max(20, "Roll number must not exceed 20 characters"),
-  password: z.string()
-    .min(6, "Password must be at least 6 characters")
-    .max(100, "Password must not exceed 100 characters"),
+  password: strongPasswordValidation,
 });
 
 // Admin Login Schema
@@ -212,3 +214,4 @@ export const validateImageFile = (file: File): string | null => {
 export const formatValidationErrors = (error: z.ZodError): string => {
   return error.errors.map(e => e.message).join(', ');
 };
+

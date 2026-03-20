@@ -19,11 +19,13 @@ import {
   studentLoginSchema,
   studentRegistrationSchema,
   passwordSetupSchema,
-  formatValidationErrors
+  formatValidationErrors,
+  strongPasswordValidation
 } from "@/lib/validations";
 import { setStudentSession } from "@/lib/session";
 import { localApi } from "@/lib/localStudentApi";
 import { logger } from "@/lib/logger";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 const branches = [
   { value: "cse", label: "CSE" },
@@ -61,6 +63,8 @@ const StudentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("student_login");
 
   // Available rooms from database
   const [allRooms, setAllRooms] = useState<Room[]>([]);
@@ -294,6 +298,16 @@ const StudentLogin = () => {
 
     setIsLoading(true);
 
+    if (isLockedOut) {
+      setIsLoading(false);
+      toast({
+        title: "Account Locked",
+        description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Dummy credentials for testing
     if (loginData.rollNumber.toLowerCase() === "vasu" && loginData.password === "200421") {
       const dummyStudent = {
@@ -331,6 +345,7 @@ const StudentLogin = () => {
       if (error) throw error;
 
       if (!student) {
+        recordAttempt();
         logger.error("login", loginData.rollNumber, "failure");
         toast({
           title: "Student Not Found",
@@ -366,6 +381,7 @@ const StudentLogin = () => {
       }
 
       if (student.password !== loginData.password) {
+        recordAttempt();
         logger.error("login", loginData.rollNumber, "failure");
         toast({
           title: "Invalid Password",
@@ -400,6 +416,7 @@ const StudentLogin = () => {
       }
 
       // Use secure session management (no password stored)
+      resetAttempts();
       setStudentSession(student as Record<string, unknown>);
       logger.info("login", loginData.rollNumber, "success");
       navigate(`/student-dashboard?gender=${gender}`);
@@ -476,10 +493,11 @@ const StudentLogin = () => {
       return;
     }
 
-    if (registerData.password.length < 6) {
+    const passwordValidation = strongPasswordValidation.safeParse(registerData.password);
+    if (!passwordValidation.success) {
       toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters",
+        title: "Weak Password",
+        description: passwordValidation.error.errors[0].message,
         variant: "destructive",
       });
       return;

@@ -9,11 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { setWatchmanSession } from "@/lib/session";
 import CollegeHeader from "@/components/CollegeHeader";
 import { ShieldCheck, Loader2, ArrowLeft } from "lucide-react";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 const WatchmanLogin = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+    const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("watchman_login");
     const [formData, setFormData] = useState({
         username: "",
         password: "",
@@ -22,6 +24,16 @@ const WatchmanLogin = () => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
+        if (isLockedOut) {
+            setLoading(false);
+            toast({
+                title: "Account Locked",
+                description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+                variant: "destructive",
+            });
+            return;
+        }
 
         try {
             const { data, error } = await (supabase as any)
@@ -32,12 +44,14 @@ const WatchmanLogin = () => {
                 .single();
 
             if (error || !data) {
+                recordAttempt();
                 toast({
                     title: "Login Failed",
                     description: "Invalid username or password",
                     variant: "destructive",
                 });
             } else {
+                resetAttempts();
                 setWatchmanSession(data);
                 toast({ title: "Welcome back!", description: `Logged in as ${data.name}` });
                 navigate("/watchman-dashboard");

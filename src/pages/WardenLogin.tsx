@@ -22,6 +22,7 @@ import {
 } from "@/lib/validations";
 import { setWardenSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 const WardenLogin = () => {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ const WardenLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("warden_login");
 
   // Login form
   const [loginData, setLoginData] = useState({
@@ -130,6 +133,16 @@ const WardenLogin = () => {
 
     setIsLoading(true);
 
+    if (isLockedOut) {
+      setIsLoading(false);
+      toast({
+        title: "Account Locked",
+        description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: warden, error } = await supabase
         .from("wardens")
@@ -140,6 +153,7 @@ const WardenLogin = () => {
       if (error) throw error;
 
       if (!warden) {
+        recordAttempt();
         logger.error("warden_login", loginData.username, "failure");
         toast({
           title: "Warden Not Found",
@@ -151,6 +165,7 @@ const WardenLogin = () => {
       }
 
       if (warden.password !== loginData.password) {
+        recordAttempt();
         logger.error("warden_login", loginData.username, "failure");
         toast({
           title: "Invalid Password",
@@ -185,6 +200,7 @@ const WardenLogin = () => {
       }
 
       // Use secure session management (no password stored)
+      resetAttempts();
       setWardenSession(warden as Record<string, unknown>);
       logger.info("warden_login", loginData.username, "success");
       navigate("/warden-dashboard");

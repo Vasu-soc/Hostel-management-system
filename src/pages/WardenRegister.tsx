@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, UserCircle, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { strongPasswordValidation } from "@/lib/validations";
 
 const WardenRegister = () => {
   const [searchParams] = useSearchParams();
@@ -83,10 +84,11 @@ const WardenRegister = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
+    const passwordValidation = strongPasswordValidation.safeParse(formData.password);
+    if (!passwordValidation.success) {
       toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters",
+        title: "Weak Password",
+        description: passwordValidation.error.errors[0].message,
         variant: "destructive",
       });
       return;

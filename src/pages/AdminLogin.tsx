@@ -10,12 +10,15 @@ import { ShieldCheck, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { adminLoginSchema, formatValidationErrors } from "@/lib/validations";
 import { setAdminSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("admin_login");
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
@@ -101,6 +104,16 @@ const AdminLogin = () => {
     
     setIsLoading(true);
 
+    if (isLockedOut) {
+      setIsLoading(false);
+      toast({
+        title: "Account Locked",
+        description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: admin, error } = await supabase
         .from("admins")
@@ -111,6 +124,7 @@ const AdminLogin = () => {
       if (error) throw error;
 
       if (!admin) {
+        recordAttempt();
         logger.error("admin_login", loginData.username, "failure");
         toast({
           title: "Admin Not Found",
@@ -122,6 +136,7 @@ const AdminLogin = () => {
       }
 
       if (admin.password !== loginData.password) {
+        recordAttempt();
         logger.error("admin_login", loginData.username, "failure");
         toast({
           title: "Invalid Password",
@@ -133,6 +148,7 @@ const AdminLogin = () => {
       }
 
       // Use secure session management (no password stored)
+      resetAttempts();
       setAdminSession(admin as Record<string, unknown>);
       logger.info("admin_login", loginData.username, "success");
       toast({

@@ -8,6 +8,7 @@ import { ArrowLeft, Eye, EyeOff, KeyRound, CheckCircle2, XCircle } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { strongPasswordValidation } from "@/lib/validations";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -66,10 +67,11 @@ const ResetPassword = () => {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (passwordData.password.length < 6) {
+    const passwordValidation = strongPasswordValidation.safeParse(passwordData.password);
+    if (!passwordValidation.success) {
       toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters",
+        title: "Weak Password",
+        description: passwordValidation.error.errors[0].message,
         variant: "destructive",
       });
       return;

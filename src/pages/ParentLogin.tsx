@@ -15,6 +15,7 @@ import {
 } from "@/lib/validations";
 import { setParentSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 const ParentLogin = () => {
   const navigate = useNavigate();
@@ -26,6 +27,8 @@ const ParentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("parent_login");
 
   // Login form
   const [loginData, setLoginData] = useState({
@@ -147,6 +150,16 @@ const ParentLogin = () => {
 
     setIsLoading(true);
 
+    if (isLockedOut) {
+      setIsLoading(false);
+      toast({
+        title: "Account Locked",
+        description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: parent, error } = await supabase
         .from("parents")
@@ -157,6 +170,7 @@ const ParentLogin = () => {
       if (error) throw error;
 
       if (!parent) {
+        recordAttempt();
         logger.error("parent_login", loginData.mobileNumber, "failure");
         toast({
           title: "Parent Not Found",
@@ -168,6 +182,7 @@ const ParentLogin = () => {
       }
 
       if (parent.password !== loginData.password) {
+        recordAttempt();
         logger.error("parent_login", loginData.mobileNumber, "failure");
         toast({
           title: "Invalid Password",
@@ -179,6 +194,7 @@ const ParentLogin = () => {
       }
 
       // Use secure session management (no password stored)
+      resetAttempts();
       setParentSession(parent as Record<string, unknown>);
       logger.info("parent_login", loginData.mobileNumber, "success");
       navigate("/parent-dashboard");
