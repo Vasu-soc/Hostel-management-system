@@ -91,7 +91,16 @@ const WatchmanDashboard = () => {
                     return;
                  }
 
-                 // 3. Cleanup existing instance
+                 // 3. Explicitly request camera permission first to force mobile browsers to prompt
+                 try {
+                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                     stream.getTracks().forEach(track => track.stop());
+                     console.log("Camera permission explicitly granted");
+                 } catch (permError) {
+                     console.warn("Pre-request permission failed:", permError);
+                 }
+
+                 // 4. Cleanup existing instance
                  if (scannerRef.current) {
                      try {
                         if (scannerRef.current.isScanning) {
@@ -104,7 +113,7 @@ const WatchmanDashboard = () => {
                  const html5QrCode = new Html5Qrcode("reader");
                  scannerRef.current = html5QrCode;
 
-                 // 4. Detailed Camera Selection
+                 // 5. Detailed Camera Selection
                  try {
                     const cameras = await Html5Qrcode.getCameras();
                     if (!cameras || cameras.length === 0) {
