@@ -116,13 +116,13 @@ const StudentLogin = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
     let pass = "";
     for (let i = 0; i < 14; i++) {
-        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setRegisterData(prev => ({ ...prev, password: pass, confirmPassword: pass }));
     toast({
-        title: "Strong Password Suggested",
-        description: "A secure password has been generated for you.",
-        duration: 3000,
+      title: "Strong Password Suggested",
+      description: "A secure password has been generated for you.",
+      duration: 3000,
     });
   };
 
@@ -140,7 +140,7 @@ const StudentLogin = () => {
         e.target.value = "";
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === 'student') {
@@ -386,7 +386,7 @@ const StudentLogin = () => {
         setIsLoading(false);
         return;
       }
-      
+
       // Check if student is approved (room_allotted is our approval flag)
       if (!student.room_allotted) {
         logger.error("login", loginData.rollNumber, "failure");
@@ -623,7 +623,7 @@ const StudentLogin = () => {
 
       setActiveTab("login");
       setLoginData({ ...loginData, rollNumber: registerData.rollNumber.toUpperCase() });
-      
+
       // Update URL to switch to login mode after successful registration
       navigate(`/student-login?gender=${gender}&mode=login`, { replace: true });
     } catch (error: unknown) {
@@ -807,7 +807,11 @@ const StudentLogin = () => {
                         id="rollNumber"
                         placeholder="e.g. 21GK1A0501 or 9876543210"
                         value={loginData.rollNumber}
-                        onChange={(e) => setLoginData({ ...loginData, rollNumber: e.target.value.toUpperCase() })}
+                        maxLength={10}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase().replace(/\s/g, '').slice(0, 10);
+                          setLoginData({ ...loginData, rollNumber: val });
+                        }}
                         className="h-12"
                       />
                     </div>
@@ -865,7 +869,7 @@ const StudentLogin = () => {
                         <Camera className="w-4 h-4" />
                         Mandatory Profile Photos
                       </Label>
-                      
+
                       <div className="grid grid-cols-3 gap-2">
                         {/* Student Photo */}
                         <div className="flex flex-col items-center space-y-2">
@@ -943,7 +947,11 @@ const StudentLogin = () => {
                           id="regRollNumber"
                           placeholder="e.g. 21GK1A0501 or 9876543210"
                           value={registerData.rollNumber}
-                          onChange={(e) => setRegisterData({ ...registerData, rollNumber: e.target.value.toUpperCase() })}
+                          maxLength={10}
+                          onChange={(e) => {
+                            const val = e.target.value.toUpperCase().replace(/\s/g, '').slice(0, 10);
+                            setRegisterData({ ...registerData, rollNumber: val });
+                          }}
                         />
                         <p className="text-[10px] text-muted-foreground italic">Use Mobile Number if Roll Number isn't issued yet.</p>
                       </div>
@@ -987,16 +995,17 @@ const StudentLogin = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="email@example.com"
-                        value={registerData.email}
-                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="email@example.com"
+                          value={registerData.email}
+                          onChange={(e) => setRegisterData({ ...registerData, email: e.target.value.toLowerCase() })}
+                          required
+                        />
+                      </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1028,8 +1037,8 @@ const StudentLogin = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="roomNumber">Preferred Room *</Label>
-                      <Select 
-                        onValueChange={(value) => setRegisterData({ ...registerData, roomNumber: value })} 
+                      <Select
+                        onValueChange={(value) => setRegisterData({ ...registerData, roomNumber: value })}
                         value={registerData.roomNumber}
                         disabled={!registerData.floorNumber || !registerData.hostelBlockType}
                       >
@@ -1111,10 +1120,10 @@ const StudentLogin = () => {
                         <div className="flex items-center justify-between text-[10px]">
                           <span className="flex items-center gap-1 font-medium text-muted-foreground">
                             <ShieldCheck className="w-3 h-3" />
-                            Security Strength: 
+                            Security Strength:
                             <span className={
-                              strength.label === "Low" ? "text-destructive" : 
-                              strength.label === "Medium" ? "text-yellow-600" : "text-green-600"
+                              strength.label === "Low" ? "text-destructive" :
+                                strength.label === "Medium" ? "text-yellow-600" : "text-green-600"
                             }>
                               {strength.label}
                             </span>
@@ -1122,28 +1131,28 @@ const StudentLogin = () => {
                           <span className="text-muted-foreground font-bold">{strength.score}% Secure</span>
                         </div>
                         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full ${strength.color} transition-all duration-500 ease-out`}
                             style={{ width: `${strength.score}%` }}
                           />
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <div className="flex items-center gap-1 text-[9px]">
-                                {registerData.password.length >= 8 ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
-                                <span className={registerData.password.length >= 8 ? "text-green-600" : "text-muted-foreground"}>8+ Chars</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[9px]">
-                                {/[A-Z]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
-                                <span className={/[A-Z]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Uppercase</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[9px]">
-                                {/[0-9]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
-                                <span className={/[0-9]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Numbers</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[9px]">
-                                {/[^A-Za-z0-9]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
-                                <span className={/[^A-Za-z0-9]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Symbols</span>
-                            </div>
+                          <div className="flex items-center gap-1 text-[9px]">
+                            {registerData.password.length >= 8 ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                            <span className={registerData.password.length >= 8 ? "text-green-600" : "text-muted-foreground"}>8+ Chars</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px]">
+                            {/[A-Z]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                            <span className={/[A-Z]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Uppercase</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px]">
+                            {/[0-9]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                            <span className={/[0-9]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Numbers</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px]">
+                            {/[^A-Za-z0-9]/.test(registerData.password) ? <Check className="w-2.5 h-2.5 text-green-500" /> : <X className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                            <span className={/[^A-Za-z0-9]/.test(registerData.password) ? "text-green-600" : "text-muted-foreground"}>Symbols</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1196,7 +1205,7 @@ const StudentLogin = () => {
                 )}
               </Tabs>
             )
-}
+            }
           </CardContent>
         </Card>
       </main>

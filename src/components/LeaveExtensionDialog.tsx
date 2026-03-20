@@ -13,9 +13,10 @@ interface Props {
   rollNumber: string;
   gatePassId: string;
   onSuccess?: () => void;
+  trigger?: React.ReactNode;
 }
 
-export function LeaveExtensionDialog({ studentId, rollNumber, gatePassId, onSuccess }: Props) {
+export function LeaveExtensionDialog({ studentId, rollNumber, gatePassId, onSuccess, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [days, setDays] = useState(1);
@@ -90,10 +91,12 @@ export function LeaveExtensionDialog({ studentId, rollNumber, gatePassId, onSucc
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full mt-4 text-warning border-warning hover:bg-warning/10" size="sm">
-          <Clock className="w-4 h-4 mr-2" />
-          Request Leave Extension
-        </Button>
+        {trigger || (
+          <Button variant="outline" className="w-full mt-4 text-warning border-warning hover:bg-warning/10" size="sm">
+            <Clock className="w-4 h-4 mr-2" />
+            Request Leave Extension
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

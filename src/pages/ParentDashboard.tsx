@@ -51,6 +51,7 @@ const ParentDashboard = () => {
   const [branchMarks, setBranchMarks] = useState<any[]>([]);
   const [gatePasses, setGatePasses] = useState<any[]>([]);
   const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
+  const [wardenSignature, setWardenSignature] = useState<string | null>(null);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
@@ -80,8 +81,21 @@ const ParentDashboard = () => {
       fetchGatePasses(rollNumber);
       fetchLeaveExtensions(rollNumber);
       fetchTodayAttendance(rollNumber);
+      loadWardenSignature();
     }
     setLoading(false);
+  };
+
+  const loadWardenSignature = async () => {
+    const { data } = await supabase
+      .from("wardens")
+      .select("signature_url")
+      .not("signature_url", "is", null)
+      .limit(1)
+      .maybeSingle();
+    if (data?.signature_url) {
+      setWardenSignature(data.signature_url);
+    }
   };
 
   const fetchMedicalAlerts = async (rollNumber: string) => {
@@ -408,6 +422,23 @@ const ParentDashboard = () => {
                 <User className="w-6 h-6 text-primary" />
                 <span className="font-bold text-sm text-foreground">Attendance</span>
               </Button>
+
+              <LeaveExtensionDialog 
+                studentId={student.id} 
+                rollNumber={student.roll_number} 
+                gatePassId={latestGatePass?.id as string || ""}
+                onSuccess={() => fetchLeaveExtensions(student.roll_number)}
+                trigger={
+                  <Button 
+                    variant="outline" 
+                    disabled={!latestGatePass || latestGatePass.status !== 'approved'}
+                    className={`h-24 w-full flex flex-col gap-2 items-center justify-center border-2 border-warning/20 transition-all shadow-sm hover:bg-warning/5 hover:border-warning font-bold ${(!latestGatePass || latestGatePass.status !== 'approved') ? 'opacity-50 grayscale' : ''}`}
+                  >
+                    <Clock className="w-6 h-6 text-warning" />
+                    <span className="font-bold text-sm text-foreground">Extend Leave</span>
+                  </Button>
+                }
+              />
             </div>
 
             {/* Dynamic Feature Content Box */}
@@ -627,7 +658,26 @@ const ParentDashboard = () => {
                         <span className="text-muted-foreground">Purpose</span>
                         <span className="text-right max-w-[60%] font-medium">{latestGatePass.purpose}</span>
                       </div>
+                      <div className="flex justify-between text-foreground">
+                        <span className="text-muted-foreground">Student Mob.</span>
+                        <span className="font-medium">{latestGatePass.student_mobile || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between text-foreground">
+                        <span className="text-muted-foreground">Parent Mob.</span>
+                        <span className="font-medium">{latestGatePass.parent_mobile || "N/A"}</span>
+                      </div>
                     </div>
+
+                    {latestGatePass.status === "approved" && wardenSignature && (
+                      <div className="flex flex-col items-center gap-1.5 p-3 mt-4 bg-muted/20 rounded-xl border border-dashed border-border">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Warden Signature</span>
+                        <img 
+                          src={wardenSignature} 
+                          alt="Warden Signature" 
+                          className="h-10 w-auto object-contain brightness-90 contrast-125"
+                        />
+                      </div>
+                    )}
 
                     {/* Leave Extension Section */}
                     {latestGatePass.status === "approved" && (

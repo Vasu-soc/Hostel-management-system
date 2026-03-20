@@ -542,10 +542,11 @@ const HostelApplication = () => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="Enter your email address"
+                      placeholder="email@example.com"
                       value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      onChange={(e) => handleInputChange("email", e.target.value.toLowerCase())}
                       className="h-12"
+                      required
                     />
                   </div>
 
@@ -554,10 +555,15 @@ const HostelApplication = () => {
                     <Input
                       id="phoneNumber"
                       type="tel"
-                      placeholder="Enter your phone number"
+                      placeholder="10-digit number"
                       value={formData.phoneNumber}
-                      onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                      maxLength={10}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        handleInputChange("phoneNumber", val);
+                      }}
                       className="h-12"
+                      required
                     />
                   </div>
                 </div>
@@ -568,11 +574,15 @@ const HostelApplication = () => {
                     <Input
                       id="parentPhoneNumber"
                       type="tel"
-                      required
-                      placeholder="Enter parent's phone number"
+                      placeholder="10-digit number"
                       value={formData.parentPhoneNumber}
-                      onChange={(e) => handleInputChange("parentPhoneNumber", e.target.value)}
+                      maxLength={10}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        handleInputChange("parentPhoneNumber", val);
+                      }}
                       className="h-12"
+                      required
                     />
                   </div>
 

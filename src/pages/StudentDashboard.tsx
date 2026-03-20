@@ -857,6 +857,23 @@ const StudentDashboard = () => {
                 <FileText className="w-6 h-6 text-primary" />
                 <span className="text-sm">Branch Marks</span>
               </Button>
+
+              <LeaveExtensionDialog 
+                studentId={student.id} 
+                rollNumber={student.roll_number} 
+                gatePassId={latestGatePass?.id as string || ""}
+                onSuccess={() => loadGatePasses(student.roll_number)}
+                trigger={
+                  <Button 
+                    variant="outline" 
+                    disabled={!latestGatePass || latestGatePass.status !== 'approved'}
+                    className={`h-24 w-full flex flex-col gap-2 items-center justify-center border-2 border-warning/20 transition-all shadow-sm hover:bg-warning/5 hover:border-warning font-bold ${(!latestGatePass || latestGatePass.status !== 'approved') ? 'opacity-50 grayscale' : ''}`}
+                  >
+                    <Clock className="w-6 h-6 text-warning" />
+                    <span className="text-sm">Extend Leave</span>
+                  </Button>
+                }
+              />
             </div>
 
             {/* Dynamic Feature Content Box */}
@@ -1307,12 +1324,41 @@ const StudentDashboard = () => {
                     <Label>Email Address *</Label>
                     <Input
                       type="email"
-                      placeholder="Enter your email for notifications"
+                      placeholder="email@example.com"
                       value={gatePassForm.email || student.email || ""}
-                      onChange={(e) => setGatePassForm({ ...gatePassForm, email: e.target.value })}
+                      onChange={(e) => setGatePassForm({ ...gatePassForm, email: e.target.value.toLowerCase() })}
                       required
                     />
-                    <p className="text-xs text-muted-foreground">Gate pass status will be sent to this email</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Student Mobile *</Label>
+                      <Input
+                        type="tel"
+                        placeholder="10-digit number"
+                        value={gatePassForm.studentMobile}
+                        maxLength={10}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setGatePassForm({ ...gatePassForm, studentMobile: val });
+                        }}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Parent Mobile *</Label>
+                      <Input
+                        type="tel"
+                        placeholder="10-digit number"
+                        value={gatePassForm.parentMobile}
+                        maxLength={10}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setGatePassForm({ ...gatePassForm, parentMobile: val });
+                        }}
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Out Date *</Label><Input type="date" value={gatePassForm.outDate} onChange={(e) => setGatePassForm({ ...gatePassForm, outDate: e.target.value })} /></div>
@@ -1412,7 +1458,32 @@ const StudentDashboard = () => {
                       <div className="flex justify-between items-center"><span className="text-muted-foreground">Pass ID</span><span className="font-mono text-[10px] font-bold bg-muted px-2 py-0.5 rounded select-all uppercase">{String(latestGatePass.id)}</span></div>
                       <div className="flex justify-between items-center"><span className="text-muted-foreground">Duration</span><span className="font-bold">{String(latestGatePass.out_date)} - {String(latestGatePass.in_date)}</span></div>
                       <div className="flex justify-between items-center"><span className="text-muted-foreground">Purpose</span><span className="font-bold text-right max-w-[60%] line-clamp-2">{String(latestGatePass.purpose)}</span></div>
+                      <div className="flex justify-between items-center"><span className="text-muted-foreground">Student Mob.</span><span className="font-bold">{latestGatePass.student_mobile || "N/A"}</span></div>
+                      <div className="flex justify-between items-center"><span className="text-muted-foreground">Parent Mob.</span><span className="font-bold">{latestGatePass.parent_mobile || "N/A"}</span></div>
                     </div>
+
+                    {latestGatePass.status === "approved" && (
+                      <div className="space-y-4 pt-4 border-t border-border/50">
+                        {/* Leave Extension Request Component */}
+                        <LeaveExtensionDialog 
+                          studentId={student.id} 
+                          rollNumber={student.roll_number} 
+                          gatePassId={latestGatePass.id as string} 
+                          onSuccess={() => loadGatePasses(student.roll_number)} 
+                        />
+                        
+                        {wardenSignature && (
+                          <div className="flex flex-col items-center gap-1.5 p-3 bg-muted/20 rounded-xl border border-dashed border-border">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Warden Signature</span>
+                            <img 
+                              src={wardenSignature} 
+                              alt="Warden Signature" 
+                              className="h-10 w-auto object-contain brightness-90 contrast-125"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {latestGatePass.status === "approved" && (
                       <Button
@@ -1445,6 +1516,12 @@ const StudentDashboard = () => {
                                   <div class="field"><span class="label">In Date</span><span class="val">${latestGatePass.in_date}</span></div>
                                   <div class="field"><span class="label">Purpose</span><span class="val">${latestGatePass.purpose}</span></div>
                                   <div class="field"><span class="label">Status</span><span class="val">APPROVED</span></div>
+                                  ${wardenSignature ? `
+                                  <div style="margin-top: 30px; text-align: right;">
+                                    <div style="color: #666; font-size: 12px; margin-bottom: 5px;">Warden Signature</div>
+                                    <img src="${wardenSignature}" style="height: 50px; width: auto; display: inline-block;" />
+                                  </div>
+                                  ` : ''}
                                 </div>
                               </body>
                             </html>

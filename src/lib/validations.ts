@@ -123,13 +123,9 @@ export const adminLoginSchema = z.object({
 // Gate Pass Schema
 export const gatePassSchema = z.object({
   studentMobile: z.string()
-    .regex(phoneRegex, "Student mobile must be exactly 10 digits")
-    .optional()
-    .or(z.literal("")),
+    .regex(phoneRegex, "Student mobile must be exactly 10 digits"),
   parentMobile: z.string()
-    .regex(phoneRegex, "Parent mobile must be exactly 10 digits")
-    .optional()
-    .or(z.literal("")),
+    .regex(phoneRegex, "Parent mobile must be exactly 10 digits"),
   outDate: z.string()
     .min(1, "Out date is required"),
   inDate: z.string()
