@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar, Clock, ExternalLink, FileText, User, DoorOpen } from "lucide-react";
+import { IndianRupee, MessageSquare, Phone, AlertCircle, BookOpen, Pill, Check, Calendar, Clock, ExternalLink, FileText, User, DoorOpen, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LeaveExtensionDialog } from "@/components/LeaveExtensionDialog";
 import { getParentSession, clearParentSession } from "@/lib/session";
@@ -52,7 +52,7 @@ const ParentDashboard = () => {
   const [gatePasses, setGatePasses] = useState<any[]>([]);
   const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
-  const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   useEffect(() => {
     const session = getParentSession();
@@ -350,181 +350,256 @@ const ParentDashboard = () => {
         showPhoto={false}
       />
 
-      <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column wrapper */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Features & Quick Actions */}
           <div className="space-y-6">
-            {/* Fee Details - Left Panel */}
-            <Card className="border-2 border-border">
-              <CardHeader className="border-b border-border">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <IndianRupee className="w-5 h-5 text-primary" />
-                  Fee Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
-                {student.pending_fee <= 0 && (
-                  <div className="p-4 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-2">
-                    <div className="flex items-center justify-center gap-2 text-success mb-1">
-                      <Check className="w-5 h-5" />
-                      <span className="font-bold text-sm uppercase tracking-wider">{student.year === "1" ? "1st" : student.year === "2" ? "2nd" : student.year === "3" ? "3rd" : student.year === "4" ? "4th" : student.year} Year Fees Completed!</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-medium">Your child's annual dues are fully cleared. Ready to continue for the {parseInt(student.year) + 1 || "next"} year.</p>
-                  </div>
-                )}
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    ₹{Number(student.total_fee ?? 100000).toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-4 bg-success/10 rounded-lg border border-success/20">
-                  <p className="text-sm text-muted-foreground mb-1">Total Paid (History)</p>
-                  <p className="text-2xl font-bold text-success">
-                    ₹{Number(student.paid_fee ?? 0).toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                  <p className="text-sm text-muted-foreground mb-1">Pending Amount</p>
-                  <p className="text-2xl font-bold text-destructive">
-                    ₹{Number(student.pending_fee ?? 100000).toLocaleString()}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'fees' ? 'border-primary bg-primary/10' : 'border-primary/20 hover:bg-primary/5 hover:border-primary'}`}
+                onClick={() => setActiveTab(activeTab === 'fees' ? null : 'fees')}
+              >
+                <IndianRupee className="w-6 h-6 text-primary" />
+                <span className="font-bold text-sm text-foreground">Fee Details</span>
+              </Button>
 
-            <Card className="border-2 border-border mb-6">
-              <CardHeader className="border-b border-border flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" />
-                  Payment History
-                </CardTitle>
-                <Dialog open={paymentHistoryDialogOpen} onOpenChange={setPaymentHistoryDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs font-bold gap-2 border-primary/30 hover:bg-primary/5">
-                      <Clock className="w-3 h-3" />
-                      View All
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 text-xl">
-                         <Clock className="w-6 h-6 text-primary" />
-                         Fee Payment History
-                      </DialogTitle>
-                    </DialogHeader>
-                    {feeTransactions.length > 0 ? (
-                      <div className="space-y-6 pt-4">
-                        {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'history' ? 'border-primary bg-primary/10' : 'border-primary/20 hover:bg-primary/5 hover:border-primary'}`}
+                onClick={() => setActiveTab(activeTab === 'history' ? null : 'history')}
+              >
+                <Clock className="w-6 h-6 text-primary" />
+                <span className="font-bold text-sm text-foreground">Payment History</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'portal' ? 'border-primary bg-primary/10' : 'border-primary/20 hover:bg-primary/5 hover:border-primary'}`}
+                onClick={() => setActiveTab(activeTab === 'portal' ? null : 'portal')}
+              >
+                <CreditCard className="w-6 h-6 text-primary" />
+                <span className="font-bold text-sm text-foreground">Payment Portal</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'marks' ? 'border-primary bg-primary/10' : 'border-primary/20 hover:bg-primary/5 hover:border-primary'}`}
+                onClick={() => setActiveTab(activeTab === 'marks' ? null : 'marks')}
+              >
+                <FileText className="w-6 h-6 text-primary" />
+                <span className="font-bold text-sm text-foreground">Branch Marks</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'remarks' ? 'border-primary bg-primary/10' : 'border-primary/20 hover:bg-primary/5 hover:border-primary'}`}
+                onClick={() => setActiveTab(activeTab === 'remarks' ? null : 'remarks')}
+              >
+                <MessageSquare className="w-6 h-6 text-primary" />
+                <span className="font-bold text-sm text-foreground">Remarks & Alerts</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'attendance' ? 'border-primary bg-primary/10' : 'border-primary/20 hover:bg-primary/5 hover:border-primary'}`}
+                onClick={() => setActiveTab(activeTab === 'attendance' ? null : 'attendance')}
+              >
+                <User className="w-6 h-6 text-primary" />
+                <span className="font-bold text-sm text-foreground">Attendance</span>
+              </Button>
+            </div>
+
+            {/* Dynamic Feature Content Box */}
+            {activeTab && (
+              <Card className="border-2 border-primary/30 shadow-md animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
+                <CardHeader className="pb-3 border-b border-border/50">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {activeTab === 'fees' && <IndianRupee className="w-5 h-5 text-primary" />}
+                    {activeTab === 'history' && <Clock className="w-5 h-5 text-primary" />}
+                    {activeTab === 'portal' && <CreditCard className="w-5 h-5 text-primary" />}
+                    {activeTab === 'marks' && <FileText className="w-5 h-5 text-primary" />}
+                    {activeTab === 'remarks' && <MessageSquare className="w-5 h-5 text-primary" />}
+                    {activeTab === 'attendance' && <User className="w-5 h-5 text-primary" />}
+                    {activeTab === 'fees' ? 'Fees Overview' : 
+                     activeTab === 'history' ? 'Payment History' : 
+                     activeTab === 'portal' ? 'Payment Portal' : 
+                     activeTab === 'marks' ? 'Branch Marks List' :
+                     activeTab === 'remarks' ? 'Remarks & Medical Alerts' :
+                     'Attendance Reports'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 max-h-[600px] overflow-y-auto">
+                  {activeTab === 'fees' && (
+                    <div className="space-y-4">
+                      {student.pending_fee <= 0 && (
+                        <div className="p-4 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-4">
+                          <div className="flex items-center justify-center gap-2 text-success mb-1">
+                            <Check className="w-5 h-5" />
+                            <span className="font-bold text-sm uppercase tracking-wider">Fees Completed!</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-medium">Your child's annual dues are fully cleared.</p>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-3 border-b border-border/50 text-foreground">
+                        <span className="text-sm font-medium">Total Fee</span>
+                        <span className="font-bold text-xl tracking-tight">₹{Number(student.total_fee ?? 100000).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-3 border-b border-border/50 text-success">
+                        <span className="text-sm font-medium">Total Paid (History)</span>
+                        <span className="font-bold text-xl tracking-tight">₹{Number(student.paid_fee ?? 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-3 text-destructive">
+                        <span className="text-sm font-medium">Pending Balance</span>
+                        <span className="font-bold text-xl tracking-tight">₹{Number(student.pending_fee ?? 100000).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'history' && (
+                    <div className="space-y-4">
+                      {feeTransactions.length > 0 ? (
+                        Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
                           <div key={year} className="space-y-3">
                             <div className="flex items-center gap-2">
                               <div className="h-[1px] flex-1 bg-border"></div>
-                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">{year}</span>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">{year}</span>
                               <div className="h-[1px] flex-1 bg-border"></div>
                             </div>
                             <div className="space-y-2">
-                              {feeTransactions
-                                .filter((tx: any) => {
-                                  const txYear = tx.academic_year || "Unknown";
-                                  return txYear === year || 
-                                         (year === "1st Year" && txYear === "1") ||
-                                         (year === "Unknown" && !tx.academic_year);
-                                })
-                                .map((tx: any, idx, filteredArr) => {
-                                  const paymentIndex = filteredArr.length - idx;
-                                  const getOrdinal = (n: number) => {
-                                    const s = ["th", "st", "nd", "rd"];
-                                    const v = n % 100;
-                                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-                                  };
-
-                                  return (
-                                    <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 hover:shadow-md transition-all">
-                                      <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-[10px] text-primary">
-                                          {getOrdinal(paymentIndex)}
-                                        </div>
-                                        <div>
-                                          <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
-                                          <p className="text-[10px] text-muted-foreground font-medium uppercase">
-                                            {new Date(tx.payment_date).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Verified</p>
-                                        {tx.remarks && (
-                                          <p className="text-[10px] text-muted-foreground italic max-w-[120px] truncate" title={tx.remarks}>
-                                            "{tx.remarks}"
-                                          </p>
-                                        )}
-                                      </div>
+                              {feeTransactions.filter((tx: any) => (tx.academic_year || "Unknown") === year).map((tx: any, idx, arr) => (
+                                <div key={tx.id} className="group flex items-center justify-between p-3 bg-primary/5 border-2 border-primary/10 rounded-xl hover:bg-primary/10 transition-all">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-xs text-primary">
+                                      {arr.length - idx}
                                     </div>
-                                  );
-                                })}
+                                    <div>
+                                      <p className="font-bold text-sm">₹{tx.amount.toLocaleString()}</p>
+                                      <p className="text-[10px] text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()}</p>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="text-[10px] bg-white text-success border-success/20">Verified</Badge>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Clock className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p>No payment records found.</p>
-                      </div>
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </CardHeader>
-              <CardContent className="pt-4 pb-4">
-                <p className="text-xs text-muted-foreground mb-4 font-medium">Keep track of every fee installment paid by your child.</p>
-                {feeTransactions.length > 0 ? (
-                  <div className="space-y-2">
-                    {feeTransactions.slice(0, 5).map((tx: any, idx) => {
-                      const paymentIndex = feeTransactions.length - idx;
-                      const getOrdinal = (n: number) => {
-                        const s = ["th", "st", "nd", "rd"];
-                        const v = n % 100;
-                        return n + (s[(v - 20) % 10] || s[v] || s[0]);
-                      };
-                      
-                      return (
-                        <div key={tx.id} className="p-3 bg-primary/5 rounded-xl border-2 border-primary/10 flex justify-between items-center group hover:bg-primary/20 transition-all cursor-pointer" onClick={() => setPaymentHistoryDialogOpen(true)}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                              {paymentIndex}
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-8">No payment records found.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'portal' && <PaymentPortal student={student} />}
+
+                  {activeTab === 'marks' && (
+                    <div className="space-y-3">
+                      {branchMarks.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">No branch marks available.</p>
+                      ) : (
+                        branchMarks.map((mark) => (
+                          <div key={mark.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="font-bold text-sm">{mark.title}</span>
+                              <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-background">
+                                {mark.date}
+                              </Badge>
                             </div>
-                            <span className="font-bold text-sm text-foreground">
-                              {getOrdinal(paymentIndex)} - ₹{tx.amount.toLocaleString()}
-                            </span>
+                            <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(mark.file_url, '_blank')}>
+                              <ExternalLink className="w-3 h-3 mr-1" /> View PDF
+                            </Button>
                           </div>
-                          <Badge variant="outline" className="text-[10px] bg-white border-primary/20 font-bold">
-                            [{new Date(tx.payment_date).toLocaleDateString()}]
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'remarks' && (
+                    <div className="space-y-4">
+                      {medicalAlerts.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-xs font-bold text-destructive flex items-center gap-2 uppercase tracking-widest">
+                            <Pill className="w-3 h-3" />
+                            Medical History
+                          </p>
+                          {medicalAlerts.map((alert) => (
+                            <div key={alert.id} className={`p-3 border-2 rounded-xl flex flex-col gap-2 ${alert.status === 'resolved' ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/10'}`}>
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <p className={`font-bold capitalize text-xs ${alert.status === 'resolved' ? 'text-success' : 'text-destructive'}`}>
+                                    {alert.issue_type}
+                                  </p>
+                                  <p className="text-[9px] text-muted-foreground">
+                                    {new Date(alert.created_at).toLocaleString()}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className={`text-[8px] font-black uppercase ${alert.status === 'resolved' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
+                                  {alert.status || 'pending'}
+                                </Badge>
+                              </div>
+                              {alert.status === 'resolved' && (
+                                <p className="text-xs font-medium text-success flex items-center gap-2">
+                                  <Check className="w-3 h-3" />
+                                  Resolved
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="p-4 bg-muted/50 rounded-xl border-2 border-border shadow-inner">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Warden's Remarks</p>
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                          {student.remarks || "No active remarks for your child."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'attendance' && (
+                    <div className="space-y-4">
+                      {todayAttendance && (
+                        <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 flex justify-between items-center shadow-sm">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Today's Presence</p>
+                            <p className="font-bold text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                          </div>
+                          <Badge className={`uppercase font-bold ${todayAttendance.status === 'present' ? 'bg-success' : 'bg-destructive'}`}>
+                            {todayAttendance.status}
                           </Badge>
                         </div>
-                      );
-                    })}
-                    {feeTransactions.length > 5 && (
-                       <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary" onClick={() => setPaymentHistoryDialogOpen(true)}>
-                         View {feeTransactions.length - 5} More Transactions
-                       </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 bg-muted/30 rounded-xl border-2 border-dashed border-border/50">
-                    <p className="text-[10px] italic text-muted-foreground font-bold uppercase tracking-widest">No payments recorded yet</p>
-                    <p className="text-[8px] text-muted-foreground mt-1">History will appear once warden updates fees</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <PaymentPortal student={student} />
-
-
+                      )}
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Monthly Presence Reports</p>
+                      <div className="grid gap-2">
+                        {attendanceReports.length === 0 && !todayAttendance ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">No attendance reports available.</p>
+                        ) : (
+                          attendanceReports.map((report) => (
+                            <div key={report.id} className="p-3 bg-background border-2 border-border rounded-xl flex justify-between items-center hover:border-primary/30 transition-all shadow-sm">
+                              <div>
+                                <p className="font-bold text-sm">{report.date}</p>
+                                {report.file_url && (
+                                  <Button variant="link" className="p-0 h-auto text-[10px] text-primary" onClick={() => window.open(report.file_url, '_blank')}>
+                                    <ExternalLink className="w-3 h-3 mr-1" /> View Document
+                                  </Button>
+                                )}
+                              </div>
+                              <Badge variant={report.status === 'Present' ? 'default' : report.status === 'Absent' ? 'destructive' : 'secondary'} className="text-[10px]">
+                                {report.status}
+                              </Badge>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Remarks - Right Panel */}
-          <div className="space-y-6">
+          {/* Right Column - Status Panel */}
+          <div className="space-y-6 text-foreground">
             {/* Gate Pass Status Section */}
             <Card className="border-2 border-border shadow-md">
               <CardHeader className="text-center border-b border-border py-4 bg-muted/30">
@@ -540,9 +615,18 @@ const ParentDashboard = () => {
                        {getStatusBadge(latestGatePass.status as string)}
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Out Date</span><span className="font-medium">{latestGatePass.out_date}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">In Date</span><span className="font-medium">{latestGatePass.in_date}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Purpose</span><span className="text-right max-w-[60%] font-medium">{latestGatePass.purpose}</span></div>
+                      <div className="flex justify-between text-foreground">
+                        <span className="text-muted-foreground">Out Date</span>
+                        <span className="font-medium">{latestGatePass.out_date}</span>
+                      </div>
+                      <div className="flex justify-between text-foreground">
+                        <span className="text-muted-foreground">In Date</span>
+                        <span className="font-medium">{latestGatePass.in_date}</span>
+                      </div>
+                      <div className="flex justify-between text-foreground">
+                        <span className="text-muted-foreground">Purpose</span>
+                        <span className="text-right max-w-[60%] font-medium">{latestGatePass.purpose}</span>
+                      </div>
                     </div>
 
                     {/* Leave Extension Section */}
@@ -552,13 +636,13 @@ const ParentDashboard = () => {
                         {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id).map(ext => (
                           <div key={ext.id} className="p-3 bg-muted rounded-lg mb-3 border border-border">
                             <div className="flex justify-between items-center mb-1">
-                              <span className="font-bold text-sm">Ext: {ext.number_of_days} Days</span>
+                              <span className="font-bold text-sm text-foreground">Ext: {ext.number_of_days} Days</span>
                               {getStatusBadge(ext.status)}
                             </div>
                             <div className="text-[10px] text-muted-foreground mb-1">
                               {ext.extension_from} to {ext.extension_to}
                             </div>
-                            <p className="text-xs italic">"{ext.reason}"</p>
+                            <p className="text-xs italic text-foreground">"{ext.reason}"</p>
                           </div>
                         ))}
                         
@@ -578,142 +662,6 @@ const ParentDashboard = () => {
                 )}
               </CardContent>
             </Card>
-
-            <Card className="border-2 border-border">
-            <CardHeader className="border-b border-border">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                Remarks & Medical Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4 space-y-4">
-              {/* Medical Alerts Section */}
-              {medicalAlerts.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-sm font-bold text-destructive flex items-center gap-2 uppercase tracking-wider">
-                    <Pill className="w-4 h-4" />
-                    Medical History
-                  </p>
-                  {medicalAlerts.map((alert) => (
-                    <div key={alert.id} className={`p-3 border rounded-lg flex flex-col gap-2 ${alert.status === 'resolved' ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/10'}`}>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className={`font-bold capitalize ${alert.status === 'resolved' ? 'text-success' : 'text-destructive'}`}>
-                            {alert.issue_type}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(alert.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${alert.status === 'resolved' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
-                          {alert.status || 'pending'}
-                        </span>
-                      </div>
-
-                      {alert.status === 'resolved' && (
-                        <div className="p-2 mt-1 bg-success/10 rounded-md border border-success/20">
-                          <p className="text-sm font-medium text-success flex items-center gap-2">
-                            <Check className="w-4 h-4" />
-                            Your {student.gender === 'girl' || student.gender === 'female' ? 'daughter\'s' : student.gender === 'boy' || student.gender === 'male' ? 'son\'s' : 'son or daughter\'s'} problem is solved. Your kid is good!
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <div className="h-px bg-border my-4"></div>
-                </div>
-              )}
-
-              {student.remarks ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-2">Warden's Remarks</p>
-                    <p className="text-foreground whitespace-pre-wrap">{student.remarks}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  {!medicalAlerts.length && (
-                    <>
-                      <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">No remarks or alerts available</p>
-                    </>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-border shadow-sm">
-            <CardHeader className="pb-3 border-b border-border"><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" />Attendance Reports</CardTitle></CardHeader>
-            <CardContent className="space-y-4 pt-4 max-h-60 overflow-y-auto">
-              {/* Today's Daily Attendance Status */}
-              {todayAttendance && (
-                <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
-                  <div className="flex justify-between items-center">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Today's Presence</p>
-                      <p className="font-bold text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                    </div>
-                    <Badge 
-                      variant={todayAttendance.status === 'present' ? 'default' : 'destructive'} 
-                      className={`text-xs px-3 py-1 font-bold uppercase tracking-wider ${todayAttendance.status === 'present' ? 'bg-success hover:bg-success' : 'bg-destructive hover:bg-destructive'}`}
-                    >
-                      {todayAttendance.status === 'present' ? 'Present' : 'Absent'}
-                    </Badge>
-                  </div>
-                  {todayAttendance.status === 'absent' && (
-                    <p className="text-[10px] text-destructive font-semibold mt-2 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      Student marked absent for today.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {attendanceReports.length === 0 && !todayAttendance ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No attendance reports available.</p>
-              ) : (
-                attendanceReports.map((report) => (
-                  <div key={report.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-sm">{report.date}</span>
-                      <Badge variant={report.status === 'Present' ? 'default' : report.status === 'Absent' ? 'destructive' : 'secondary'} className="text-[10px]">
-                        {report.status}
-                      </Badge>
-                    </div>
-                    {report.file_url && (
-                      <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(report.file_url, '_blank')}>
-                        <ExternalLink className="w-3 h-3 mr-1" /> View Document
-                      </Button>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {branchMarks.length > 0 && (
-            <Card className="border-2 border-border shadow-sm">
-              <CardHeader className="pb-3 border-b border-border"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Branch Marks List</CardTitle></CardHeader>
-              <CardContent className="space-y-2 pt-4 max-h-60 overflow-y-auto">
-                {branchMarks.map((mark) => (
-                  <div key={mark.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-sm">{mark.title}</span>
-                      <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-background">
-                        {mark.date}
-                      </Badge>
-                    </div>
-                    <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(mark.file_url, '_blank')}>
-                      <ExternalLink className="w-3 h-3 mr-1" /> View PDF
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
           </div>
         </div>
 
@@ -723,7 +671,7 @@ const ParentDashboard = () => {
             <CardTitle className="text-lg">Student Information</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-foreground">
               <div>
                 <p className="text-muted-foreground">Student Name</p>
                 <p className="font-medium">{student.student_name}</p>

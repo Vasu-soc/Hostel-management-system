@@ -23,13 +23,13 @@ const localApiPlugin = () => ({
     server.middlewares.use((req: any, res: any, next: any) => {
       // General middleware: Log every HTTP request
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
-      
+
       // We don't log typical asset requests to keep logs clean for Splunk, but we log all API calls
       if (req.url?.startsWith('/api/')) {
         const clientIp = ip.toString();
         const requestUrl = req.url;
         const requestMethod = req.method;
-        
+
         res.on('finish', () => {
           const statusText = res.statusCode < 400 ? 'success' : 'failure';
           writeToLog({
@@ -494,8 +494,9 @@ const localApiPlugin = () => ({
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: true,
     port: 8080,
+    allowedHosts: true
   },
   build: {
     chunkSizeWarningLimit: 1000,

@@ -39,6 +39,9 @@ import {
   ChevronDown,
   Download,
   Search,
+  CreditCard,
+  IndianRupee,
+  MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,13 +70,15 @@ const StudentDashboard = () => {
 
   const [student, setStudent] = useState<StudentSession | null>(null);
   const [isDefaultPassword, setIsDefaultPassword] = useState(false);
-  const [gatePasses, setGatePasses] = useState<Record<string, unknown>[]>([]);
+  const [gatePasses, setGatePasses] = useState<any[]>([]);
   const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
   const [feeTransactions, setFeeTransactions] = useState<Record<string, unknown>[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<Record<string, unknown>[]>([]);
   const [branchMarks, setBranchMarks] = useState<any[]>([]);
-  const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
+   const [attendanceReports, setAttendanceReports] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
+  const [remarks, setRemarks] = useState<any[]>([]);
   const [issueReportDialogOpen, setIssueReportDialogOpen] = useState(false);
   const [medicalDialogOpen, setMedicalDialogOpen] = useState(false);
   const [issueCategory, setIssueCategory] = useState<"food" | "electrical" | "room" | "">("");
@@ -92,6 +97,7 @@ const StudentDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
   const [activePassType, setActivePassType] = useState<"gatepass" | "leave">("gatepass");
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const downloadQRCode = () => {
     const canvas = document.getElementById("qr-canvas") as HTMLCanvasElement;
@@ -177,10 +183,11 @@ const StudentDashboard = () => {
     refreshStudentData(session.id);
     fetchFeeTransactions(session.id);
     loadGatePasses(session.roll_number);
-    loadAttendanceReports(session.id);
+     loadAttendanceReports(session.id);
     fetchTodayAttendance(session.id);
     loadStudyMaterials(session.branch, session.year);
     loadBranchMarks(session.branch, session.year);
+    loadMedicalAlerts(session.id);
     fetchMedicines();
 
     // Subscribe to medicine updates
@@ -191,8 +198,22 @@ const StudentDashboard = () => {
       })
       .subscribe();
 
+     // Subscribe to medical alert updates
+    const medicalChannel = supabase
+      .channel("medical-alerts-student")
+      .on("postgres_changes", { 
+        event: "*", 
+        schema: "public", 
+        table: "medical_alerts",
+        filter: `student_id=eq.${session.id}`
+      }, () => {
+        loadMedicalAlerts(session.id);
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(medicineChannel);
+      supabase.removeChannel(medicalChannel);
     };
   }, [gender, navigate]);
 
@@ -396,8 +417,22 @@ const StudentDashboard = () => {
       }
     }
     setIsUploadingPhoto(false);
-    // Reset input so same file can be re-selected
+     // Reset input so same file can be re-selected
     if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
+  const loadMedicalAlerts = async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('medical_alerts')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setMedicalAlerts(data || []);
+    } catch (e) {
+      console.error("Failed to fetch medical alerts:", e);
+    }
   };
 
   const loadAttendanceReports = async (studentId: string) => {
@@ -702,7 +737,7 @@ const StudentDashboard = () => {
     setFoodSelectionDialogOpen(false);
   };
 
-  const latestGatePass = gatePasses[0] as Record<string, unknown> | undefined;
+   const latestGatePass = gatePasses[0] as any | undefined;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -764,75 +799,116 @@ const StudentDashboard = () => {
         studentId={student.id}
       />
 
-      <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Features & Content */}
           <div className="space-y-6">
-            <Card className="border-2 border-border shadow-sm">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-lg">Fee Details</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                  onClick={() => student?.id && refreshStudentData(student.id)}
-                  title="Refresh Fee Data"
-                >
-                  <Clock className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {student.pending_fee <= 0 && (
-                  <div className="p-3 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-4">
-                    <div className="flex items-center justify-center gap-2 text-success mb-1">
-                      <Check className="w-5 h-5" />
-                      <span className="font-bold text-sm uppercase tracking-wider">
-                        {student.year.includes("1") ? "1st" : student.year.includes("2") ? "2nd" : student.year.includes("3") ? "3rd" : student.year.includes("4") ? "4th" : student.year} Year Fees Completed!
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground font-medium">Excellent! Your annual dues are cleared. Ready to continue for the {parseInt(student.year) + 1 || "next"} year.</p>
-                  </div>
-                )}
-                <div className="flex justify-between items-center py-2 border-b border-border/50">
-                  <span className="text-sm text-muted-foreground">Total Fee</span>
-                  <span className="font-bold text-xl">₹{Number(student.total_fee ?? 100000).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-border/50">
-                  <span className="text-sm text-muted-foreground">Total Paid (History)</span>
-                  <span className="font-bold text-xl text-success">₹{Number(student.paid_fee ?? 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">Pending Balance</span>
-                  <span className="font-bold text-xl text-destructive">₹{Number(student.pending_fee ?? 100000).toLocaleString()}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'fees' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
+                onClick={() => setActiveTab(activeTab === 'fees' ? null : 'fees')}
+              >
+                <IndianRupee className="w-6 h-6 text-primary" />
+                <span className="text-sm">Fee Details</span>
+              </Button>
 
-            <Card className="border-2 border-border shadow-sm">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0 text-center">
-                <CardTitle className="text-lg">Payment History</CardTitle>
-                <Dialog open={paymentHistoryDialogOpen} onOpenChange={setPaymentHistoryDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 border-primary/30 hover:bg-primary/5 h-8 text-xs font-bold"
-                    >
-                      <Clock className="w-3 h-3" />
-                      View All
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary" />
-                        Detailed Payment History
-                      </DialogTitle>
-                    </DialogHeader>
-                    {feeTransactions.length > 0 ? (
-                      <div className="space-y-6 pt-4">
-                        {/* Improved grouping: handle null/undefined academic_year */}
-                        {Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'history' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
+                onClick={() => setActiveTab(activeTab === 'history' ? null : 'history')}
+              >
+                <Clock className="w-6 h-6 text-primary" />
+                <span className="text-sm">History</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'portal' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
+                onClick={() => setActiveTab(activeTab === 'portal' ? null : 'portal')}
+              >
+                <CreditCard className="w-6 h-6 text-primary" />
+                <span className="text-sm">Portal</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'remarks' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
+                onClick={() => setActiveTab(activeTab === 'remarks' ? null : 'remarks')}
+              >
+                <MessageSquare className="w-6 h-6 text-primary" />
+                <span className="text-sm text-center">Remarks & Alerts</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'attendance' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
+                onClick={() => setActiveTab(activeTab === 'attendance' ? null : 'attendance')}
+              >
+                <User className="w-6 h-6 text-primary" />
+                <span className="text-sm">Attendance</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className={`h-24 flex flex-col gap-2 items-center justify-center border-2 transition-all shadow-sm ${activeTab === 'marks' ? 'border-primary bg-primary/10 font-bold' : 'border-primary/20 hover:bg-primary/5 hover:border-primary font-bold'}`}
+                onClick={() => setActiveTab(activeTab === 'marks' ? null : 'marks')}
+              >
+                <FileText className="w-6 h-6 text-primary" />
+                <span className="text-sm">Branch Marks</span>
+              </Button>
+            </div>
+
+            {/* Dynamic Feature Content Box */}
+            {activeTab && (
+              <Card className="border-2 border-primary/30 shadow-md animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
+                <CardHeader className="pb-3 border-b border-border/50">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {activeTab === 'fees' && <IndianRupee className="w-5 h-5 text-primary" />}
+                    {activeTab === 'history' && <Clock className="w-5 h-5 text-primary" />}
+                    {activeTab === 'portal' && <CreditCard className="w-5 h-5 text-primary" />}
+                    {activeTab === 'remarks' && <MessageSquare className="w-5 h-5 text-primary" />}
+                    {activeTab === 'attendance' && <User className="w-5 h-5 text-primary" />}
+                    {activeTab === 'marks' && <FileText className="w-5 h-5 text-primary" />}
+                    {activeTab === 'fees' ? 'Fees Overview' : 
+                     activeTab === 'history' ? 'Payment History' : 
+                     activeTab === 'portal' ? 'Payment Portal' : 
+                     activeTab === 'remarks' ? 'Remarks & Medical Alerts' : 
+                     activeTab === 'attendance' ? 'Attendance Reports' :
+                     'Branch Mark List'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 max-h-[600px] overflow-y-auto">
+                  {activeTab === 'fees' && (
+                    <div className="space-y-4">
+                      {student.pending_fee <= 0 && (
+                        <div className="p-4 bg-success/10 border-2 border-dashed border-success/30 rounded-xl text-center mb-4">
+                          <div className="flex items-center justify-center gap-2 text-success mb-1">
+                            <Check className="w-5 h-5" />
+                            <span className="font-bold text-sm uppercase tracking-wider">Fees Completed!</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-medium">Your annual dues are fully cleared.</p>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-3 border-b border-border/50 text-foreground">
+                        <span className="text-sm font-medium">Total Fee</span>
+                        <span className="font-bold text-xl tracking-tight italic">₹{Number(student.total_fee ?? 100000).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-3 border-b border-border/50 text-success">
+                        <span className="text-sm font-medium">Total Paid (History)</span>
+                        <span className="font-bold text-xl tracking-tight italic">₹{Number(student.paid_fee ?? 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-3 text-destructive">
+                        <span className="text-sm font-medium">Pending Balance</span>
+                        <span className="font-bold text-xl tracking-tight italic">₹{Number(student.pending_fee ?? 100000).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'history' && (
+                    <div className="space-y-4">
+                      {feeTransactions.length > 0 ? (
+                        Array.from(new Set(feeTransactions.map((tx: any) => tx.academic_year || "Unknown"))).map((year: string) => (
                           <div key={year} className="space-y-3">
                             <div className="flex items-center gap-2">
                               <div className="h-[1px] flex-1 bg-border"></div>
@@ -840,104 +916,138 @@ const StudentDashboard = () => {
                               <div className="h-[1px] flex-1 bg-border"></div>
                             </div>
                             <div className="space-y-2">
-                              {feeTransactions
-                                .filter((tx: any) => {
-                                  const txYear = tx.academic_year || "Unknown";
-                                  return txYear === year ||
-                                    (year === "1st Year" && txYear === "1") ||
-                                    (year === "Unknown" && !tx.academic_year);
-                                })
-                                .map((tx: any, idx, filteredArr) => {
-                                  const paymentIndex = filteredArr.length - idx;
-                                  const getOrdinal = (n: number) => {
-                                    const s = ["th", "st", "nd", "rd"];
-                                    const v = n % 100;
-                                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-                                  };
-
-                                  return (
-                                    <div key={tx.id} className="group flex items-center justify-between p-4 bg-background border-2 border-border rounded-xl hover:border-primary/30 hover:shadow-md transition-all">
-                                      <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors uppercase font-bold text-[10px] text-primary">
-                                          {getOrdinal(paymentIndex)}
-                                        </div>
-                                        <div>
-                                          <p className="font-bold text-lg text-foreground tracking-tight">₹{tx.amount.toLocaleString()}</p>
-                                          <p className="text-[10px] text-muted-foreground font-medium uppercase">
-                                            {new Date(tx.payment_date).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-[10px] font-bold text-success uppercase tracking-tighter mb-1">Success</p>
-                                        {tx.remarks && (
-                                          <p className="text-[10px] text-muted-foreground italic max-w-[120px] truncate" title={tx.remarks}>
-                                            "{tx.remarks}"
-                                          </p>
-                                        )}
-                                      </div>
+                              {feeTransactions.filter((tx: any) => (tx.academic_year || "Unknown") === year).map((tx: any, idx, arr) => (
+                                <div key={tx.id} className="group flex items-center justify-between p-3 bg-primary/5 border-2 border-primary/10 rounded-xl hover:bg-primary/10 transition-all">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-xs text-primary">
+                                      {arr.length - idx}
                                     </div>
-                                  );
-                                })}
+                                    <div>
+                                      <p className="font-bold text-sm italic">₹{tx.amount.toLocaleString()}</p>
+                                      <p className="text-[10px] text-muted-foreground">{new Date(tx.payment_date).toLocaleDateString()}</p>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="text-[10px] bg-white text-success border-success/20">Verified</Badge>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Clock className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p>No payment history records found.</p>
-                      </div>
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </CardHeader>
-              <CardContent className="pt-0 pb-4">
-                <p className="text-xs text-muted-foreground mb-4">View your full transaction history and payment receipts.</p>
-                {feeTransactions.length > 0 ? (
-                  <div className="space-y-2">
-                    {feeTransactions.slice(0, 5).map((tx: any, idx) => {
-                      const paymentIndex = feeTransactions.length - idx;
-                      const getOrdinal = (n: number) => {
-                        const s = ["th", "st", "nd", "rd"];
-                        const v = n % 100;
-                        return n + (s[(v - 20) % 10] || s[v] || s[0]);
-                      };
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-8">No payment history found.</p>
+                      )}
+                    </div>
+                  )}
 
-                      return (
-                        <div key={tx.id} className="p-3 bg-primary/5 rounded-xl border-2 border-primary/10 flex justify-between items-center group hover:bg-primary/20 transition-all cursor-pointer" onClick={() => setPaymentHistoryDialogOpen(true)}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                              {paymentIndex}
+                  {activeTab === 'portal' && <PaymentPortal student={student} />}
+
+                  {activeTab === 'remarks' && (
+                    <div className="space-y-4">
+                      {medicalAlerts.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-xs font-bold text-destructive flex items-center gap-2 uppercase tracking-widest">
+                            <Pill className="w-3 h-3" />
+                            Medical Alerts
+                          </p>
+                          {medicalAlerts.map((alert) => (
+                            <div key={alert.id} className={`p-3 border-2 rounded-xl flex flex-col gap-2 ${alert.status === 'resolved' ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/10'}`}>
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <p className={`font-bold capitalize text-xs ${alert.status === 'resolved' ? 'text-success' : 'text-destructive'}`}>
+                                    {alert.issue_type}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {new Date(alert.created_at).toLocaleString()}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className={`text-[8px] font-black tracking-widest uppercase ${alert.status === 'resolved' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
+                                  {alert.status || 'pending'}
+                                </Badge>
+                              </div>
+                              {alert.status === 'resolved' && (
+                                <p className="text-xs font-medium text-success flex items-center gap-2">
+                                  <Check className="w-3 h-3" />
+                                  Resolved
+                                </p>
+                              )}
                             </div>
-                            <span className="font-bold text-sm text-foreground">
-                              {getOrdinal(paymentIndex)} - ₹{tx.amount.toLocaleString()}
-                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="p-4 bg-muted/50 rounded-xl border-2 border-border shadow-inner">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Warden's Remarks</p>
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                          {student.remarks || "No active remarks from warden."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'attendance' && (
+                    <div className="space-y-4">
+                      {todayAttendance && (
+                        <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 flex justify-between items-center shadow-sm">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Today's Presence</p>
+                            <p className="font-bold text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                           </div>
-                          <Badge variant="outline" className="text-[10px] bg-white border-primary/20 font-bold">
-                            [{new Date(tx.payment_date).toLocaleDateString()}]
+                          <Badge className={`uppercase font-bold ${todayAttendance.status === 'present' ? 'bg-success' : 'bg-destructive'}`}>
+                            {todayAttendance.status}
                           </Badge>
                         </div>
-                      );
-                    })}
-                    {feeTransactions.length > 5 && (
-                      <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary" onClick={() => setPaymentHistoryDialogOpen(true)}>
-                        View {feeTransactions.length - 5} More Transactions
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 bg-muted/30 rounded-xl border-2 border-dashed border-border/50">
-                    <p className="text-[10px] italic text-muted-foreground font-bold uppercase tracking-widest">No payments recorded yet</p>
-                    <p className="text-[8px] text-muted-foreground mt-1">History will appear once warden updates fees</p>
-                    {/* Diagnostic: check why list is empty */}
-                    <p className="text-[6px] text-muted-foreground mt-2 opacity-50">ID: {student.id}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      )}
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Monthly Presence Reports</p>
+                      <div className="grid gap-2">
+                        {attendanceReports.length === 0 && !todayAttendance ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">No attendance records found.</p>
+                        ) : (
+                          attendanceReports.map((report) => (
+                            <div key={report.id} className="p-3 bg-background border-2 border-border rounded-xl flex justify-between items-center hover:border-primary/30 transition-all shadow-sm">
+                              <div>
+                                <p className="font-bold text-sm">{report.date}</p>
+                                {report.file_url && (
+                                  <Button variant="link" className="p-0 h-auto text-[10px] text-primary" onClick={() => window.open(report.file_url, '_blank')}>
+                                    <ExternalLink className="w-3 h-3 mr-1" /> View Document
+                                  </Button>
+                                )}
+                              </div>
+                              <Badge variant={report.status === 'Present' ? 'default' : 'destructive'} className="text-[10px]">
+                                {report.status}
+                              </Badge>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-            <PaymentPortal student={student} />
+                  {activeTab === 'marks' && (
+                    <div className="space-y-4">
+                      {branchMarks.length > 0 ? (
+                        <div className="grid gap-3">
+                          {branchMarks.map((mark) => (
+                            <div key={mark.id} className="p-4 bg-muted/30 border-2 border-border rounded-2xl flex justify-between items-center hover:border-primary/20 transition-all">
+                              <div>
+                                <p className="font-bold text-sm tracking-tight">{mark.title}</p>
+                                <p className="text-[10px] text-muted-foreground">{mark.date}</p>
+                              </div>
+                              <Button variant="link" className="h-auto p-0 text-primary font-bold text-xs" onClick={() => window.open(mark.file_url, '_blank')}>
+                                <ExternalLink className="w-4 h-4 mr-1" /> VIEW PDF
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-20" />
+                          <p className="text-sm text-muted-foreground italic">No branch marks uploaded yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <div className="space-y-3">
               <Dialog open={resourcesDialogOpen} onOpenChange={setResourcesDialogOpen}>
@@ -1058,7 +1168,6 @@ const StudentDashboard = () => {
                       </div>
                     )}
 
-
                     <Button 
                       onClick={handleIssueSubmit} 
                       className="w-full mt-6" 
@@ -1111,8 +1220,6 @@ const StudentDashboard = () => {
                 </DialogContent>
               </Dialog>
 
-
-
               <Dialog open={medicalDialogOpen} onOpenChange={setMedicalDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full justify-start h-14 glare-hover border-destructive/30 hover:bg-destructive/10">
@@ -1160,50 +1267,6 @@ const StudentDashboard = () => {
                 </DialogContent>
               </Dialog>
             </div>
-
-            <Card className="border-2 border-border shadow-sm">
-              <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" />Attendance Reports</CardTitle></CardHeader>
-              <CardContent className="space-y-4 max-h-60 overflow-y-auto">
-                {/* Today's Attendance Status */}
-                {todayAttendance && (
-                  <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
-                    <div className="flex justify-between items-center">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Today's Status</p>
-                        <p className="font-bold text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                      </div>
-                      <Badge 
-                        variant={todayAttendance.status === 'present' ? 'default' : 'destructive'} 
-                        className={`text-xs px-3 py-1 font-bold uppercase tracking-wider ${todayAttendance.status === 'present' ? 'bg-success hover:bg-success' : 'bg-destructive hover:bg-destructive'}`}
-                      >
-                        {todayAttendance.status === 'present' ? 'Present' : 'Absent'}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-
-                {attendanceReports.length === 0 && !todayAttendance ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No attendance reports available.</p>
-                ) : (
-                  attendanceReports.map((report) => (
-                    <div key={report.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-sm">{report.date}</span>
-                        <Badge variant={report.status === 'Present' ? 'default' : report.status === 'Absent' ? 'destructive' : 'secondary'} className="text-[10px]">
-                          {report.status}
-                        </Badge>
-                      </div>
-                      {report.file_url && (
-                        <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(report.file_url, '_blank')}>
-                          <ExternalLink className="w-3 h-3 mr-1" /> View Document
-                        </Button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
           </div>
 
           {/* Middle Column - Gate Pass Form */}
@@ -1251,26 +1314,6 @@ const StudentDashboard = () => {
                     />
                     <p className="text-xs text-muted-foreground">Gate pass status will be sent to this email</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Student Mobile (10 digits)</Label>
-                    <Input
-                      type="tel"
-                      placeholder="Enter 10-digit mobile"
-                      value={gatePassForm.studentMobile}
-                      onChange={(e) => setGatePassForm({ ...gatePassForm, studentMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                      maxLength={10}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Parent Mobile (10 digits)</Label>
-                    <Input
-                      type="tel"
-                      placeholder="Enter parent mobile"
-                      value={gatePassForm.parentMobile}
-                      onChange={(e) => setGatePassForm({ ...gatePassForm, parentMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                      maxLength={10}
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Out Date *</Label><Input type="date" value={gatePassForm.outDate} onChange={(e) => setGatePassForm({ ...gatePassForm, outDate: e.target.value })} /></div>
                     <div className="space-y-2"><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />In Date *</Label><Input type="date" value={gatePassForm.inDate} onChange={(e) => setGatePassForm({ ...gatePassForm, inDate: e.target.value })} /></div>
@@ -1297,25 +1340,28 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
-            {studyMaterials.length > 0 && (
-              <Card className="border-2 border-border">
-                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5" />Study Materials</CardTitle></CardHeader>
-                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
-                  {studyMaterials.map((mat) => (
-                    <div key={mat.id as string} className="p-2 bg-muted rounded-lg flex items-center justify-between">
-                      <span className="text-sm font-medium">{mat.subject_name as string}</span>
-                      <div className="flex gap-2 items-center">
+             {studyMaterials.length > 0 && (
+              <Card className="border-2 border-border shadow-sm">
+                <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Library className="w-5 h-5 text-primary" />
+                    Study Materials
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
+                  {studyMaterials.map((mat: any) => (
+                    <div key={mat.id} className="p-3 bg-muted/50 rounded-xl border border-border/50 hover:bg-muted/80 transition-colors">
+                      <p className="text-sm font-bold truncate mb-2">{mat.subject_name}</p>
+                      <div className="flex gap-2">
                         {mat.file_url && (
-                          <a href={mat.file_url as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-success/10 text-success hover:bg-success/20 px-2 py-1 rounded">
-                            <FileText className="w-3 h-3" />
-                            Open File
-                          </a>
+                          <Button variant="hero" size="sm" className="h-8 flex-1 text-[10px]" onClick={() => window.open(mat.file_url, '_blank')}>
+                            Open PDF
+                          </Button>
                         )}
                         {mat.drive_link && (
-                          <a href={mat.drive_link as string} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded">
-                            <ExternalLink className="w-3 h-3" />
+                          <Button variant="outline" size="sm" className="h-8 flex-1 text-[10px]" onClick={() => window.open(mat.drive_link, '_blank')}>
                             Drive Link
-                          </a>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -1323,272 +1369,123 @@ const StudentDashboard = () => {
                 </CardContent>
               </Card>
             )}
-
-            {branchMarks.length > 0 && (
-              <Card className="border-2 border-border shadow-sm">
-                <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Branch Marks</CardTitle></CardHeader>
-                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
-                  {branchMarks.map((mark) => (
-                    <div key={mark.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10 hover:bg-primary/10 transition-colors">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-sm">{mark.title}</span>
-                        <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-background">
-                          {mark.date}
-                        </Badge>
-                      </div>
-                      <Button variant="link" className="p-0 h-auto text-xs text-primary font-semibold" onClick={() => window.open(mark.file_url, '_blank')}>
-                        <ExternalLink className="w-3 h-3 mr-1" /> View PDF
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
           </div>
 
-          {/* Right Column - Gate Pass Status */}
+          {/* Right Column - Status */}
           <div className="space-y-6">
-            <Card className="border-2 border-border">
-              <CardHeader className="text-center border-b border-border">
-                <CardTitle className="text-xl">
-                  {latestGatePass?.pass_type === "leave" ? "Leave Form Status" : "Gate Pass Status"}
+            <Card className="border-2 border-border shadow-md overflow-hidden">
+              <CardHeader className="text-center border-b border-border py-4 bg-muted/30">
+                <CardTitle className="text-xl font-bold">
+                  {latestGatePass?.pass_type === "leave" ? "Leave Status" : "Pass Status"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 {latestGatePass ? (
-                  <div className="space-y-4">
-                    {/* Student Photo for Identity Verification - Click to Zoom */}
+                  <div className="space-y-6">
                     {student.photo_url && (
-                      <div className="flex justify-center mb-4">
+                      <div className="flex justify-center">
                         <img
                           src={student.photo_url}
-                          alt="Student Photo"
-                          className="w-24 h-24 rounded-lg object-cover border-2 border-primary shadow-md cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                          alt="Student"
+                          className="w-24 h-24 rounded-2xl object-cover border-4 border-primary/10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
                           onClick={() => setPhotoDialogOpen(true)}
                         />
                       </div>
                     )}
-                    <div className="flex justify-center mb-4">{getStatusBadge(latestGatePass.status as string)}</div>
+                    <div className="flex justify-center">{getStatusBadge(latestGatePass.status as string)}</div>
                     
-                    {/* Dynamic QR Code for Verification - Click to Zoom */}
                     {latestGatePass.status === "approved" && (
-                      <div className="flex flex-col items-center gap-2 mb-6 animate-in fade-in zoom-in duration-700">
+                      <div className="flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-500">
                         <div 
-                          className="p-2 bg-white rounded-xl border border-border shadow-sm cursor-zoom-in group relative hover:ring-2 hover:ring-primary/20 transition-all" 
+                          className="p-3 bg-white rounded-2xl border-4 border-primary/5 shadow-inner cursor-zoom-in hover:scale-[1.02] transition-transform" 
                           onClick={() => setQrZoomOpen(true)}
                         >
-                          <QRCodeCanvas 
-                            id="qr-canvas"
-                            value={latestGatePass.id as string} 
-                            size={140}
-                            level="H"
-                          />
-                          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="bg-white/90 p-1.5 rounded-full shadow-lg">
-                              <Search className="w-4 h-4 text-primary" />
-                            </div>
-                          </div>
+                          <QRCodeCanvas value={latestGatePass.id as string} size={140} level="H" />
                         </div>
-                        <div className="flex flex-col items-center gap-1">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3" /> Secure Gate QR
-                          </p>
-                          <Button 
-                            variant="link" 
-                            className="h-auto p-0 text-[10px] text-muted-foreground underline decoration-1"
-                            onClick={downloadQRCode}
-                          >
-                            <Download className="w-3 h-3 mr-1" /> Download QR
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-2 text-sm">
-                       <div className="flex justify-between"><span className="text-muted-foreground">Pass ID</span><span className="font-mono text-[10px] font-bold text-primary uppercase select-all">{latestGatePass.id as string}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Student Name</span><span className="font-medium">{student.student_name}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Roll Number</span><span>{student.roll_number}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Branch</span><span>{student.branch?.toUpperCase()}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Year</span><span>{student.year}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Out Date</span><span>{latestGatePass.out_date as string}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">In Date</span><span>{latestGatePass.in_date as string}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Purpose</span><span className="text-right max-w-[60%]">{latestGatePass.purpose as string}</span></div>
-                    </div>
-                    {/* Warden Signature for Approved Gate Pass */}
-                    {latestGatePass.status === "approved" && wardenSignature && (
-                      <div className="pt-4 border-t border-border mt-4">
-                        <p className="text-sm text-muted-foreground mb-2 text-center">Warden Signature</p>
-                        <div className="flex justify-center">
-                          <img
-                            src={wardenSignature}
-                            alt="Warden Signature"
-                            className="h-16 object-contain border border-border rounded p-1 bg-white"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {/* Print Button for Approved Gate Pass */}
-                    {latestGatePass.status === "approved" && (
-                      <div className="pt-4">
-                        <Button
-                          variant="outline"
-                          className="w-full gap-2"
-                          onClick={() => {
-                            const printWindow = window.open('', '_blank');
-                            if (printWindow) {
-                              printWindow.document.write(`
-                              <!DOCTYPE html>
-                              <html>
-                              <head>
-                                <title>Gate Pass - ${student.student_name}</title>
-                                <style>
-                                  body { font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; }
-                                  .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-                                  .header h1 { margin: 0; font-size: 24px; }
-                                  .header p { margin: 5px 0 0; color: #666; }
-                                  .photo-section { text-align: center; margin: 20px 0; }
-                                  .photo-section img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 2px solid #333; }
-                                  .details { margin: 20px 0; }
-                                  .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-                                  .row:last-child { border-bottom: none; }
-                                  .label { color: #666; }
-                                  .value { font-weight: 500; }
-                                  .status { text-align: center; margin: 20px 0; }
-                                  .status span { background: #d4edda; color: #155724; padding: 8px 20px; border-radius: 20px; font-weight: 500; }
-                                  .signature { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
-                                  .signature p { color: #666; margin-bottom: 10px; }
-                                  .signature img { height: 60px; }
-                                  .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #999; }
-                                  @media print { body { padding: 20px; } }
-                                </style>
-                              </head>
-                              <body>
-                                <div class="header">
-                                  <h1>HOSTEL ${latestGatePass?.pass_type === 'leave' ? 'LEAVE FORM' : 'GATE PASS'}</h1>
-                                  <p>Identity Verification Document</p>
-                                </div>
-                                ${student.photo_url ? `
-                                <div class="photo-section">
-                                  <img src="${student.photo_url}" alt="Student Photo" />
-                                </div>
-                                ` : ''}
-                                <div class="status">
-                                  <span>✓ APPROVED</span>
-                                </div>
-                                <div class="details">
-                                  <div class="row"><span class="label">Student Name</span><span class="value">${student.student_name}</span></div>
-                                  <div class="row"><span class="label">Roll Number</span><span class="value">${student.roll_number}</span></div>
-                                  <div class="row"><span class="label">Branch</span><span class="value">${student.branch?.toUpperCase()}</span></div>
-                                  <div class="row"><span class="label">Year</span><span class="value">${student.year}</span></div>
-                                  <div class="row"><span class="label">Out Date</span><span class="value">${latestGatePass.out_date}</span></div>
-                                  <div class="row"><span class="label">In Date</span><span class="value">${latestGatePass.in_date}</span></div>
-                                  <div class="row"><span class="label">Purpose</span><span class="value">${latestGatePass.purpose}</span></div>
-                                </div>
-                                ${wardenSignature ? `
-                                <div class="signature">
-                                  <p>Warden Signature</p>
-                                  <img src="${wardenSignature}" alt="Warden Signature" />
-                                </div>
-                                ` : ''}
-                                <div class="footer">
-                                  <p>This is a computer-generated gate pass. Valid only with warden signature.</p>
-                                  <p>Generated on: ${new Date().toLocaleString()}</p>
-                                </div>
-                              </body>
-                              </html>
-                            `);
-                              printWindow.document.close();
-                              printWindow.focus();
-                              setTimeout(() => printWindow.print(), 250);
-                            }
-                          }}
-                        >
-                          <Printer className="w-4 h-4" />
-                          Print {latestGatePass?.pass_type === "leave" ? "Leave Form" : "Gate Pass"}
+                        <Button variant="link" className="h-auto p-0 text-[10px] text-muted-foreground font-bold" onClick={downloadQRCode}>
+                          <Download className="w-3 h-3 mr-1" /> DOWNLOAD PASS
                         </Button>
                       </div>
                     )}
-                    
-                    {/* Leave Extension Section */}
-                    {latestGatePass.status === "approved" && (
-                      <div className="pt-4 border-t border-border mt-4">
-                        {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id).map(ext => (
-                          <div key={ext.id} className="p-3 bg-muted rounded-lg mb-3">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="font-medium text-sm">Extension: {ext.number_of_days} Days</span>
-                              <Badge variant={ext.status === 'approved' ? 'default' : ext.status === 'rejected' ? 'destructive' : 'secondary'} className="text-[10px]">
-                                {ext.status}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">Reason: {ext.reason}</p>
-                          </div>
-                        ))}
-                        
-                        {leaveExtensions.filter(ext => ext.gate_pass_id === latestGatePass.id && ext.status === 'pending').length === 0 && (
-                          <LeaveExtensionDialog 
-                            studentId={student.id} 
-                            rollNumber={student.roll_number} 
-                            gatePassId={latestGatePass.id as string} 
-                            onSuccess={() => loadGatePasses(student.roll_number)} 
-                          />
-                        )}
-                      </div>
-                    )}
 
+                    <div className="grid gap-3 text-sm border-t pt-4 border-border/50">
+                      <div className="flex justify-between items-center"><span className="text-muted-foreground">Pass ID</span><span className="font-mono text-[10px] font-bold bg-muted px-2 py-0.5 rounded select-all uppercase">{String(latestGatePass.id)}</span></div>
+                      <div className="flex justify-between items-center"><span className="text-muted-foreground">Duration</span><span className="font-bold">{String(latestGatePass.out_date)} - {String(latestGatePass.in_date)}</span></div>
+                      <div className="flex justify-between items-center"><span className="text-muted-foreground">Purpose</span><span className="font-bold text-right max-w-[60%] line-clamp-2">{String(latestGatePass.purpose)}</span></div>
+                    </div>
+
+                    {latestGatePass.status === "approved" && (
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2 font-bold h-11 border-2"
+                        onClick={() => {
+                          const printWindow = window.open('', '_blank');
+                          if (printWindow) {
+                            printWindow.document.write(`
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                              <title>Pass - ${student.student_name}</title>
+                              <head>
+                                <style>
+                                  body { font-family: system-ui; padding: 40px; }
+                                  .pass { border: 2px solid #ccc; border-radius: 12px; padding: 20px; max-width: 500px; margin: auto; }
+                                  .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
+                                  .field { display: flex; justify-content: space-between; margin: 10px 0; }
+                                  .label { color: #666; }
+                                  .val { font-weight: bold; }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="pass">
+                                  <div class="header"><h1>HOSTEL PASS</h1></div>
+                                  <div class="field"><span class="label">Name</span><span class="val">${student.student_name}</span></div>
+                                  <div class="field"><span class="label">Roll No</span><span class="val">${student.roll_number}</span></div>
+                                  <div class="field"><span class="label">Out Date</span><span class="val">${latestGatePass.out_date}</span></div>
+                                  <div class="field"><span class="label">In Date</span><span class="val">${latestGatePass.in_date}</span></div>
+                                  <div class="field"><span class="label">Purpose</span><span class="val">${latestGatePass.purpose}</span></div>
+                                  <div class="field"><span class="label">Status</span><span class="val">APPROVED</span></div>
+                                </div>
+                              </body>
+                            </html>
+                            `);
+                            printWindow.document.close();
+                            printWindow.print();
+                          }
+                        }}
+                      >
+                        <Printer className="w-4 h-4" /> Print Pass
+                      </Button>
+                    )}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8">No gate pass requests yet</div>
+                  <div className="text-center text-muted-foreground py-12 italic">No active requests</div>
                 )}
               </CardContent>
             </Card>
 
             {(student?.pending_fee !== undefined && student.pending_fee <= 0 && student.paid_fee > 0) && (
-              <div className="bg-success/10 border-2 border-success/30 rounded-xl p-6 text-center animate-in zoom-in duration-500 mb-6 group hover:border-success/50 transition-all">
-                <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Check className="w-10 h-10 text-success" />
+              <div className="bg-success/10 border-2 border-success/30 rounded-2xl p-6 text-center animate-bounce duration-[2000ms]">
+                <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-8 h-8 text-success" />
                 </div>
-                <h3 className="text-2xl font-black text-success mb-1 tracking-tight italic">Year Fees Completed!</h3>
-                <p className="text-sm text-success/80 font-medium">You have successfully cleared all dues for the {student.year}.</p>
+                <h3 className="text-xl font-black text-success italic tracking-tighter">FEES CLEARED!</h3>
+                <p className="text-[10px] text-success/80 font-bold uppercase">All dues for {student.year} Year are paid.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Quick Links Section */}
-        <div className="mt-8 text-center">
-          <p className="text-muted-foreground mb-4">Need help?</p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(`https://wa.me/91${WARDEN_CONTACT}`, "_blank")}
-              className="gap-2"
-            >
-              <Phone className="w-4 h-4" />
-              Contact Warden
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.location.href = `tel:${WARDEN_CONTACT}`}
-              className="gap-2 text-destructive hover:text-destructive"
-            >
-              <AlertCircle className="w-4 h-4" />
-              Emergency
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRulesDialogOpen(true)}
-              className="gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              Hostel Rules
-            </Button>
+        <div className="mt-8 pt-8 border-t border-border/50 text-center">
+          <p className="text-muted-foreground text-sm font-medium mb-4">Support & Information</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => window.open(`https://wa.me/91${WARDEN_CONTACT}`)} className="h-10 px-4 gap-2 font-bold"><Phone className="w-4 h-4" /> WhatsApp Warden</Button>
+            <Button variant="ghost" size="sm" onClick={() => window.location.href = `tel:${WARDEN_CONTACT}`} className="h-10 px-4 gap-2 font-bold text-destructive hover:text-destructive hover:bg-destructive/5"><AlertCircle className="w-4 h-4" /> EMERGENCY CALL</Button>
+            <Button variant="ghost" size="sm" onClick={() => setRulesDialogOpen(true)} className="h-10 px-4 gap-2 font-bold"><BookOpen className="w-4 h-4" /> Hostel Rules</Button>
           </div>
         </div>
-      </main >
+      </main>
 
       {/* Hostel Rules Dialog */}
       < Dialog open={rulesDialogOpen} onOpenChange={setRulesDialogOpen} >
