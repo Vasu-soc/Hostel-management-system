@@ -69,18 +69,27 @@ const WatchmanDashboard = () => {
                  setCameraError(null);
                  
                  try {
-                     // Check if browser supports camera
+                     // 1. Wait for reader element with a loop
+                     let readerElement = document.getElementById("reader");
+                     let attempts = 0;
+                     while (!readerElement && attempts < 10) {
+                         await new Promise(r => setTimeout(r, 200));
+                         readerElement = document.getElementById("reader");
+                         attempts++;
+                     }
+
+                     if (!readerElement) {
+                         setCameraError("Scanner preview area not ready. Please try again.");
+                         return;
+                     }
+
+                     // 2. Check if browser supports camera
                      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        setCameraError("Camera API not supported in this browser. Please use a modern browser like Chrome or Safari.");
+                        setCameraError("Your browser doesn't support camera access. Please use Chrome or Safari.");
                         return;
                      }
 
-                     // Check for secure context
-                     if (!window.isSecureContext && window.location.hostname !== "localhost") {
-                        setCameraError("Camera access requires a secure connection (HTTPS). URL must start with https://");
-                     }
-
-                     // Stop existing if any
+                     // 3. Stop existing if any
                      if (scannerRef.current) {
                          try {
                             if (scannerRef.current.isScanning) {
@@ -92,48 +101,41 @@ const WatchmanDashboard = () => {
                      const html5QrCode = new Html5Qrcode("reader");
                      scannerRef.current = html5QrCode;
 
+                     // 4. Start the camera - this triggers the permission prompt
                      const config = { 
-                         fps: 15, // Higher FPS for smoother mobile experience
+                         fps: 10,
                          qrbox: { width: 250, height: 250 },
-                         aspectRatio: 1.0,
-                         rememberLastUsedCamera: true,
-                         showTorchButtonIfSupported: true
+                         aspectRatio: 1.0
                      };
                      
-                     // Direct start often triggers permission prompt better than getCameras
                      await html5QrCode.start(
                          { facingMode: facingMode }, 
                          config, 
                          onScanSuccess, 
-                         (err) => {
-                             // Silence common internal scan errors to avoid console noise
-                             // But keep it for debugging if needed
-                             // console.log(err);
-                         }
+                         () => {} // Silent scan errors
                      ).catch(err => {
-                        console.error("Scanner Start Error:", err);
-                        let msg = "Could not start camera.";
-                        if (err.includes("NotAllowedError") || err.includes("permission")) {
-                            msg = "Camera permission denied. Please allow camera access in your settings.";
-                        } else if (err.includes("NotFoundError")) {
+                        console.error("Scanner Error:", err);
+                        
+                        let msg = "Could not access camera.";
+                        const errStr = String(err).toLowerCase();
+                        
+                        if (errStr.includes("notallowed") || errStr.includes("permission")) {
+                            msg = "Permission denied. Please allow camera access in your browser settings.";
+                        } else if (errStr.includes("notfound")) {
                             msg = "No camera found on this device.";
-                        } else if (err.includes("NotReadableError")) {
-                            msg = "Camera is already in use by another app.";
+                        } else if (errStr.includes("notreadable") || errStr.includes("in use")) {
+                            msg = "Camera is already in use by another app or tab.";
+                        } else if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                            msg = "Camera requires HTTPS. Please ensure you are using a secure connection.";
                         }
+                        
                         setCameraError(msg);
-                        toast({ title: "Camera Error", description: msg, variant: "destructive" });
+                        toast({ title: "Scanner Error", description: msg, variant: "destructive" });
                      });
 
-                     // Try to get cameras list for the switcher AFTER starting (or in parallel)
-                     Html5Qrcode.getCameras().then(devices => {
-                        if (devices && devices.length > 0) {
-                            setCameras(devices);
-                        }
-                     }).catch(() => {});
-
                  } catch (err: any) {
-                     console.error("Camera Init Error:", err);
-                     setCameraError(err.message || "Failed to initialize camera");
+                     console.error("Fatal Camera Error:", err);
+                     setCameraError("Failed to initialize camera. Tap 'Retry' to try again.");
                  } finally {
                      isInitializing.current = false;
                  }
@@ -142,7 +144,7 @@ const WatchmanDashboard = () => {
 
         const timer = setTimeout(() => {
             initScanner();
-        }, 300); // Small delay to ensure DOM is ready
+        }, 500); // 500ms delay for DOM stabilization
 
         fetchOutStudents();
         fetchHistory();
@@ -334,28 +336,46 @@ const WatchmanDashboard = () => {
                             </CardHeader>
                             <CardContent className="-mt-6 p-4 relative">
                                 <div id="reader" className="w-full overflow-hidden rounded-2xl border-2 border-primary/20 shadow-inner bg-neutral-100 min-h-[300px] h-[300px] flex items-center justify-center relative">
-                                    {cameraError && (
-                                        <div className="absolute inset-0 z-10 bg-neutral-100 flex flex-col items-center justify-center p-6 text-center">
-                                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-600">
-                                                <Camera className="w-8 h-8" />
-                                            </div>
-                                            <h3 className="font-bold text-neutral-900 mb-2">Camera Access Failed</h3>
-                                            <p className="text-xs text-neutral-500 mb-4">{cameraError}</p>
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="rounded-full"
-                                                onClick={() => {
-                                                    setCameraError(null);
-                                                    setIsScanning(false);
-                                                    setTimeout(() => setIsScanning(true), 100);
-                                                }}
-                                            >
-                                                <RefreshCw className="w-4 h-4 mr-2" />
-                                                Retry Camera
-                                            </Button>
-                                        </div>
-                                    )}
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4">
+                                        {!cameraError && (
+                                            <>
+                                                <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                                <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">Warming up camera...</p>
+                                                <Button 
+                                                    variant="secondary" 
+                                                    size="sm" 
+                                                    className="mt-2 rounded-full"
+                                                    onClick={() => {
+                                                        setIsScanning(false);
+                                                        setTimeout(() => setIsScanning(true), 100);
+                                                    }}
+                                                >
+                                                    Tap to Manually Start
+                                                </Button>
+                                            </>
+                                        )}
+                                        
+                                        {cameraError && (
+                                            <>
+                                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-0 text-red-600">
+                                                    <Camera className="w-8 h-8" />
+                                                </div>
+                                                <h3 className="font-bold text-neutral-900">Camera Needed</h3>
+                                                <p className="text-xs text-neutral-500 max-w-[200px]">{cameraError}</p>
+                                                <Button 
+                                                    className="rounded-full px-8 bg-primary hover:bg-primary/90"
+                                                    onClick={() => {
+                                                        setCameraError(null);
+                                                        setIsScanning(false);
+                                                        setTimeout(() => setIsScanning(true), 100);
+                                                    }}
+                                                >
+                                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                                    Enable Camera
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                                 {isScanning && !cameraError && (
                                     <Button 
