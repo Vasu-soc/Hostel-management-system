@@ -232,20 +232,22 @@ const CollegeHeader = () => {
             </div>
           </div>
 
-          {/* Menu Button + Theme Toggle - Only on home page */}
-          {isHomePage && (
-            <div className="flex flex-col items-center gap-2 flex-shrink-0">
-              {/* Album Gallery Icon */}
+          {/* Menu Button + Theme Toggle - Always available toggle, others conditional */}
+          <div className="flex flex-col items-center gap-1 sm:gap-2 flex-shrink-0 shrink-0">
+            {/* Album Gallery Icon - Only on home page */}
+            {isHomePage && (
               <div className="animate-in slide-in-from-right duration-700 delay-300">
                 <HostelAlbumGallery />
               </div>
+            )}
 
-              {/* Theme Toggle Button Style */}
-              <div className="bg-muted/50 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner leading-none flex items-center justify-center">
-                <ThemeToggle />
-              </div>
+            {/* Theme Toggle Button Style - Always Available */}
+            <div className="bg-muted/50 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner leading-none flex items-center justify-center">
+              <ThemeToggle />
+            </div>
 
-              {/* Unique Styled Menu Button */}
+            {/* Unique Styled Menu Button - Only on home page */}
+            {isHomePage && (
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
                   <Button
@@ -342,8 +344,8 @@ const CollegeHeader = () => {
                   </div>
                 </SheetContent>
               </Sheet>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       <HostelBedDetails open={bedsDialogOpen} onOpenChange={setBedsDialogOpen} />

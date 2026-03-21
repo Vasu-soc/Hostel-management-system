@@ -2,9 +2,27 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch by waiting for mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl opacity-0"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <Button
@@ -42,3 +60,4 @@ const ThemeToggle = () => {
 };
 
 export default ThemeToggle;
+
