@@ -72,4 +72,11 @@ BEGIN
         END IF;
     END IF;
 
+    -- Add branch_marks if table exists and not added
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'branch_marks' AND table_schema = 'public') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'branch_marks') THEN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.branch_marks;
+        END IF;
+    END IF;
+
 END $$;

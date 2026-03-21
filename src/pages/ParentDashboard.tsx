@@ -252,6 +252,19 @@ const ParentDashboard = () => {
           fetchTodayAttendance(parent.student_roll_number);
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "branch_marks",
+        },
+        () => {
+          if (student?.branch && student?.year) {
+             fetchBranchMarks(student.branch, student.year);
+          }
+        }
+      )
       .subscribe();
 
     return () => {

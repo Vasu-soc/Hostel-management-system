@@ -51,6 +51,15 @@ const WardenApproval = () => {
 
   useEffect(() => {
     fetchWardens();
+
+    const channel = supabase
+      .channel("warden-approval-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "wardens" }, fetchWardens)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchWardens = async () => {

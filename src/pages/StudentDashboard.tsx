@@ -211,9 +211,61 @@ const StudentDashboard = () => {
       })
       .subscribe();
 
+    // Subscribe to study materials and branch marks updates
+    const educationChannel = supabase
+      .channel(`education-student-${session.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "study_materials",
+        filter: `branch=eq.${session.branch}`
+      }, () => {
+        loadStudyMaterials(session.branch, (session as any).year);
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "branch_marks",
+        filter: `branch=eq.${session.branch}`
+      }, () => {
+        loadBranchMarks(session.branch, (session as any).year);
+      })
+      .subscribe();
+
+    // Subscribe to issues status updates
+    const issuesChannel = supabase
+      .channel(`issues-student-${session.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "food_issues",
+        filter: `student_id=eq.${session.id}`
+      }, () => {
+        // Refresh whatever part shows issues status if applicable
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "electrical_issues",
+        filter: `student_id=eq.${session.id}`
+      }, () => {
+        // Same for electrical
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "room_issues",
+        filter: `student_id=eq.${session.id}`
+      }, () => {
+        // Same for room issues
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(medicineChannel);
       supabase.removeChannel(medicalChannel);
+      supabase.removeChannel(educationChannel);
+      supabase.removeChannel(issuesChannel);
     };
   }, [gender, navigate]);
 
@@ -321,7 +373,7 @@ const StudentDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [student?.id]);
 
-  // Real-time: gate passes (so approved status + warden signature load instantly)
+  // Real-time: gate passes and leave extensions (so approved status + warden signature load instantly)
   useEffect(() => {
     if (!student?.roll_number) return;
     const channel = supabase
@@ -330,6 +382,14 @@ const StudentDashboard = () => {
         event: "*",
         schema: "public",
         table: "gate_passes",
+        filter: `roll_number=eq.${student.roll_number}`,
+      }, () => {
+        loadGatePasses(student.roll_number);
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "leave_extensions",
         filter: `roll_number=eq.${student.roll_number}`,
       }, () => {
         loadGatePasses(student.roll_number);

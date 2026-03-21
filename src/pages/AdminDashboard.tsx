@@ -131,6 +131,15 @@ const AdminDashboard = () => {
       .channel("admin-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, fetchRooms)
       .on("postgres_changes", { event: "*", schema: "public", table: "watchmen" }, fetchWatchmen)
+      .on("postgres_changes", { event: "*", schema: "public", table: "wardens" }, () => {
+        // No fetchWardens here as it's in a sub-component, but we might want to trigger it if possible
+        // Actually WardenApproval handles its own state. Let's add it there or force refresh.
+        // For now, let's refresh general student stats that might be affected
+        fetchAllStudents();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_transactions" }, () => {
+        fetchAllStudents(); // Refresh to update collection stats
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => {
         fetchAllStudents();
         if (selectedBranch && selectedYear) {
