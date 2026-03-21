@@ -1571,7 +1571,7 @@ const StudentDashboard = () => {
             </Card>
 
             {(student?.pending_fee !== undefined && student.pending_fee <= 0 && student.paid_fee > 0) && (
-              <div className="bg-success/10 border-2 border-success/30 rounded-2xl p-6 text-center animate-bounce duration-[2000ms]">
+              <div className="bg-success/10 border-2 border-success/30 rounded-2xl p-6 text-center animate-bounce" style={{ animationDuration: '2000ms' }}>
                 <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Check className="w-8 h-8 text-success" />
                 </div>
