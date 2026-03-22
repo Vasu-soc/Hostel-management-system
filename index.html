@@ -61,13 +61,17 @@
     // Immediate Theme Application Script (Blocking)
     (function() {
       try {
-        const theme = localStorage.getItem('hostel-theme-preference') || 'light';
+        const theme = localStorage.getItem('hostel-theme-preference');
         if (theme === 'dark') {
           document.documentElement.classList.add('dark');
         } else {
+          // Default to light if not explicitly dark
           document.documentElement.classList.remove('dark');
         }
-      } catch (e) { console.error('Theme script failed', e); }
+      } catch (e) {
+        console.error('Theme script failed', e);
+        document.documentElement.classList.remove('dark'); 
+      }
     })();
   </script>
 </head>

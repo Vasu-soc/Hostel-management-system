@@ -1,6 +1,6 @@
 import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes";
 import * as React from "react";
-import { ReactNode, useEffect, useLayoutEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
@@ -9,7 +9,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       defaultTheme="light" 
       enableSystem={false}
       storageKey="hostel-theme-preference"
-      disableTransitionOnChange={false}
     >
       {children}
     </NextThemesProvider>
@@ -18,41 +17,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const { theme, setTheme, resolvedTheme } = useNextTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const applyTheme = (targetTheme: string) => {
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement;
-      if (targetTheme === 'dark') {
-        root.classList.add('dark');
-        root.style.colorScheme = 'dark';
-      } else {
-        root.classList.remove('dark');
-        root.style.colorScheme = 'light';
-      }
-    }
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
-    // Determine target based on current icon/meaning (the resolvedTheme)
-    const targetTheme = resolvedTheme === "dark" ? "light" : "dark";
-    setTheme(targetTheme);
-    applyTheme(targetTheme);
-    console.log("Switching theme to:", targetTheme);
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
   };
 
-  // Sync class on mount and theme change
-  useLayoutEffect(() => {
-    if (resolvedTheme) {
-      applyTheme(resolvedTheme);
-    }
-  }, [resolvedTheme]);
-
   return {
-    theme: (resolvedTheme || "light") as "light" | "dark",
+    theme: (theme || "light") as "light" | "dark",
+    setTheme,
     toggleTheme,
-    setTheme: (newTheme: string) => {
-      setTheme(newTheme);
-      applyTheme(newTheme);
-    },
+    mounted,
   };
 }
