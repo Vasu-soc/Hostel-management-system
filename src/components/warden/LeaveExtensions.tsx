@@ -40,6 +40,14 @@ export default function LeaveExtensions() {
         .eq('id', id);
 
       if (error) throw error;
+      
+      // Clear any overdue alerts if extension is approved
+      if (status === 'approved') {
+        await (supabase as any)
+          .from('overdue_alerts')
+          .delete()
+          .eq('student_id', studentId);
+      }
 
       // Create notification for the student
       const { error: notifyError } = await supabase.from('notifications').insert({

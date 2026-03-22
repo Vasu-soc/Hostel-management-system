@@ -57,6 +57,18 @@
           .catch(err => console.log('SW registration failed'));
       });
     }
+
+    // Immediate Theme Application Script (Blocking)
+    (function() {
+      try {
+        const theme = localStorage.getItem('hostel-theme-preference') || 'light';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) { console.error('Theme script failed', e); }
+    })();
   </script>
 </head>
 

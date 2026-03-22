@@ -337,6 +337,12 @@ const WatchmanDashboard = () => {
                 // Update pass to completed and set entry_time
                 await (supabase as any).from("gate_passes").update({ entry_time: now, status: "completed" }).eq("id", passDetails.id);
                 
+                // Clear any overdue alerts (Delete them so they disappear immediately)
+                await (supabase as any)
+                    .from("overdue_alerts")
+                    .delete()
+                    .eq("student_id", studentDetails.id);
+                
                 toast({ title: "Entry Confirmed", description: `${studentDetails.student_name} is now IN` });
             }
 

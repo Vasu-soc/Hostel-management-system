@@ -85,7 +85,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "studyMaterial" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees" | "attendance" | "marksUpload" | "leaveExtensions" | "complaints" | "profile";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "studyMaterial" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees" | "attendance" | "marksUpload" | "leaveExtensions" | "complaints" | "profile" | "overdueReturns";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -105,8 +105,9 @@ const WardenDashboard = () => {
   const [roomIssues, setRoomIssues] = useState<any[]>([]);
   const [medicalAlerts, setMedicalAlerts] = useState<any[]>([]);
   const [updates, setUpdates] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
   const [activeAttendance, setActiveAttendance] = useState<any[]>([]);
+  const [overdueAlerts, setOverdueAlerts] = useState<any[]>([]);
+  const [leaveExtensions, setLeaveExtensions] = useState<any[]>([]);
 
   // Dialog states
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
@@ -442,8 +443,125 @@ const WardenDashboard = () => {
       fetchIssues(studentGender),
       fetchMaterials(),
       fetchNotifications(),
-      fetchTodayAttendance()
+      fetchTodayAttendance(),
+      fetchOverdueAlerts(),
+      fetchLeaveExtensions()
     ]);
+  };
+
+  const fetchOverdueAlerts = async () => {
+    const { data, error } = await (supabase as any)
+      .from("overdue_alerts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) setOverdueAlerts(data);
+  };
+
+  const fetchLeaveExtensions = async () => {
+    const { data, error } = await supabase
+      .from("leave_extensions")
+      .select("*");
+    if (!error && data) setLeaveExtensions(data);
+  };
+
+  const checkAndCreateOverdueAlerts = async () => {
+    if (!warden || students.length === 0 || gatePasses.length === 0) return;
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    // Filter students who are OUT and IN
+    const studentsOut = students.filter(s => s.status === 'OUT');
+    const studentsIn = students.filter(s => s.status === 'IN');
+
+    // SELF-HEALING: Delete any pending alerts for students who are now IN
+    // This handles cases where the watchman confirmation might have failed to clear the alert
+    for (const student of studentsIn) {
+      const pendingAlerts = overdueAlerts.filter(a => a.student_id === student.id && a.status === 'pending');
+      if (pendingAlerts.length > 0) {
+        console.log(`Self-healing: Clearing stale alert for returned student ${student.student_name}`);
+        const { error: deleteError } = await (supabase as any)
+          .from("overdue_alerts")
+          .delete()
+          .eq("student_id", student.id);
+        
+        if (!deleteError) fetchOverdueAlerts();
+      }
+    }
+
+    for (const student of studentsOut) {
+      // Find the active gate pass for this student (most recent approved one)
+      const activePass = gatePasses
+        .filter(gp => gp.student_id === student.id && gp.status === 'approved')
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+      if (!activePass) continue;
+
+      // Check if student is overdue
+      const inDateTime = new Date(`${activePass.in_date}T${activePass.in_time || '23:59:59'}`);
+      
+      // Check if there's an approved extension that covers 'now'
+      const activeExtension = leaveExtensions.find(ext => 
+        ext.student_id === student.id && 
+        ext.status === 'approved' && 
+        ext.extension_to && 
+        new Date(ext.extension_to) >= now
+      );
+
+      const isActuallyOverdue = now > inDateTime && !activeExtension;
+
+      if (isActuallyOverdue) {
+        // Check if there are any pending alerts for this student
+        const studentAlerts = overdueAlerts.filter(alert => 
+          alert.student_id === student.id && 
+          alert.status === 'pending'
+        ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        if (studentAlerts.length > 0) {
+          const latestAlert = studentAlerts[0];
+          
+          // Cleanup duplicates if they exist (Delete all but the newest row)
+          if (studentAlerts.length > 1) {
+             const excessIds = studentAlerts.slice(1).map(a => a.id);
+             console.log(`Cleaning up ${excessIds.length} duplicate alerts for ${student.student_name}`);
+             await (supabase as any).from("overdue_alerts").delete().in("id", excessIds);
+             fetchOverdueAlerts();
+          }
+
+          // If more than an hour has passed since last alert, update the timestamp
+          if (new Date(latestAlert.last_alerted_at) < oneHourAgo) {
+            console.log(`Updating hourly alert for ${student.student_name}`);
+            const { error: updateError } = await (supabase as any)
+                .from("overdue_alerts")
+                .update({ last_alerted_at: now.toISOString() })
+                .eq("id", latestAlert.id);
+            
+            if (updateError) console.error("Failed to update alert:", updateError);
+            else fetchOverdueAlerts();
+          }
+        } else {
+          // Create new alert if none exists for this student
+          console.log(`Creating initial overdue alert for ${student.student_name}`);
+          
+          const newAlert = {
+            student_id: student.id,
+            student_name: student.student_name,
+            roll_number: student.roll_number,
+            gate_pass_id: activePass.id,
+            overdue_since: inDateTime.toISOString(),
+            last_alerted_at: now.toISOString(),
+            status: 'pending'
+          };
+
+          const { error: insertError } = await (supabase as any)
+            .from("overdue_alerts")
+            .insert(newAlert);
+
+          if (insertError) console.error("Failed to insert overdue alert:", insertError);
+          else fetchOverdueAlerts();
+        }
+      }
+    }
   };
 
   useEffect(() => {
@@ -454,6 +572,19 @@ const WardenDashboard = () => {
     }
     setWarden(session);
   }, [navigate]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+        checkAndCreateOverdueAlerts();
+    }, 5 * 60 * 1000); // Check every 5 minutes
+    
+    // Also check on mount
+    if (warden && students.length > 0) {
+      checkAndCreateOverdueAlerts();
+    }
+    
+    return () => clearInterval(timer);
+  }, [warden, students, gatePasses, overdueAlerts, leaveExtensions]);
 
   // Fetch data when warden is set
   useEffect(() => {
@@ -519,6 +650,10 @@ const WardenDashboard = () => {
         .on("postgres_changes", { event: "*", schema: "public", table: "payment_submissions" }, () => {
            console.log("Real-time: payment_submissions changed");
            fetchAllData();
+         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "overdue_alerts" }, () => {
+           console.log("Real-time: overdue_alerts changed");
+           fetchOverdueAlerts();
          })
         .subscribe((status) => {
           console.log("Real-time subscription status:", status);
@@ -1109,6 +1244,7 @@ const WardenDashboard = () => {
     { id: "attendance" as TabType, label: "Attendance", icon: Users },
     { id: "marksUpload" as TabType, label: "Marks Upload", icon: FileText },
     { id: "leaveExtensions" as TabType, label: "Leave Exts.", icon: Clock },
+    { id: "overdueReturns" as TabType, label: "Overdue Returns", icon: AlertTriangle, count: overdueAlerts.filter(a => a.status === 'pending').length },
     { id: "recycleBin" as TabType, label: "Recycle Bin", icon: Trash2 },
   ];
 
@@ -1116,10 +1252,28 @@ const WardenDashboard = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
+  const overduePendingCount = overdueAlerts.filter(a => a.status === 'pending').length;
+
   return (
     <div className="min-h-screen bg-background">
       {/* College Header */}
       <CollegeHeader />
+
+      {/* Overdue Alerts Floating Notification (Visible on all tabs if pending) */}
+      {overduePendingCount > 0 && activeTab !== "overdueReturns" && (
+        <div 
+          className="fixed bottom-6 right-6 z-50 animate-bounce cursor-pointer"
+          onClick={() => setActiveTab("overdueReturns")}
+        >
+          <div className="bg-destructive text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white">
+            <AlertTriangle className="w-6 h-6" />
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest">Urgent: Overdue Students</p>
+              <p className="text-[10px] font-bold opacity-90">{overduePendingCount} students have not returned yet!</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Enhanced Top Bar */}
       <DashboardHeader
@@ -1341,10 +1495,11 @@ const WardenDashboard = () => {
               const presentCount = students.filter(s => s.status === 'IN' && s.room_allotted).length;
               const leaveCount = students.filter(s => s.status === 'OUT' && s.room_allotted).length;
               const activePasses = gatePasses.filter(gp => gp.status === 'approved').length;
+              const overdueCount = overdueAlerts.filter(a => a.status === 'pending').length;
               const isBoys = warden?.warden_type === "boys";
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-2 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 mt-2 animate-fade-in">
                   <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg border-0 hover:shadow-indigo-500/30 transition-shadow transition-transform hover:-translate-y-1">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-indigo-100 flex items-center justify-between font-medium">
@@ -1394,6 +1549,22 @@ const WardenDashboard = () => {
                     <CardContent>
                       <div className="text-4xl font-black">{activePasses}</div>
                       <p className="text-amber-100/80 text-sm mt-1">Approved pending passes</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card 
+                    className={`bg-gradient-to-br ${overdueCount > 0 ? 'from-red-600 to-orange-700 animate-pulse' : 'from-slate-500 to-slate-600'} text-white shadow-lg border-0 hover:shadow-red-500/30 transition-shadow transition-transform hover:-translate-y-1 cursor-pointer`}
+                    onClick={() => setActiveTab("overdueReturns")}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-red-100 flex items-center justify-between font-medium">
+                        Overdue Return
+                        <AlertTriangle className="w-5 h-5 text-red-200" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-black">{overdueCount}</div>
+                      <p className="text-red-100/80 text-sm mt-1">{overdueCount === 1 ? 'Student is overdue' : 'Students are overdue'}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -1865,6 +2036,96 @@ const WardenDashboard = () => {
         {activeTab === "leaveExtensions" && (
           <div className="animate-in fade-in duration-500">
             <LeaveExtensions />
+          </div>
+        )}
+
+        {/* Overdue Returns Tab */}
+        {activeTab === "overdueReturns" && (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <AlertTriangle className="w-8 h-8 text-destructive animate-pulse" />
+                Overdue Student Returns
+              </h2>
+              <Badge variant="destructive" className="px-4 py-1 text-sm font-black">
+                {overdueAlerts.filter(a => a.status === 'pending').length} ACTIVE ALERTS
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {overdueAlerts
+                .filter(a => a.status === 'pending')
+                .map((alert) => (
+                  <Card key={alert.id} className="border-2 border-destructive/30 bg-destructive/5 hover:shadow-xl transition-all group overflow-hidden">
+                    <div className="bg-destructive text-white px-4 py-2 flex justify-between items-center">
+                      <span className="text-[10px] font-black tracking-widest uppercase">Overdue Alert</span>
+                      <span className="text-[10px] font-bold">Since: {new Date(alert.overdue_since).toLocaleDateString()} {new Date(alert.overdue_since).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center text-destructive">
+                          <User className="w-7 h-7" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg font-black">{alert.student_name}</CardTitle>
+                          <p className="text-xs font-bold text-muted-foreground uppercase">{alert.roll_number}</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="bg-white/50 p-3 rounded-xl border border-destructive/10">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground font-bold uppercase">Expected Back</span>
+                          <span className="font-black text-destructive">
+                            {new Date(alert.overdue_since).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground font-bold uppercase">Last Hourly Alert</span>
+                          <span className="font-black">
+                            {new Date(alert.last_alerted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 text-[10px] font-black uppercase border-destructive/20 hover:bg-destructive hover:text-white"
+                          onClick={() => {
+                            const student = students.find(s => s.id === alert.student_id);
+                            if (student?.student_mobile) window.location.href = `tel:${student.student_mobile}`;
+                            else toast({ title: "Error", description: "Mobile number not found", variant: "destructive" });
+                          }}
+                        >
+                          <Phone className="w-3 h-3 mr-1" /> Call Student
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 text-[10px] font-black uppercase border-primary/20 hover:bg-primary hover:text-white"
+                          onClick={() => {
+                            const gp = gatePasses.find(g => g.id === alert.gate_pass_id);
+                            if (gp) setSelectedGatePass(gp);
+                          }}
+                        >
+                          View Pass
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+              {overdueAlerts.filter(a => a.status === 'pending').length === 0 && (
+                <div className="col-span-full py-20 text-center bg-muted/20 rounded-3xl border-2 border-dashed border-border group">
+                  <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                    <Check className="w-10 h-10 text-success" />
+                  </div>
+                  <h3 className="text-xl font-black text-foreground">All Students Accounted For</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">No students are currently overdue. Everything is running smoothly.</p>
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>
