@@ -76,6 +76,14 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Warden {
   id: string;
@@ -120,6 +128,13 @@ const WardenDashboard = () => {
   const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState<string | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [isFeatureVisionOpen, setIsFeatureVisionOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<{
+    id: "total" | "inside" | "outside" | "activePasses";
+    label: string;
+    icon: any;
+    color: string;
+  } | null>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -1500,7 +1515,18 @@ const WardenDashboard = () => {
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 mt-2 animate-fade-in">
-                  <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg border-0 hover:shadow-indigo-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                  <Card 
+                    className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg border-0 hover:shadow-indigo-500/30 transition-shadow transition-transform hover:-translate-y-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedCategory({
+                        id: "total",
+                        label: `Total ${isBoys ? 'Boys' : 'Girls'}`,
+                        icon: Users,
+                        color: "from-indigo-500 to-indigo-600"
+                      });
+                      setIsCategoryDialogOpen(true);
+                    }}
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-indigo-100 flex items-center justify-between font-medium">
                         Total {isBoys ? 'Boys' : 'Girls'}
@@ -1513,7 +1539,18 @@ const WardenDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg border-0 hover:shadow-emerald-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                  <Card 
+                    className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg border-0 hover:shadow-emerald-500/30 transition-shadow transition-transform hover:-translate-y-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedCategory({
+                        id: "inside",
+                        label: "Students Inside",
+                        icon: Home,
+                        color: "from-emerald-500 to-emerald-600"
+                      });
+                      setIsCategoryDialogOpen(true);
+                    }}
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-emerald-100 flex items-center justify-between font-medium">
                         Students Inside
@@ -1526,7 +1563,18 @@ const WardenDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg border-0 hover:shadow-red-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                  <Card 
+                    className="bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg border-0 hover:shadow-red-500/30 transition-shadow transition-transform hover:-translate-y-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedCategory({
+                        id: "outside",
+                        label: "Students Outside",
+                        icon: DoorOpen,
+                        color: "from-red-500 to-red-600"
+                      });
+                      setIsCategoryDialogOpen(true);
+                    }}
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-red-100 flex items-center justify-between font-medium">
                         Students Outside
@@ -1539,7 +1587,18 @@ const WardenDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg border-0 hover:shadow-amber-500/30 transition-shadow transition-transform hover:-translate-y-1">
+                  <Card 
+                    className="bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg border-0 hover:shadow-amber-500/30 transition-shadow transition-transform hover:-translate-y-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedCategory({
+                        id: "activePasses",
+                        label: "Active Gate Passes",
+                        icon: ShieldCheck,
+                        color: "from-amber-500 to-amber-600"
+                      });
+                      setIsCategoryDialogOpen(true);
+                    }}
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-amber-100 flex items-center justify-between font-medium">
                         Active Passes
@@ -2129,6 +2188,117 @@ const WardenDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Category List Dialog */}
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl border-2 border-primary/20 shadow-2xl p-0 overflow-hidden bg-card">
+          <DialogHeader className={`p-6 text-white bg-gradient-to-br ${selectedCategory?.color || 'from-primary to-primary/80'}`}>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                {selectedCategory?.icon && <selectedCategory.icon className="w-8 h-8 text-white" />}
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-black italic uppercase tracking-tight">
+                  {selectedCategory?.label}
+                </DialogTitle>
+                <DialogDescription className="text-white/80 font-medium">
+                  {selectedCategory?.id === "activePasses" 
+                    ? "Currently approved gate pass holders" 
+                    : `List of students in the ${selectedCategory?.label} category`}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="p-6">
+            <div className="rounded-2xl border border-border overflow-hidden bg-muted/30">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest px-6 py-4">Student Name</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest">Roll Number</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest">Branch</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center">Room</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest text-right px-6">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const filteredData = (() => {
+                      if (!selectedCategory) return [];
+                      switch (selectedCategory.id) {
+                        case "total":
+                          return students.filter(s => s.room_allotted);
+                        case "inside":
+                          return students.filter(s => s.status === 'IN' && s.room_allotted);
+                        case "outside":
+                          return students.filter(s => s.status === 'OUT' && s.room_allotted);
+                        case "activePasses":
+                          return gatePasses.filter(gp => gp.status === 'approved');
+                        default:
+                          return [];
+                      }
+                    })();
+
+                    if (filteredData.length === 0) {
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-32 text-center text-muted-foreground font-medium">
+                            No students found in this category.
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    return filteredData.map((item, index) => {
+                      const isGatePass = selectedCategory?.id === "activePasses";
+                      return (
+                        <TableRow key={index} className="hover:bg-primary/5 transition-colors group">
+                          <TableCell className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                {item.student_name?.charAt(0)}
+                              </div>
+                              <span className="font-bold text-foreground group-hover:text-primary transition-colors">
+                                {item.student_name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-bold text-muted-foreground">
+                            {item.roll_number}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold uppercase">
+                            {item.branch || "-"}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="font-black text-xs border-primary/20 bg-primary/5">
+                              {isGatePass ? (students.find(s => s.roll_number === item.roll_number)?.hostel_room_number || "N/A") : (item.hostel_room_number || "N/A")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right px-6">
+                            {isGatePass ? (
+                              <div className="flex flex-col items-end">
+                                <Badge className="bg-amber-500 hover:bg-amber-600 font-bold text-[9px] uppercase tracking-tighter">
+                                  Gate Pass: {item.pass_type === 'leave' ? 'Leave' : 'Standard'}
+                                </Badge>
+                                <span className="text-[10px] text-muted-foreground mt-1 font-medium">{item.out_date} → {item.in_date}</span>
+                              </div>
+                            ) : (
+                              <Badge className={`${item.status === 'IN' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'} font-bold text-[9px] uppercase tracking-tighter`}>
+                                {item.status === 'IN' ? 'INSIDE' : 'OUTSIDE'}
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    });
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Feature Vision Overlay */}
       <Dialog open={isFeatureVisionOpen} onOpenChange={setIsFeatureVisionOpen}>
