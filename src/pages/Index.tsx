@@ -50,7 +50,7 @@ const loginOptions = [
   { value: "girls", label: "Girls", enabled: true, icon: Users },
   { value: "admin", label: "Admin", enabled: true, icon: ShieldCheck },
   { value: "warden", label: "Hostel Warden", enabled: true, icon: UserCircle },
-  { value: "watchman", label: "Gate Watchman", enabled: true, icon: ShieldCheck },
+  { value: "watchman", label: "Gatepass Security", enabled: true, icon: ShieldCheck },
   { value: "parent", label: "Parent", enabled: true, icon: Home },
 ];
 

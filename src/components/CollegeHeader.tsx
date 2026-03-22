@@ -73,6 +73,7 @@ const navigationLogins = [
   { label: "Hostel Warden", path: "/warden-login", icon: Shield, color: "text-orange-500" },
   { label: "College Admin", path: "/admin-login", icon: ShieldCheck, color: "text-red-500" },
   { label: "Parent Portal", path: "/parent-login", icon: GraduationCap, color: "text-green-500" },
+  { label: "Gatepass Security", path: "/watchman-login", icon: Shield, color: "text-emerald-500" },
 ];
 
 const CollegeHeader = () => {
@@ -233,7 +234,7 @@ const CollegeHeader = () => {
           </div>
 
           {/* Menu Button + Theme Toggle - Always available toggle, others conditional */}
-          <div className="flex flex-col items-center gap-1 sm:gap-2 flex-shrink-0 shrink-0">
+          <div className="flex flex-col items-center gap-1 sm:gap-2 flex-shrink-0 z-50">
             {/* Album Gallery Icon - Only on home page */}
             {isHomePage && (
               <div className="animate-in slide-in-from-right duration-700 delay-300">
@@ -241,8 +242,8 @@ const CollegeHeader = () => {
               </div>
             )}
 
-            {/* Theme Toggle Button Style - Always Available */}
-            <div className="bg-muted/50 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-primary/20 backdrop-blur-sm shadow-inner leading-none flex items-center justify-center">
+            {/* Theme Toggle Button Style - Enhanced visibility on mobile */}
+            <div className="bg-primary/5 dark:bg-muted/50 p-1 rounded-xl border border-primary/20 backdrop-blur-sm shadow-sm leading-none flex items-center justify-center min-w-[32px] min-h-[32px] sm:min-w-[40px] sm:min-h-[40px]">
               <ThemeToggle />
             </div>
 
