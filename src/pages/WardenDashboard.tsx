@@ -2195,7 +2195,7 @@ const WardenDashboard = () => {
 
       {/* Category List Dialog */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl border-2 border-primary/20 shadow-2xl p-0 overflow-hidden bg-card">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl border-2 border-primary/20 shadow-2xl p-0 bg-card">
           <DialogHeader className={`p-6 text-white bg-gradient-to-br ${selectedCategory?.color || 'from-primary to-primary/80'}`}>
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
@@ -2215,15 +2215,15 @@ const WardenDashboard = () => {
           </DialogHeader>
 
           <div className="p-6">
-            <div className="rounded-2xl border border-border overflow-hidden bg-muted/30">
+            <div className="rounded-2xl border border-border overflow-x-auto bg-muted/30">
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="font-bold uppercase text-[10px] tracking-widest px-6 py-4">Student Name</TableHead>
-                    <TableHead className="font-bold uppercase text-[10px] tracking-widest">Roll Number</TableHead>
-                    <TableHead className="font-bold uppercase text-[10px] tracking-widest">Branch</TableHead>
-                    <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center">Room</TableHead>
-                    <TableHead className="font-bold uppercase text-[10px] tracking-widest text-right px-6">Status</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest px-6 py-4 whitespace-nowrap">Student Name</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest whitespace-nowrap">Roll Number</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest whitespace-nowrap">Branch</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center whitespace-nowrap">Room</TableHead>
+                    <TableHead className="font-bold uppercase text-[10px] tracking-widest text-right px-6 whitespace-nowrap">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2258,7 +2258,7 @@ const WardenDashboard = () => {
                       const isGatePass = selectedCategory?.id === "activePasses";
                       return (
                         <TableRow key={index} className="hover:bg-primary/5 transition-colors group">
-                          <TableCell className="px-6 py-4">
+                          <TableCell className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                                 {item.student_name?.charAt(0)}
@@ -2268,10 +2268,10 @@ const WardenDashboard = () => {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-xs font-bold text-muted-foreground">
+                          <TableCell className="font-mono text-xs font-bold text-muted-foreground whitespace-nowrap">
                             {item.roll_number}
                           </TableCell>
-                          <TableCell className="text-xs font-semibold uppercase">
+                          <TableCell className="text-xs font-semibold uppercase whitespace-nowrap">
                             {item.branch || "-"}
                           </TableCell>
                           <TableCell className="text-center">
@@ -2279,16 +2279,16 @@ const WardenDashboard = () => {
                               {isGatePass ? (students.find(s => s.roll_number === item.roll_number)?.hostel_room_number || "N/A") : (item.hostel_room_number || "N/A")}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right px-6">
+                          <TableCell className="text-right px-6 whitespace-nowrap">
                             {isGatePass ? (
                               <div className="flex flex-col items-end">
-                                <Badge className="bg-amber-500 hover:bg-amber-600 font-bold text-[9px] uppercase tracking-tighter">
+                                <Badge className="bg-amber-500 hover:bg-amber-600 font-bold text-[9px] uppercase tracking-tighter whitespace-nowrap">
                                   Gate Pass: {item.pass_type === 'leave' ? 'Leave' : 'Standard'}
                                 </Badge>
-                                <span className="text-[10px] text-muted-foreground mt-1 font-medium">{item.out_date} → {item.in_date}</span>
+                                <span className="text-[10px] text-muted-foreground mt-1 font-medium whitespace-nowrap">{item.out_date} → {item.in_date}</span>
                               </div>
                             ) : (
-                              <Badge className={`${item.status === 'IN' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'} font-bold text-[9px] uppercase tracking-tighter`}>
+                              <Badge className={`${item.status === 'IN' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'} font-bold text-[9px] uppercase tracking-tighter whitespace-nowrap`}>
                                 {item.status === 'IN' ? 'INSIDE' : 'OUTSIDE'}
                               </Badge>
                             )}
