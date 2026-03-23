@@ -1,0 +1,22 @@
+node_modules
+dist
+.git
+.vscode
+.env
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+README.md
+Hostel Management System remarks.docx
+attendance_setup.sql
+issue_reporting_redesign.sql
+leave_extensions_setup.sql
+mandatory_images_setup.sql
+marks_setup.sql
+room_attendance_setup.sql
+supabase
+backend
+medical-alert-backend
