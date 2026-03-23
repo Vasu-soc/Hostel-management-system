@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import CollegeHeader from "@/components/CollegeHeader";
+import TerminalLoader from "@/components/TerminalLoader";
 import {
   ShieldCheck,
   Loader2,
@@ -60,6 +61,7 @@ const WatchmanDashboard = () => {
     const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
     const [activeView, setActiveView] = useState<"scanner" | "outList" | "history">("scanner");
     const [isPassDetailOpen, setIsPassDetailOpen] = useState(false);
+    const [showLoader, setShowLoader] = useState(true);
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isInitializing = useRef(false);
@@ -415,8 +417,14 @@ const WatchmanDashboard = () => {
     const isExitTime = studentDetails?.status === "IN" && passDetails?.status === "approved";
     const isEntryTime = studentDetails?.status === "OUT" && passDetails?.status === "approved" && passDetails?.exit_time;
 
+    if (!watchman) {
+      return <div className="min-h-screen bg-neutral-50 flex items-center justify-center">Loading...</div>;
+    }
+
     return (
-        <div className="min-h-screen bg-neutral-50 flex flex-col pb-10">
+        <>
+            {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+            <div className={`min-h-screen bg-neutral-50 flex flex-col pb-10 transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
             <CollegeHeader />
             
             <div className="bg-white border-b px-4 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
@@ -577,7 +585,7 @@ const WatchmanDashboard = () => {
                                     </div>
 
                                     <CardContent className="pt-8 px-6 pb-8 space-y-8">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="bg-neutral-50 p-5 rounded-[2rem] border border-neutral-100 shadow-inner">
                                                 <span className="text-[9px] uppercase tracking-[0.1em] font-black text-neutral-400 block mb-2 text-center">Authorization</span>
                                                 <Badge className={`
@@ -982,6 +990,7 @@ const WatchmanDashboard = () => {
                 </button>
             </div>
         </div>
+        </>
     );
 };
 

@@ -17,6 +17,7 @@ import { getParentSession, clearParentSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
+import TerminalLoader from "@/components/TerminalLoader";
 import PaymentPortal from "@/components/PaymentPortal";
 
 const WARDEN_CONTACT = "9553866278";
@@ -54,6 +55,7 @@ const ParentDashboard = () => {
   const [wardenSignature, setWardenSignature] = useState<string | null>(null);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
     const session = getParentSession();
@@ -363,7 +365,9 @@ const ParentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      <div className={`min-h-screen bg-background transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       {/* College Header */}
       <CollegeHeader />
 
@@ -830,6 +834,7 @@ const ParentDashboard = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

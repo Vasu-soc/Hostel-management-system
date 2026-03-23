@@ -40,6 +40,7 @@ import {
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
+import TerminalLoader from "@/components/TerminalLoader";
 import WardenApproval from "@/components/admin/WardenApproval";
 import UpdatesManagement from "@/components/UpdatesManagement";
 import { motion, AnimatePresence } from "framer-motion";
@@ -101,6 +102,7 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
   const [messCount, setMessCount] = useState<number>(0);
+  const [showLoader, setShowLoader] = useState(true);
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
@@ -367,8 +369,14 @@ const AdminDashboard = () => {
     return list;
   }, [allStudents, selectedBranch, selectedYear, searchQuery]);
 
+  if (!admin) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <>
+      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      <div className={`min-h-screen bg-background text-foreground transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       <CollegeHeader />
       
       <DashboardHeader
@@ -993,6 +1001,7 @@ const AdminDashboard = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

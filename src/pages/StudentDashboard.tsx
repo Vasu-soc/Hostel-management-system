@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardHeader from "@/components/DashboardHeader";
 import CollegeHeader from "@/components/CollegeHeader";
 import PaymentPortal from "@/components/PaymentPortal";
+import TerminalLoader from "@/components/TerminalLoader";
 import { gatePassSchema, issueReportSchema, formatValidationErrors } from "@/lib/validations";
 import { getStudentSession, clearStudentSession, StudentSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
@@ -95,6 +96,7 @@ const StudentDashboard = () => {
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "", email: "", address: "", zipCode: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(true);
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
   const [activePassType, setActivePassType] = useState<"gatepass" | "leave">("gatepass");
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -821,7 +823,9 @@ const StudentDashboard = () => {
   const genderLabel = gender === "boys" ? "Boys" : "Girls";
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      <div className={`min-h-screen bg-background transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       {isDefaultPassword && (
         <div className="bg-destructive text-destructive-foreground p-3 text-center text-sm font-bold animate-pulse sticky top-0 z-[100] flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4" />
@@ -1766,6 +1770,7 @@ const StudentDashboard = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

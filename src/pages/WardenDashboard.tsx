@@ -55,6 +55,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { localApi } from "@/lib/localStudentApi";
 import CollegeHeader from "@/components/CollegeHeader";
+import TerminalLoader from "@/components/TerminalLoader";
 import PendingRoomsDashboard from "@/components/warden/PendingRoomsDashboard";
 import HostelRoomDetails from "@/components/warden/HostelRoomDetails";
 import RoomAllotment from "@/components/warden/RoomAllotment";
@@ -98,6 +99,7 @@ type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotmen
 const WardenDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showLoader, setShowLoader] = useState(true);
 
   const [warden, setWarden] = useState<Warden | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -1270,7 +1272,9 @@ const WardenDashboard = () => {
   const overduePendingCount = overdueAlerts.filter(a => a.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      <div className={`min-h-screen bg-background transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       {/* College Header */}
       <CollegeHeader />
 
@@ -1314,7 +1318,7 @@ const WardenDashboard = () => {
       {/* Tab Navigation */}
       {/* Classic Navigation Bar */}
       <div className="sticky top-0 z-30 w-full bg-background/80 backdrop-blur-md border-b border-border transition-all">
-        <div className="container mx-auto px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar items-center justify-center">
+        <div className="container mx-auto px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar items-center justify-start sm:justify-center">
           {/* Master "All Features" Toggle with Hover Vision Preview */}
           <HoverCard openDelay={200}>
             <HoverCardTrigger asChild>
@@ -2925,6 +2929,7 @@ const WardenDashboard = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
