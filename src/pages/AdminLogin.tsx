@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ const AdminLogin = () => {
     username: "",
     password: "",
   });
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -201,6 +202,12 @@ const AdminLogin = () => {
                     onChange={(e) =>
                       setLoginData({ ...loginData, username: e.target.value })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        passwordRef.current?.focus();
+                      }
+                    }}
                     placeholder="Enter your username"
                     required
                     className="h-12"
@@ -213,6 +220,7 @@ const AdminLogin = () => {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
+                      ref={passwordRef}
                       value={loginData.password}
                       onChange={(e) =>
                         setLoginData({ ...loginData, password: e.target.value })

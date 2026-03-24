@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,7 @@ const StudentLogin = () => {
     rollNumber: "",
     password: "",
   });
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   // Register form
   const [registerData, setRegisterData] = useState({
@@ -832,6 +833,12 @@ const StudentLogin = () => {
                           const val = e.target.value.toUpperCase().replace(/\s/g, '').slice(0, 10);
                           setLoginData({ ...loginData, rollNumber: val });
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            passwordRef.current?.focus();
+                          }
+                        }}
                         className="h-12"
                       />
                     </div>
@@ -843,6 +850,7 @@ const StudentLogin = () => {
                           id="password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
+                          ref={passwordRef}
                           value={loginData.password}
                           onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                           className="h-12 pr-10"

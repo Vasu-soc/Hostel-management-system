@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ const WardenLogin = () => {
     username: "",
     password: "",
   });
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   // Register form
   const [registerData, setRegisterData] = useState({
@@ -333,6 +334,12 @@ const WardenLogin = () => {
                     placeholder="Enter your username"
                     value={loginData.username}
                     onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        passwordRef.current?.focus();
+                      }
+                    }}
                     className="h-12"
                   />
                 </div>
@@ -344,6 +351,7 @@ const WardenLogin = () => {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      ref={passwordRef}
                       value={loginData.password}
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                       className="h-12 pr-10"

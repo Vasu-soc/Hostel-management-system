@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ const ParentLogin = () => {
     mobileNumber: "",
     password: "",
   });
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   // Register form
   const [registerData, setRegisterData] = useState({
@@ -394,6 +395,12 @@ const ParentLogin = () => {
                       placeholder="Enter 10-digit mobile number"
                       value={loginData.mobileNumber}
                       onChange={(e) => setLoginData({ ...loginData, mobileNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          passwordRef.current?.focus();
+                        }
+                      }}
                       className="h-12"
                       maxLength={10}
                     />
@@ -406,6 +413,7 @@ const ParentLogin = () => {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Enter your password"
+                        ref={passwordRef}
                         value={loginData.password}
                         onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                         className="h-12 pr-10"
