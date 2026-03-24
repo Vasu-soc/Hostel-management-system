@@ -99,7 +99,7 @@ type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotmen
 const WardenDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
 
   const [warden, setWarden] = useState<Warden | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -688,7 +688,7 @@ const WardenDashboard = () => {
       logger.info("warden_logout", warden.username, "success");
     }
     clearWardenSession();
-    navigate("/warden-login");
+    navigate("/");
   };
 
   const handleApplicationAction = async (applicationId: string, initialAction: "accepted" | "rejected") => {
@@ -1273,7 +1273,10 @@ const WardenDashboard = () => {
 
   return (
     <>
-      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      {showLoader && <TerminalLoader onComplete={() => {
+        setShowLoader(false);
+        sessionStorage.removeItem("show_terminal_loader");
+      }} />}
       <div className={`min-h-screen bg-background transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       {/* College Header */}
       <CollegeHeader />

@@ -196,6 +196,7 @@ const ParentLogin = () => {
       // Use secure session management (no password stored)
       resetAttempts();
       setParentSession(parent as Record<string, unknown>);
+      sessionStorage.setItem("show_terminal_loader", "true");
       logger.info("parent_login", loginData.mobileNumber, "success");
       navigate("/parent-dashboard");
     } catch (error: unknown) {

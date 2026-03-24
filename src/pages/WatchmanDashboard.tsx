@@ -61,11 +61,16 @@ const WatchmanDashboard = () => {
     const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
     const [activeView, setActiveView] = useState<"scanner" | "outList" | "history">("scanner");
     const [isPassDetailOpen, setIsPassDetailOpen] = useState(false);
-    const [showLoader, setShowLoader] = useState(true);
+    const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isInitializing = useRef(false);
     const stopInProgress = useRef(false);
+    const activeViewRef = useRef(activeView);
+
+    useEffect(() => {
+        activeViewRef.current = activeView;
+    }, [activeView]);
 
     const initScanner = async () => {
          if (isScanning && !isInitializing.current) {
@@ -93,7 +98,9 @@ const WatchmanDashboard = () => {
                  }
 
                  if (!readerElement) {
-                     setCameraError("Camera preview area failed to load. Please refresh.");
+                     if (activeViewRef.current === "scanner") {
+                        setCameraError("Camera preview area failed to load. Please refresh.");
+                     }
                      isInitializing.current = false;
                      return;
                  }
@@ -213,24 +220,37 @@ const WatchmanDashboard = () => {
         }
         setWatchman(session);
 
-        const timer = setTimeout(() => {
-            initScanner();
-        }, 1500); // Increased delay for mobile browser stabilization
+        let timer: any;
+        if (activeView === "scanner" && isScanning) {
+            // Give the DOM a moment to render the #reader element
+            timer = setTimeout(() => {
+                initScanner();
+            }, 1000);
+        }
 
         fetchOutStudents();
         fetchHistory();
 
         return () => {
-            clearTimeout(timer);
+            if (timer) clearTimeout(timer);
+            
+            // Cleanup scanner when view changes or component unmounts
             if (scannerRef.current && scannerRef.current.isScanning && !stopInProgress.current) {
                 stopInProgress.current = true;
-                scannerRef.current.stop().finally(() => {
+                const currentScanner = scannerRef.current;
+                currentScanner.stop().finally(() => {
                     stopInProgress.current = false;
                     setIsCameraActive(false);
-                }).catch(() => {});
+                }).catch((err) => {
+                    console.warn("Error stopping scanner in cleanup:", err);
+                    stopInProgress.current = false;
+                    setIsCameraActive(false);
+                });
+            } else {
+                setIsCameraActive(false);
             }
         };
-    }, [isScanning, facingMode]);
+    }, [isScanning, facingMode, activeView, navigate]);
 
     const toggleCamera = () => {
         setFacingMode(prev => prev === "environment" ? "user" : "environment");
@@ -411,7 +431,7 @@ const WatchmanDashboard = () => {
 
     const handleLogout = () => {
         clearWatchmanSession();
-        navigate("/watchman-login");
+        navigate("/");
     };
 
     const isExitTime = studentDetails?.status === "IN" && passDetails?.status === "approved";
@@ -423,7 +443,10 @@ const WatchmanDashboard = () => {
 
     return (
         <>
-            {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+            {showLoader && <TerminalLoader onComplete={() => {
+                setShowLoader(false);
+                sessionStorage.removeItem("show_terminal_loader");
+            }} />}
             <div className={`min-h-screen bg-neutral-50 flex flex-col pb-10 transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
             <CollegeHeader />
             

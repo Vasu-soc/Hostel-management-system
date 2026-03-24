@@ -150,6 +150,7 @@ const AdminLogin = () => {
       // Use secure session management (no password stored)
       resetAttempts();
       setAdminSession(admin as Record<string, unknown>);
+      sessionStorage.setItem("show_terminal_loader", "true");
       logger.info("admin_login", loginData.username, "success");
       toast({
         title: "Login Successful",

@@ -55,7 +55,7 @@ const ParentDashboard = () => {
   const [wardenSignature, setWardenSignature] = useState<string | null>(null);
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
 
   useEffect(() => {
     const session = getParentSession();
@@ -366,7 +366,10 @@ const ParentDashboard = () => {
 
   return (
     <>
-      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      {showLoader && <TerminalLoader onComplete={() => {
+        setShowLoader(false);
+        sessionStorage.removeItem("show_terminal_loader");
+      }} />}
       <div className={`min-h-screen bg-background transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       {/* College Header */}
       <CollegeHeader />

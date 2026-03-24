@@ -202,6 +202,7 @@ const WardenLogin = () => {
       // Use secure session management (no password stored)
       resetAttempts();
       setWardenSession(warden as Record<string, unknown>);
+      sessionStorage.setItem("show_terminal_loader", "true");
       logger.info("warden_login", loginData.username, "success");
       navigate("/warden-dashboard");
     } catch (error: any) {

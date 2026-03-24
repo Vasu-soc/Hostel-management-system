@@ -96,7 +96,7 @@ const StudentDashboard = () => {
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ rollNumber: "", password: "", email: "", address: "", zipCode: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
   const [activePassType, setActivePassType] = useState<"gatepass" | "leave">("gatepass");
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -824,7 +824,10 @@ const StudentDashboard = () => {
 
   return (
     <>
-      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      {showLoader && <TerminalLoader onComplete={() => {
+        setShowLoader(false);
+        sessionStorage.removeItem("show_terminal_loader");
+      }} />}
       <div className={`min-h-screen bg-background transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       {isDefaultPassword && (
         <div className="bg-destructive text-destructive-foreground p-3 text-center text-sm font-bold animate-pulse sticky top-0 z-[100] flex items-center justify-center gap-2">

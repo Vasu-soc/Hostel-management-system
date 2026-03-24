@@ -53,6 +53,7 @@ const WatchmanLogin = () => {
             } else {
                 resetAttempts();
                 setWatchmanSession(data);
+                sessionStorage.setItem("show_terminal_loader", "true");
                 toast({ title: "Welcome back!", description: `Logged in as ${data.name}` });
                 navigate("/watchman-dashboard");
             }

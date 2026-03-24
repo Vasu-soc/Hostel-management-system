@@ -325,6 +325,7 @@ const StudentLogin = () => {
         photo_url: null,
       };
       setStudentSession(dummyStudent);
+      sessionStorage.setItem("show_terminal_loader", "true");
       logger.info("login", "VASU", "success");
       toast({
         title: "Logged in with Dummy Account",
@@ -418,6 +419,7 @@ const StudentLogin = () => {
       // Use secure session management (no password stored)
       resetAttempts();
       setStudentSession(student as Record<string, unknown>);
+      sessionStorage.setItem("show_terminal_loader", "true");
       logger.info("login", loginData.rollNumber, "success");
       navigate(`/student-dashboard?gender=${gender}`);
     } catch (error: unknown) {
@@ -459,7 +461,7 @@ const StudentLogin = () => {
 
       // Use secure session management (no password stored)
       setStudentSession(studentForPassword);
-
+      sessionStorage.setItem("show_terminal_loader", "true");
       logger.info("password_setup", studentForPassword.roll_number as string, "success");
       toast({
         title: "Password Set Successfully!",

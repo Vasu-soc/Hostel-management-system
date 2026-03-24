@@ -102,7 +102,7 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
   const [messCount, setMessCount] = useState<number>(0);
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
@@ -344,7 +344,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     clearAdminSession();
-    navigate("/admin-login");
+    navigate("/");
   };
 
   const filteredStudents = useMemo(() => {
@@ -375,7 +375,10 @@ const AdminDashboard = () => {
 
   return (
     <>
-      {showLoader && <TerminalLoader onComplete={() => setShowLoader(false)} />}
+      {showLoader && <TerminalLoader onComplete={() => {
+        setShowLoader(false);
+        sessionStorage.removeItem("show_terminal_loader");
+      }} />}
       <div className={`min-h-screen bg-background text-foreground transition-all duration-700 ${showLoader ? "pointer-events-none select-none opacity-60" : ""}`}>
       <CollegeHeader />
       
