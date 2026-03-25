@@ -32,7 +32,7 @@ import roomFourNew from "@/assets/room-four-new.png";
 import roomDormNew from "@/assets/room-dorm-new.png";
 import { Badge } from "@/components/ui/badge";
 
-import { BRANCHES } from "@/lib/constants";
+import { BRANCHES, COURSES, getBranchesByCourse } from "@/lib/constants";
 
 const roomTypes = [
   {
@@ -142,6 +142,7 @@ const HostelApplication = () => {
   const [formData, setFormData] = useState({
     studentName: "",
     fatherName: "",
+    course: "",
     branch: "",
     gender: initialGender === "boy" || initialGender === "girl" ? initialGender : "",
     email: "",
@@ -488,13 +489,37 @@ const HostelApplication = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="branch">Branch *</Label>
-                    <Select onValueChange={(value) => handleInputChange("branch", value)}>
+                    <Label htmlFor="course">Course *</Label>
+                    <Select onValueChange={(value) => {
+                      handleInputChange("course", value);
+                      handleInputChange("branch", ""); // Reset branch when course changes
+                    }}>
                       <SelectTrigger className="h-12 bg-background">
-                        <SelectValue placeholder="Select your branch..." />
+                        <SelectValue placeholder="Select your course..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-2 border-border z-50">
+                        {COURSES.map((course) => (
+                          <SelectItem key={course.value} value={course.value}>
+                            {course.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Branch *</Label>
+                    <Select 
+                      key={formData.course} // Force re-render when course changes
+                      value={formData.branch}
+                      onValueChange={(value) => handleInputChange("branch", value)}
+                      disabled={!formData.course}
+                    >
+                      <SelectTrigger className="h-12 bg-background">
+                        <SelectValue placeholder={formData.course ? "Select your branch..." : "Select course first..."} />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-2 border-border z-50 max-h-60">
-                        {BRANCHES.map((branch) => (
+                        {getBranchesByCourse(formData.course).map((branch) => (
                           <SelectItem key={branch.value} value={branch.value}>
                             {branch.label}
                           </SelectItem>

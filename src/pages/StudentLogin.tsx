@@ -27,7 +27,7 @@ import { localApi } from "@/lib/localStudentApi";
 import { logger } from "@/lib/logger";
 import { useRateLimit } from "@/hooks/useRateLimit";
 
-import { BRANCHES } from "@/lib/constants";
+import { BRANCHES, COURSES, getBranchesByCourse } from "@/lib/constants";
 
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 const floors = ["1", "2", "3"];
@@ -70,6 +70,7 @@ const StudentLogin = () => {
 
   // Register form
   const [registerData, setRegisterData] = useState({
+    course: "",
     branch: "",
     rollNumber: "",
     studentName: "",
@@ -987,13 +988,31 @@ const StudentLogin = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="branch">Branch *</Label>
-                        <Select onValueChange={(value) => setRegisterData({ ...registerData, branch: value })} value={registerData.branch}>
+                        <Label htmlFor="course">Course *</Label>
+                        <Select onValueChange={(value) => setRegisterData({ ...registerData, course: value, branch: "" })} value={registerData.course}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select Branch" />
+                            <SelectValue placeholder="Select Course" />
                           </SelectTrigger>
                           <SelectContent>
-                            {BRANCHES.map((b) => (
+                            {COURSES.map((c) => (
+                              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="branch">Branch *</Label>
+                        <Select 
+                          disabled={!registerData.course}
+                          onValueChange={(value) => setRegisterData({ ...registerData, branch: value })} 
+                          value={registerData.branch}
+                          key={registerData.course}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={registerData.course ? "Select Branch" : "Select course first"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getBranchesByCourse(registerData.course).map((b) => (
                               <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                             ))}
                           </SelectContent>

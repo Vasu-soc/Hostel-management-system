@@ -85,7 +85,7 @@ interface Room {
   pending_beds: number;
 }
 
-import { BRANCHES, getBranchImage } from "@/lib/constants";
+import { BRANCHES, COURSES, getBranchesByCourse, getBranchImage } from "@/lib/constants";
 const branches = BRANCHES.map(b => b.value.toUpperCase());
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
@@ -93,7 +93,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [admin, setAdmin] = useState<Admin | null>(null);
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [selectedCourse, setSelectedCourse] = useState<string>("all_courses");
+  const [selectedBranch, setSelectedBranch] = useState<string>("all_branches");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -547,13 +548,36 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-bold px-1">Quick Search</h3>
                   <Card className="p-6">
                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <div className="space-y-2">
+                              <label className="text-sm font-medium">Course</label>
+                              <Select value={selectedCourse} onValueChange={(val) => {
+                                setSelectedCourse(val);
+                                setSelectedBranch("all_branches");
+                              }}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select Course" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all_courses">All Courses</SelectItem>
+                                  {COURSES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                           </div>
                            <div className="space-y-2">
                               <label className="text-sm font-medium">Branch</label>
-                              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="Select Branch" /></SelectTrigger>
+                              <Select 
+                                value={selectedBranch} 
+                                onValueChange={setSelectedBranch}
+                                disabled={selectedCourse === "all_courses"}
+                                key={selectedCourse}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder={selectedCourse === "all_courses" ? "All Branches" : "Select Branch"} />
+                                </SelectTrigger>
                                 <SelectContent>
-                                  {BRANCHES.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+                                   <SelectItem value="all_branches">All Branches</SelectItem>
+                                   {getBranchesByCourse(selectedCourse).map(b => (
+                                     <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                                   ))}
                                 </SelectContent>
                               </Select>
                            </div>
@@ -640,14 +664,37 @@ const AdminDashboard = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-border/50">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Filter by Branch</Label>
-                      <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Filter by Course</Label>
+                      <Select value={selectedCourse} onValueChange={(val) => {
+                        setSelectedCourse(val);
+                        setSelectedBranch("all_branches");
+                      }}>
                         <SelectTrigger className="h-10">
-                          <SelectValue placeholder="All Branches" />
+                          <SelectValue placeholder="All Courses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_courses">All Courses</SelectItem>
+                          {COURSES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Filter by Branch</Label>
+                      <Select 
+                        value={selectedBranch} 
+                        onValueChange={setSelectedBranch}
+                        disabled={selectedCourse === "all_courses"}
+                        key={selectedCourse}
+                      >
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder={selectedCourse === "all_courses" ? "All Branches" : "All Branches"} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all_branches">All Branches</SelectItem>
-                          {BRANCHES.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+                          {getBranchesByCourse(selectedCourse).map(b => (
+                            <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

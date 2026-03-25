@@ -24,7 +24,7 @@ interface StudyMaterialUploadProps {
   onRefresh: () => void;
 }
 
-import { BRANCHES } from "@/lib/constants";
+import { BRANCHES, COURSES, getBranchesByCourse } from "@/lib/constants";
 
 const years = [
   { value: "1st Year", label: "1st Year" },
@@ -35,6 +35,7 @@ const years = [
 
 const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUploadProps) => {
   const { toast } = useToast();
+  const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [subjectName, setSubjectName] = useState("");
@@ -43,7 +44,7 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
   const [isUploading, setIsUploading] = useState(false);
 
   const handleUpload = async () => {
-    if (!selectedBranch || !selectedYear || !subjectName) {
+    if (!selectedCourse || !selectedBranch || !selectedYear || !subjectName) {
       toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
       return;
     }
@@ -114,6 +115,7 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
       }
 
       toast({ title: "Success", description: "Study material processed successfully!" });
+      setSelectedCourse("");
       setSelectedBranch("");
       setSelectedYear("");
       setSubjectName("");
@@ -160,16 +162,36 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Select Branch *</Label>
-            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+            <Label>Select Course *</Label>
+            <Select value={selectedCourse} onValueChange={(val) => {
+              setSelectedCourse(val);
+              setSelectedBranch("");
+            }}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose branch" />
+                <SelectValue placeholder="Choose course" />
               </SelectTrigger>
               <SelectContent>
-                {BRANCHES.map((branch) => (
-                  <SelectItem key={branch.value} value={branch.value}>
-                    {branch.label}
-                  </SelectItem>
+                {COURSES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Select Branch *</Label>
+            <Select 
+              value={selectedBranch} 
+              onValueChange={setSelectedBranch}
+              disabled={!selectedCourse}
+              key={selectedCourse}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={selectedCourse ? "Choose branch" : "Choose course first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {getBranchesByCourse(selectedCourse).map((b) => (
+                  <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -228,7 +250,7 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
             </div>
           </div>
 
-          <Button onClick={handleUpload} disabled={isUploading} className="w-full">
+          <Button onClick={handleUpload} disabled={isUploading || !selectedCourse || !selectedBranch || !selectedYear || !subjectName} className="w-full">
             <Upload className="w-4 h-4 mr-2" />
             {isUploading ? "Uploading..." : "Upload Material"}
           </Button>

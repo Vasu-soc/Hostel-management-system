@@ -22,7 +22,7 @@ interface BranchMarksUploadProps {
   wardenId: string;
 }
 
-import { BRANCHES } from "@/lib/constants";
+import { BRANCHES, COURSES, getBranchesByCourse } from "@/lib/constants";
 
 const years = [
   { value: "1st Year", label: "1st Year" },
@@ -34,6 +34,7 @@ const years = [
 const BranchMarksUpload = ({ wardenId }: BranchMarksUploadProps) => {
   const { toast } = useToast();
   const [marks, setMarks] = useState<BranchMark[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [title, setTitle] = useState("");
@@ -63,7 +64,7 @@ const BranchMarksUpload = ({ wardenId }: BranchMarksUploadProps) => {
   }, []);
 
   const handleUpload = async () => {
-    if (!selectedBranch || !selectedYear || !title || !date || !file) {
+    if (!selectedCourse || !selectedBranch || !selectedYear || !title || !date || !file) {
       toast({ title: "Error", description: "Please fill all required fields and upload a PDF file", variant: "destructive" });
       return;
     }
@@ -129,6 +130,7 @@ const BranchMarksUpload = ({ wardenId }: BranchMarksUploadProps) => {
 
       toast({ title: "Success", description: "Marks uploaded successfully!" });
       
+      setSelectedCourse("");
       setSelectedBranch("");
       setSelectedYear("");
       setTitle("");
@@ -171,13 +173,35 @@ const BranchMarksUpload = ({ wardenId }: BranchMarksUploadProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Select Branch *</Label>
-            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+            <Label>Select Course *</Label>
+            <Select value={selectedCourse} onValueChange={(val) => {
+              setSelectedCourse(val);
+              setSelectedBranch("");
+            }}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose branch" />
+                <SelectValue placeholder="Choose course" />
               </SelectTrigger>
               <SelectContent>
-                {BRANCHES.map((b) => (
+                {COURSES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Select Branch *</Label>
+            <Select 
+              value={selectedBranch} 
+              onValueChange={setSelectedBranch}
+              disabled={!selectedCourse}
+              key={selectedCourse}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={selectedCourse ? "Choose branch" : "Choose course first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {getBranchesByCourse(selectedCourse).map((b) => (
                   <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -228,7 +252,7 @@ const BranchMarksUpload = ({ wardenId }: BranchMarksUploadProps) => {
             <p className="text-xs text-muted-foreground">Max 10MB. PDF format only.</p>
           </div>
 
-          <Button onClick={handleUpload} disabled={isUploading || !selectedBranch || !selectedYear || !title || !date || !file} className="w-full">
+          <Button onClick={handleUpload} disabled={isUploading || !selectedCourse || !selectedBranch || !selectedYear || !title || !date || !file} className="w-full">
             <Upload className="w-4 h-4 mr-2" />
             {isUploading ? "Uploading..." : "Upload Marks"}
           </Button>
