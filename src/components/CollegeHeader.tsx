@@ -237,114 +237,129 @@ const CollegeHeader = () => {
           <div className="flex flex-col items-center gap-1 sm:gap-2 flex-shrink-0 z-50">
             {/* Album Gallery Icon - Only on home page */}
             {isHomePage && (
-              <div className="animate-in slide-in-from-right duration-700 delay-300">
+              <motion.div 
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
+              >
                 <HostelAlbumGallery />
-              </div>
+              </motion.div>
             )}
 
             {/* Theme Toggle Button Style - Enhanced visibility on mobile */}
-            <div className="bg-primary/5 dark:bg-muted/50 p-1 rounded-xl border border-primary/20 backdrop-blur-sm shadow-sm leading-none flex items-center justify-center min-w-[32px] min-h-[32px] sm:min-w-[40px] sm:min-h-[40px]">
+            <motion.div 
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+              className="bg-primary/5 dark:bg-muted/50 p-1 rounded-xl border border-primary/20 backdrop-blur-sm shadow-sm leading-none flex items-center justify-center min-w-[32px] min-h-[32px] sm:min-w-[40px] sm:min-h-[40px]"
+            >
               <ThemeToggle />
-            </div>
+            </motion.div>
 
             {/* Unique Styled Menu Button - Only on home page */}
             {isHomePage && (
-              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/25 border-b-[2px] sm:border-b-4 border-primary-foreground/20"
-                    aria-label="Open menu"
+              <motion.div
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+              >
+                <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/25 border-b-[2px] sm:border-b-4 border-primary-foreground/20"
+                      aria-label="Open menu"
+                    >
+                      <Menu className="h-4 w-4 sm:h-6 sm:w-6" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="right"
+                    className="w-[85vw] sm:w-[400px] border-l-2 border-primary/20 bg-card/95 backdrop-blur-xl p-0 overflow-hidden"
+                    aria-describedby={undefined}
                   >
-                    <Menu className="h-4 w-4 sm:h-6 sm:w-6" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="right"
-                  className="w-[85vw] sm:w-[400px] border-l-2 border-primary/20 bg-card/95 backdrop-blur-xl p-0 overflow-hidden"
-                  aria-describedby={undefined}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
-                  <SheetHeader className="p-6 border-b border-primary/10 bg-muted/30 relative">
-                    <SheetTitle className="flex items-center gap-3 text-2xl font-black italic text-primary">
-                      <div className="p-2 bg-primary rounded-xl text-primary-foreground">
-                        <UserPlus className="w-6 h-6" />
-                      </div>
-                      JOIN HOSTEL
-                    </SheetTitle>
-                    <SheetDescription className="sr-only">
-                      Access quick links to join the hostel and manage your account.
-                    </SheetDescription>
-                  </SheetHeader>
+                    <SheetHeader className="p-6 border-b border-primary/10 bg-muted/30 relative">
+                      <SheetTitle className="flex items-center gap-3 text-2xl font-black italic text-primary">
+                        <div className="p-2 bg-primary rounded-xl text-primary-foreground">
+                          <UserPlus className="w-6 h-6" />
+                        </div>
+                        JOIN HOSTEL
+                      </SheetTitle>
+                      <SheetDescription className="sr-only">
+                        Access quick links to join the hostel and manage your account.
+                      </SheetDescription>
+                    </SheetHeader>
 
-                  <div className="p-6">
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 gap-3">
-                        <button
-                          onClick={() => {
-                            setMenuOpen(false);
-                            setBedsDialogOpen(true);
-                          }}
-                          className="group text-left"
-                        >
-                          <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-card hover:border-orange-500/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                            <div className={`p-3 rounded-xl bg-card shadow-sm group-hover:bg-orange-500 group-hover:scale-110 transition-all duration-300`}>
-                              <Bed className={`w-6 h-6 text-orange-500 group-hover:text-white`} />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-lg group-hover:text-orange-600 transition-colors uppercase italic tracking-wider">Beds Availability</span>
-                              <span className="text-xs text-muted-foreground font-medium">Check floor-wise live status</span>
-                            </div>
-                            <div className="ml-auto opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                              <Layers className="w-5 h-5 text-orange-500" />
-                            </div>
-                          </div>
-                        </button>
-                        {loginOptions.map((option) => (
-                          <Link
-                            key={option.path}
-                            to={option.path}
-                            onClick={() => setMenuOpen(false)}
-                            className="group"
+                    <div className="p-6">
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 gap-3">
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setBedsDialogOpen(true);
+                            }}
+                            className="group text-left"
                           >
-                            <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-card hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                              <div className={`p-3 rounded-xl bg-card shadow-sm group-hover:bg-primary group-hover:scale-110 transition-all duration-300`}>
-                                <option.icon className={`w-6 h-6 ${option.color} group-hover:text-primary-foreground`} />
+                            <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-card hover:border-orange-500/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                              <div className={`p-3 rounded-xl bg-card shadow-sm group-hover:bg-orange-500 group-hover:scale-110 transition-all duration-300`}>
+                                <Bed className={`w-6 h-6 text-orange-500 group-hover:text-white`} />
                               </div>
                               <div className="flex flex-col">
-                                <span className="font-bold text-lg group-hover:text-primary transition-colors">{option.label}</span>
-                                <span className="text-xs text-muted-foreground font-medium">Create your new account</span>
+                                <span className="font-bold text-lg group-hover:text-orange-600 transition-colors uppercase italic tracking-wider">Beds Availability</span>
+                                <span className="text-xs text-muted-foreground font-medium">Check floor-wise live status</span>
                               </div>
                               <div className="ml-auto opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                                <UserPlus className="w-5 h-5 text-primary" />
+                                <Layers className="w-5 h-5 text-orange-500" />
                               </div>
-                              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform duration-500 group-hover:scale-150" />
                             </div>
-                          </Link>
-                        ))}
-                      </div>
+                          </button>
+                          {loginOptions.map((option) => (
+                            <Link
+                              key={option.path}
+                              to={option.path}
+                              onClick={() => setMenuOpen(false)}
+                              className="group"
+                            >
+                              <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-card hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                                <div className={`p-3 rounded-xl bg-card shadow-sm group-hover:bg-primary group-hover:scale-110 transition-all duration-300`}>
+                                  <option.icon className={`w-6 h-6 ${option.color} group-hover:text-primary-foreground`} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-lg group-hover:text-primary transition-colors">{option.label}</span>
+                                  <span className="text-xs text-muted-foreground font-medium">Create your new account</span>
+                                </div>
+                                <div className="ml-auto opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                                  <UserPlus className="w-5 h-5 text-primary" />
+                                </div>
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform duration-500 group-hover:scale-150" />
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
 
-                      {/* Mobile Footer Spacing */}
-                      <div className="h-20 md:hidden" />
+                        {/* Mobile Footer Spacing */}
+                        <div className="h-20 md:hidden" />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Enhanced Footer Toggle */}
-                  <div className="absolute bottom-0 left-0 right-0 p-8 border-t border-primary/10 bg-muted/50">
-                    <div className="flex items-center justify-between p-4 bg-card rounded-2xl border border-primary/10 shadow-sm">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-primary italic">Visual Mode</span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Customize Experience</span>
-                      </div>
-                      <div className="scale-110">
-                        <ThemeToggle />
+                    {/* Enhanced Footer Toggle */}
+                    <div className="absolute bottom-0 left-0 right-0 p-8 border-t border-primary/10 bg-muted/50">
+                      <div className="flex items-center justify-between p-4 bg-card rounded-2xl border border-primary/10 shadow-sm">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-primary italic">Visual Mode</span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Customize Experience</span>
+                        </div>
+                        <div className="scale-110">
+                          <ThemeToggle />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                  </SheetContent>
+                </Sheet>
+              </motion.div>
             )}
           </div>
         </div>

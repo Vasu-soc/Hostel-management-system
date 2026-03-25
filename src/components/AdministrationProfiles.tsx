@@ -46,7 +46,11 @@ const profiles = [
     },
 ];
 
-const AdministrationProfiles = () => {
+interface AdministrationProfilesProps {
+    onImageClick?: (src: string) => void;
+}
+
+const AdministrationProfiles = ({ onImageClick }: AdministrationProfilesProps) => {
     return (
         <section className="py-12 bg-transparent overflow-hidden">
             <div className="container mx-auto px-4 mb-8 text-center">
@@ -77,13 +81,21 @@ const AdministrationProfiles = () => {
                                     {/* Background Decor */}
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8 blur-2xl group-hover/card:bg-primary/10 transition-colors"></div>
 
-                                    {/* Image Container */}
-                                    <div className="relative mb-4 mx-auto w-32 h-40 rounded-2xl overflow-hidden border-4 border-white shadow-lg rotate-1 group-hover/card:rotate-0 transition-transform duration-500">
+                                    {/* Image Container with Zoom Trigger */}
+                                    <div 
+                                        className="relative mb-4 mx-auto w-32 h-40 rounded-2xl overflow-hidden border-4 border-white shadow-lg rotate-1 group-hover/card:rotate-0 group-hover/card:scale-110 transition-all duration-500 cursor-zoom-in group-hover/card:ring-4 group-hover/card:ring-primary/20"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onImageClick?.(profile.image);
+                                        }}
+                                    >
                                         <img
                                             src={profile.image}
                                             alt={profile.name}
-                                            className="w-full h-full object-cover transform scale-105 group-hover/card:scale-100 transition-transform duration-700"
+                                            className="w-full h-full object-cover transform scale-105 group-hover/card:scale-110 transition-transform duration-700"
                                         />
+                                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
                                         <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl"></div>
                                     </div>
 

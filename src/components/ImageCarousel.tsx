@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Maximize2 } from "lucide-react";
 import carousel1 from "@/assets/carousel-1.jpg";
 import carousel2 from "@/assets/carousel-2.jpg";
 import carousel3 from "@/assets/carousel-3.jpg";
@@ -44,7 +45,11 @@ const preloadImages = () => {
 // Execute preload immediately on module load
 preloadImages();
 
-const ImageCarousel = () => {
+interface ImageCarouselProps {
+  onImageClick?: (src: string) => void;
+}
+
+const ImageCarousel = ({ onImageClick }: ImageCarouselProps) => {
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
@@ -88,41 +93,60 @@ const ImageCarousel = () => {
         {images.map((img, idx) => (
           <div
             key={`first-${idx}`}
-            className="carousel-item"
+            className="carousel-item group cursor-zoom-in relative"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onImageClick?.(img);
+            }}
           >
             <img
               src={img}
               alt={`Hostel view ${idx + 1}`}
               loading="eager"
               decoding="async"
-              className="w-full h-full object-cover rounded-xl"
+              className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
               style={{
                 boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
               }}
             />
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl pointer-events-none">
+              <Maximize2 className="text-white w-10 h-10 drop-shadow-lg" />
+            </div>
           </div>
         ))}
         {/* Duplicate set for seamless infinite loop */}
         {images.map((img, idx) => (
           <div
             key={`second-${idx}`}
-            className="carousel-item"
+            className="carousel-item group cursor-zoom-in relative"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onImageClick?.(img);
+            }}
           >
             <img
               src={img}
               alt={`Hostel view ${idx + 1}`}
               loading="eager"
               decoding="async"
-              className="w-full h-full object-cover rounded-xl"
+              className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
               style={{
                 boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
               }}
             />
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl pointer-events-none">
+              <Maximize2 className="text-white w-10 h-10 drop-shadow-lg" />
+            </div>
           </div>
         ))}
       </div>
+
     </section>
   );
 };
 
 export default ImageCarousel;
+
+

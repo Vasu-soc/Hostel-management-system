@@ -131,7 +131,7 @@ const HostelAlbumGallery = () => {
           ) : (
             <div className="space-y-12 pb-10">
               {albums.map((album) => (
-                <div key={album.id} className="space-y-4 animate-in fade-in slide-in-from-bottom-5 duration-700">
+                <div key={album.id} className="space-y-4 animate-in fade-in slide-in-from-left-10 duration-700">
                   <div className="flex items-baseline justify-between border-b border-primary/10 pb-2">
                     <h3 className="text-xl font-black text-foreground flex items-center gap-2">
                       <span className="w-2 h-8 bg-primary rounded-full mr-1"></span>

@@ -30,6 +30,8 @@ import {
   AlertCircle,
   BookOpen,
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { X } from "lucide-react";
 import CollegeHeader from "@/components/CollegeHeader";
 import ImageCarousel from "@/components/ImageCarousel";
 import FoodMenu from "@/components/FoodMenu";
@@ -79,6 +81,7 @@ const Index = () => {
   const [selectedMedicine, setSelectedMedicine] = useState<string>("");
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMedicines();
@@ -150,11 +153,39 @@ const Index = () => {
   const selectedMedicineData = medicines.find(m => m.name === selectedMedicine);
 
   return (
-    <div className="min-h-screen grid-motion-bg">
+    <div className="min-h-screen grid-motion-bg overflow-x-hidden">
       <CollegeHeader />
 
-      {/* Image Carousel Section */}
-      <ImageCarousel />
+      {/* Image Carousel Section - Entrance animation added */}
+      <motion.div
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <ImageCarousel onImageClick={setSelectedImage} />
+      </motion.div>
+
+      {/* Fullscreen Lightbox - Triggered from Home Page level */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300 pointer-events-auto"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 z-[1010] h-12 w-12 rounded-full bg-white/10 hover:bg-destructive text-white flex items-center justify-center transition-all duration-300 shadow-2xl"
+            onClick={() => setSelectedImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <img 
+            src={selectedImage} 
+            alt="Hostel view zoomed" 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-[0_0_50px_rgba(255,165,0,0.3)] animate-in zoom-in-95 duration-500"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="relative z-10 container mx-auto px-4 py-8 md:py-12">
@@ -172,7 +203,7 @@ const Index = () => {
         <UpdatesDisplay />
 
         {/* Administration Profiles Section */}
-        <AdministrationProfiles />
+        <AdministrationProfiles onImageClick={setSelectedImage} />
 
         {/* Three Main Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
