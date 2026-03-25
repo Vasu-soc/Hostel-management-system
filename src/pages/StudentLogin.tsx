@@ -27,16 +27,7 @@ import { localApi } from "@/lib/localStudentApi";
 import { logger } from "@/lib/logger";
 import { useRateLimit } from "@/hooks/useRateLimit";
 
-const branches = [
-  { value: "cse", label: "CSE" },
-  { value: "aiml", label: "AIML" },
-  { value: "ds", label: "Data Science" },
-  { value: "ece", label: "ECE" },
-  { value: "eee", label: "EEE" },
-  { value: "mech", label: "MECH" },
-  { value: "civil", label: "CIVIL" },
-  { value: "it", label: "IT" },
-];
+import { BRANCHES } from "@/lib/constants";
 
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 const floors = ["1", "2", "3"];
@@ -1002,7 +993,7 @@ const StudentLogin = () => {
                             <SelectValue placeholder="Select Branch" />
                           </SelectTrigger>
                           <SelectContent>
-                            {branches.map((b) => (
+                            {BRANCHES.map((b) => (
                               <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                             ))}
                           </SelectContent>

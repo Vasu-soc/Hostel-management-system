@@ -52,6 +52,7 @@ import TerminalLoader from "@/components/TerminalLoader";
 import { gatePassSchema, issueReportSchema, formatValidationErrors } from "@/lib/validations";
 import { getStudentSession, clearStudentSession, StudentSession } from "@/lib/session";
 import { logger } from "@/lib/logger";
+import { getBranchImage } from "@/lib/constants";
 
 const WARDEN_CONTACT = "9553866278";
 
@@ -862,9 +863,20 @@ const StudentDashboard = () => {
         userName={student.student_name}
         userSubtitle={
           isUploadingPhoto ? "Uploading photo..." : (
-            <div className="flex flex-col gap-0.5">
-              <span>{student.roll_number}</span>
-              <span className="text-xs opacity-80">{student.branch?.toUpperCase()} • {student.year} Year</span>
+            <div className="flex flex-col gap-1">
+              <span className="font-bold">{student.roll_number}</span>
+              <div className="flex items-center gap-2">
+                {getBranchImage(student.branch) && (
+                  <img 
+                    src={getBranchImage(student.branch)!} 
+                    alt="Branch" 
+                    className="w-5 h-5 object-contain"
+                  />
+                )}
+                <span className="text-[10px] md:text-xs opacity-80 font-bold uppercase tracking-wider">
+                  {student.branch?.toUpperCase()} • {student.year} Year
+                </span>
+              </div>
             </div>
           )
         }

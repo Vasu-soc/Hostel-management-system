@@ -85,7 +85,8 @@ interface Room {
   pending_beds: number;
 }
 
-const branches = ["CSE", "MECH", "CIVIL", "AIML", "AIDS", "ECE", "EEE", "DS", "IT"];
+import { BRANCHES, getBranchImage } from "@/lib/constants";
+const branches = BRANCHES.map(b => b.value.toUpperCase());
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
 const AdminDashboard = () => {
@@ -505,21 +506,35 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {Object.entries(stats.branchStats)
-                      .filter(([_, data]) => data.total > 0)
-                      .map(([branch, data]) => (
-                      <div key={branch} className="p-4 rounded-xl bg-muted/30 border border-border group hover:bg-muted/50 transition-colors">
-                        <span className="text-xs font-black text-muted-foreground uppercase">{branch}</span>
-                        <div className="flex items-baseline gap-2 mt-1">
-                          <span className="text-xl font-bold">{data.total}</span>
-                          <span className="text-[10px] font-medium text-muted-foreground">STUDENTS</span>
-                        </div>
-                        <div className="w-full h-1 bg-muted rounded-full mt-3 overflow-hidden flex">
-                          <div className="h-full bg-indigo-500" style={{ width: `${data.total > 0 ? (data.male / data.total) * 100 : 0}%` }} />
-                          <div className="h-full bg-pink-500" style={{ width: `${data.total > 0 ? (data.female / data.total) * 100 : 0}%` }} />
-                        </div>
-                      </div>
-                    ))}
+                      {Object.entries(stats.branchStats)
+                        .filter(([_, data]) => data.total > 0)
+                        .map(([branchValue, data]) => {
+                          const branchImg = getBranchImage(branchValue);
+                          return (
+                            <div key={branchValue} className="p-4 rounded-xl bg-muted/30 border border-border group hover:bg-muted/50 transition-colors relative overflow-hidden">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <span className="text-xs font-black text-muted-foreground uppercase">{branchValue}</span>
+                                  <div className="flex items-baseline gap-2 mt-1">
+                                    <span className="text-xl font-bold">{data.total}</span>
+                                    <span className="text-[10px] font-medium text-muted-foreground">STUDENTS</span>
+                                  </div>
+                                </div>
+                                {branchImg && (
+                                  <img 
+                                    src={branchImg} 
+                                    className="w-10 h-10 object-contain opacity-40 group-hover:opacity-100 transition-opacity" 
+                                    alt={branchValue}
+                                  />
+                                )}
+                              </div>
+                              <div className="w-full h-1 bg-muted rounded-full mt-3 overflow-hidden flex">
+                                <div className="h-full bg-indigo-500" style={{ width: `${data.total > 0 ? (data.male / data.total) * 100 : 0}%` }} />
+                                <div className="h-full bg-pink-500" style={{ width: `${data.total > 0 ? (data.female / data.total) * 100 : 0}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
                   </div>
                   <div className="mt-6 pt-4 border-t border-dashed flex justify-end">
                      <Button variant="link" size="sm" onClick={() => setActiveView("students")} className="text-primary font-bold">View Detailed List <ChevronRight className="w-4 h-4 ml-1" /></Button>
@@ -538,7 +553,7 @@ const AdminDashboard = () => {
                               <Select value={selectedBranch} onValueChange={setSelectedBranch}>
                                 <SelectTrigger className="w-full"><SelectValue placeholder="Select Branch" /></SelectTrigger>
                                 <SelectContent>
-                                  {branches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                                  {BRANCHES.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
                                 </SelectContent>
                               </Select>
                            </div>
@@ -632,7 +647,7 @@ const AdminDashboard = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all_branches">All Branches</SelectItem>
-                          {branches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                          {BRANCHES.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

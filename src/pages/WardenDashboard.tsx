@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import emailjs from '@emailjs/browser';
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
+import { getBranchImage } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -1769,7 +1770,12 @@ const WardenDashboard = () => {
                           <span className="absolute top-4 right-4 w-3 h-3 rounded-full bg-success pulse-dot" />
                         )}
                         <CardTitle className="text-lg">{app.student_name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{app.branch?.toUpperCase()}</p>
+                        <div className="flex items-center gap-2">
+                          {getBranchImage(app.branch) && (
+                            <img src={getBranchImage(app.branch)!} className="w-4 h-4 object-contain" alt="Branch" />
+                          )}
+                          <p className="text-sm text-muted-foreground font-bold">{app.branch?.toUpperCase()}</p>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-col gap-2">
@@ -2275,7 +2281,12 @@ const WardenDashboard = () => {
                             {item.roll_number}
                           </TableCell>
                           <TableCell className="text-xs font-semibold uppercase whitespace-nowrap">
-                            {item.branch || "-"}
+                            <div className="flex items-center gap-2">
+                              {getBranchImage(item.branch) && (
+                                <img src={getBranchImage(item.branch)!} className="w-4 h-4 object-contain opacity-60" alt="" />
+                              )}
+                              {item.branch || "-"}
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="outline" className="font-black text-xs border-primary/20 bg-primary/5">
@@ -2466,7 +2477,12 @@ const WardenDashboard = () => {
                 </div>
                 <div className="detail-item">
                   <p className="detail-label text-sm text-muted-foreground">Branch</p>
-                  <p className="detail-value font-medium">{selectedApplication.branch?.toUpperCase()}</p>
+                   <p className="detail-value font-bold flex items-center gap-2">
+                     {getBranchImage(selectedApplication.branch) && (
+                       <img src={getBranchImage(selectedApplication.branch)!} className="w-5 h-5 object-contain" alt="" />
+                     )}
+                     {selectedApplication.branch?.toUpperCase()}
+                   </p>
                 </div>
                 <div className="detail-item">
                   <p className="detail-label text-sm text-muted-foreground">Phone</p>

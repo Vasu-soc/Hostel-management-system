@@ -24,15 +24,7 @@ interface StudyMaterialUploadProps {
   onRefresh: () => void;
 }
 
-const branches = [
-  { value: "cse", label: "Computer Science (CSE)" },
-  { value: "ece", label: "Electronics (ECE)" },
-  { value: "eee", label: "Electrical (EEE)" },
-  { value: "mech", label: "Mechanical" },
-  { value: "civil", label: "Civil" },
-  { value: "aiml", label: "AI & ML" },
-  { value: "it", label: "Information Technology (IT)" },
-];
+import { BRANCHES } from "@/lib/constants";
 
 const years = [
   { value: "1st Year", label: "1st Year" },
@@ -174,7 +166,7 @@ const StudyMaterialUpload = ({ materials, wardenId, onRefresh }: StudyMaterialUp
                 <SelectValue placeholder="Choose branch" />
               </SelectTrigger>
               <SelectContent>
-                {branches.map((branch) => (
+                {BRANCHES.map((branch) => (
                   <SelectItem key={branch.value} value={branch.value}>
                     {branch.label}
                   </SelectItem>

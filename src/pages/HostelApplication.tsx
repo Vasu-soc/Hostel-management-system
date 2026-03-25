@@ -32,23 +32,7 @@ import roomFourNew from "@/assets/room-four-new.png";
 import roomDormNew from "@/assets/room-dorm-new.png";
 import { Badge } from "@/components/ui/badge";
 
-const branches = [
-  { value: "cse", label: "CSE - Computer Science Engineering" },
-  { value: "aiml", label: "AIML - Artificial Intelligence & Machine Learning" },
-  { value: "ds", label: "DS - Data Science" },
-  { value: "ece", label: "ECE - Electronics & Communication Engineering" },
-  { value: "eee", label: "EEE - Electrical & Electronics Engineering" },
-  { value: "mech", label: "MECH - Mechanical Engineering" },
-  { value: "civil", label: "CIVIL - Civil Engineering" },
-  { value: "it", label: "IT - Information Technology" },
-  { value: "csm", label: "CSM - Computer Science (AI & ML)" },
-  { value: "csd", label: "CSD - Computer Science (Data Science)" },
-  { value: "dme", label: "DME - Diploma in Mechanical Engineering" },
-  { value: "dece", label: "DECE - Diploma in Electronics & Communication" },
-  { value: "deee", label: "DEEE - Diploma in Electrical Engineering" },
-  { value: "dcme", label: "DCME - Diploma in Computer Engineering" },
-  { value: "dcivil", label: "DCIVIL - Diploma in Civil Engineering" },
-];
+import { BRANCHES } from "@/lib/constants";
 
 const roomTypes = [
   {
@@ -510,7 +494,7 @@ const HostelApplication = () => {
                         <SelectValue placeholder="Select your branch..." />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-2 border-border z-50 max-h-60">
-                        {branches.map((branch) => (
+                        {BRANCHES.map((branch) => (
                           <SelectItem key={branch.value} value={branch.value}>
                             {branch.label}
                           </SelectItem>

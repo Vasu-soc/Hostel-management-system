@@ -22,15 +22,7 @@ interface BranchMarksUploadProps {
   wardenId: string;
 }
 
-const branches = [
-  { value: "cse", label: "Computer Science (CSE)" },
-  { value: "ece", label: "Electronics (ECE)" },
-  { value: "eee", label: "Electrical (EEE)" },
-  { value: "mech", label: "Mechanical" },
-  { value: "civil", label: "Civil" },
-  { value: "aiml", label: "AI & ML" },
-  { value: "it", label: "Information Technology (IT)" },
-];
+import { BRANCHES } from "@/lib/constants";
 
 const years = [
   { value: "1st Year", label: "1st Year" },
@@ -185,7 +177,7 @@ const BranchMarksUpload = ({ wardenId }: BranchMarksUploadProps) => {
                 <SelectValue placeholder="Choose branch" />
               </SelectTrigger>
               <SelectContent>
-                {branches.map((b) => (
+                {BRANCHES.map((b) => (
                   <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                 ))}
               </SelectContent>
