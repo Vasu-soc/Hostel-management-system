@@ -105,7 +105,7 @@ const ImageCarousel = ({ onImageClick }: ImageCarouselProps) => {
               alt={`Hostel view ${idx + 1}`}
               loading="eager"
               decoding="async"
-              className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover rounded-xl transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               style={{
                 boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
               }}
@@ -131,7 +131,7 @@ const ImageCarousel = ({ onImageClick }: ImageCarouselProps) => {
               alt={`Hostel view ${idx + 1}`}
               loading="eager"
               decoding="async"
-              className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover rounded-xl transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               style={{
                 boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
               }}

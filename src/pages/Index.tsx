@@ -162,6 +162,14 @@ const Index = () => {
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
+        <div className="text-center mt-8 mb-4 animate-fade-in px-4">
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-black mb-2">
+            <span className="text-animated-gradient">WELCOME TO GEETHANJALI HOSTEL</span> <span className="italic text-foreground">(GIST)</span>
+          </h1>
+          <p className="text-muted-foreground text-[8px] sm:text-[10px] md:text-xs max-w-2xl mx-auto font-black uppercase tracking-[0.2em]">
+            Official Management Portal for Geethanjali Institute of Science & Technology
+          </p>
+        </div>
         <ImageCarousel onImageClick={setSelectedImage} />
       </motion.div>
 
@@ -189,16 +197,6 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="relative z-10 container mx-auto px-4 py-8 md:py-12">
-        {/* Welcome Title */}
-        <div className="text-center mb-10 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-3">
-            <span className="text-animated-gradient">WELCOME TO GEETHANJALI HOSTEL</span> <span className="italic text-foreground">(GIST)</span>
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-black uppercase tracking-widest text-[10px] sm:text-xs">
-            Official Management Portal for Geethanjali Institute of Science & Technology
-          </p>
-        </div>
-
         {/* System Updates Display */}
         <UpdatesDisplay />
 

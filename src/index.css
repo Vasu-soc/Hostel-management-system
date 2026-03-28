@@ -372,8 +372,8 @@
 
 .carousel-track {
   display: flex;
-  gap: 3rem;
-  animation: carousel-scroll 90s linear infinite;
+  gap: 2rem;
+  animation: carousel-scroll 120s linear infinite;
   width: max-content;
 }
 
@@ -381,26 +381,33 @@
 
 .carousel-item {
   flex-shrink: 0;
-  width: 320px;
-  height: 208px;
+  width: calc(48vw - 1rem); /* Large width, 2 images per view */
+  height: 260px; /* Reduced height again */
   transition: transform 0.3s ease;
   cursor: pointer;
 }
 
 .carousel-item:hover {
-  transform: scale(1.05);
+  transform: scale(1.01);
 }
 
-/* Slower scroll on mobile for smooth experience */
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .carousel-item {
+    width: calc(48vw - 1rem);
+    height: 200px;
+  }
+}
+
 @media (max-width: 768px) {
   .carousel-track {
-    animation: carousel-scroll 60s linear infinite;
-    gap: 2rem;
+    animation: carousel-scroll 80s linear infinite;
+    gap: 1rem;
   }
 
   .carousel-item {
-    width: 260px;
-    height: 170px;
+    width: calc(90vw); /* Single image visible on mobile */
+    height: 180px;
   }
 }
 
