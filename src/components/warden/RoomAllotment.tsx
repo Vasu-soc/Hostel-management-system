@@ -39,6 +39,8 @@ interface Student {
   pending_fee?: number;
   remarks?: string;
   photo_url?: string;
+  batch_start?: number;
+  batch_end?: number;
 }
 
 interface RoomAllotmentProps {
@@ -376,32 +378,73 @@ const RoomAllotment = ({ rooms, pendingStudents, allStudents = [], onRefresh, wa
   const handleMoveToNextYear = async (skipConfirm = false) => {
     if (!selectedStudent) return;
 
-    const currentYear = selectedStudent.year;
-    const yearNumber = parseInt(currentYear) || 1;
+    const currentYearStr = selectedStudent.year;
+    const yearNumber = parseInt(currentYearStr) || 1;
+    
+    let nextYear = "";
+    let isGraduating = false;
+
     if (yearNumber >= 4) {
-      toast({ title: "Note", description: "Student is already in the final year." });
-      return;
+      nextYear = "Alumni (Graduated)";
+      isGraduating = true;
+    } else {
+      nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
     }
 
-    const nextYear = `${yearNumber + 1}${getYearSuffix(yearNumber + 1)} Year`;
+    const message = isGraduating 
+      ? `Are you sure you want to mark ${selectedStudent.student_name} as Graduated? This will automatically empty their room and move them to the academic data bank.`
+      : `Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden.`;
 
-    if (!skipConfirm && !confirm(`Are you sure you want to move ${selectedStudent.student_name} to ${nextYear}? This will reset current year's paid fee to 0 and history in this view will be hidden (but saved in database).`)) return;
+    if (!skipConfirm && !confirm(message)) return;
 
     setIsTransitioningYear(true);
     try {
+      const updateData: any = {
+        year: nextYear,
+        paid_fee: 0,
+        pending_fee: selectedStudent.total_fee || 100000,
+        total_fee: selectedStudent.total_fee || 100000,
+      };
+
+      if (isGraduating) {
+        updateData.room_allotted = false;
+        updateData.hostel_room_number = null;
+        updateData.floor_number = null;
+      }
+
       const { error } = await supabase
         .from("students")
-        .update({
-          year: nextYear,
-          paid_fee: 0,
-          pending_fee: selectedStudent.total_fee || 100000,
-          total_fee: selectedStudent.total_fee || 100000,
-        })
+        .update(updateData)
         .eq("id", selectedStudent.id);
 
       if (error) throw error;
 
-      toast({ title: "Success", description: `Moved to ${nextYear} successfully!` });
+      // Update room occupancy if graduating
+      if (isGraduating && selectedStudent.hostel_room_number) {
+        const { data: stInRoom } = await supabase
+          .from("students")
+          .select("id")
+          .eq("hostel_room_number", selectedStudent.hostel_room_number)
+          .eq("room_allotted", true);
+          
+        const { data: roomObj } = await supabase
+          .from("rooms")
+          .select("id")
+          .eq("room_number", selectedStudent.hostel_room_number)
+          .maybeSingle();
+          
+        if (roomObj) {
+          await supabase
+            .from("rooms")
+            .update({ occupied_beds: stInRoom?.length || 0 })
+            .eq("id", roomObj.id);
+        }
+      }
+
+      toast({ 
+        title: isGraduating ? "Graduation Successful" : "Year Advanced", 
+        description: isGraduating ? `${selectedStudent.student_name} is now an Alumni. Room is vacant.` : `Moved to ${nextYear} successfully!` 
+      });
       setShowFeeDialog(false);
       onRefresh();
     } catch (err: any) {

@@ -65,6 +65,8 @@ interface Student {
   gender: string;
   photo_url: string | null;
   email: string | null;
+  batch_start?: number;
+  batch_end?: number;
 }
 
 interface Watchman {
@@ -96,6 +98,8 @@ const AdminDashboard = () => {
   const [selectedCourse, setSelectedCourse] = useState<string>("all_courses");
   const [selectedBranch, setSelectedBranch] = useState<string>("all_branches");
   const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedBatchStart, setSelectedBatchStart] = useState<string>("all_years");
+  const [selectedBatchEnd, setSelectedBatchEnd] = useState<string>("all_years");
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -359,6 +363,14 @@ const AdminDashboard = () => {
     }
     if (selectedYear && selectedYear !== "all_years") {
       list = list.filter(s => (s.year || "").trim() === selectedYear.trim());
+    }
+
+    if (selectedBatchStart && selectedBatchStart !== "all_years") {
+      list = list.filter(s => (s as any).batch_start === parseInt(selectedBatchStart));
+    }
+
+    if (selectedBatchEnd && selectedBatchEnd !== "all_years") {
+      list = list.filter(s => (s as any).batch_end === parseInt(selectedBatchEnd));
     }
 
     if (searchQuery) {
@@ -710,11 +722,47 @@ const AdminDashboard = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Batch Start</Label>
+                      <Select value={selectedBatchStart} onValueChange={setSelectedBatchStart}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="All Years" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_years">All Years</SelectItem>
+                          {Array.from({ length: 21 }, (_, i) => 2020 + i).map(y => (
+                            <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Batch End</Label>
+                      <Select value={selectedBatchEnd} onValueChange={setSelectedBatchEnd}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="All Years" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_years">All Years</SelectItem>
+                          {Array.from({ length: 21 }, (_, i) => 2020 + i).map(y => (
+                            <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="flex items-end">
                       <Button 
                         variant="outline" 
                         className="w-full h-10 border-dashed" 
-                        onClick={() => { setSelectedBranch(""); setSelectedYear(""); setSearchQuery(""); }}
+                        onClick={() => { 
+                          setSelectedBranch(""); 
+                          setSelectedYear(""); 
+                          setSelectedBatchStart("all_years");
+                          setSelectedBatchEnd("all_years");
+                          setSearchQuery(""); 
+                        }}
                       >
                         <XCircle className="w-4 h-4 mr-2" />
                         Clear All Filters

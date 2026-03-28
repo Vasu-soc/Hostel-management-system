@@ -897,6 +897,8 @@ export type Database = {
           year: string
           parent_photo_url: string | null
           guardian_photo_url: string | null
+          batch_start: number | null
+          batch_end: number | null
         }
         Insert: {
           branch: string
@@ -923,6 +925,8 @@ export type Database = {
           year: string
           parent_photo_url?: string | null
           guardian_photo_url?: string | null
+          batch_start?: number | null
+          batch_end?: number | null
         }
         Update: {
           branch?: string
@@ -949,6 +953,8 @@ export type Database = {
           year?: string
           parent_photo_url?: string | null
           guardian_photo_url?: string | null
+          batch_start?: number | null
+          batch_end?: number | null
         }
         Relationships: []
       }

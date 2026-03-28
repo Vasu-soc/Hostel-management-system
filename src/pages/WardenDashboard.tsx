@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import emailjs from '@emailjs/browser';
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
-import { getBranchImage } from "@/lib/constants";
+import { getBranchImage, BRANCHES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -50,7 +50,15 @@ import {
   Clock,
   BookOpen,
   Info,
+  Search,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import RoomAttendance from "@/components/warden/RoomAttendance";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,7 +103,7 @@ interface Warden {
   signature_url?: string;
 }
 
-type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "studyMaterial" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees" | "attendance" | "marksUpload" | "leaveExtensions" | "complaints" | "profile" | "overdueReturns";
+type TabType = "dashboard" | "applications" | "gatepasses" | "rooms" | "allotment" | "studyMaterial" | "issues" | "medicines" | "foodSelection" | "completedFees" | "paymentSubmissions" | "updates" | "recycleBin" | "albumUpdate" | "appFees" | "attendance" | "marksUpload" | "leaveExtensions" | "complaints" | "profile" | "overdueReturns" | "studentsData";
 
 const WardenDashboard = () => {
   const navigate = useNavigate();
@@ -138,6 +146,10 @@ const WardenDashboard = () => {
     icon: any;
     color: string;
   } | null>(null);
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>("all_branches");
+  const [selectedBatchStartFilter, setSelectedBatchStartFilter] = useState<string>("all_years");
+  const [selectedBatchEndFilter, setSelectedBatchEndFilter] = useState<string>("all_years");
+  const [studentsSearchQuery, setStudentsSearchQuery] = useState("");
   const signatureInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -797,6 +809,8 @@ const WardenDashboard = () => {
             password: defaultPassword,
             address: application.address,
             zip_code: application.zip_code,
+            batch_start: new Date().getFullYear(),
+            batch_end: new Date().getFullYear() + 4,
           });
 
           if (insertError) {
@@ -1263,6 +1277,7 @@ const WardenDashboard = () => {
     { id: "marksUpload" as TabType, label: "Marks Upload", icon: FileText },
     { id: "leaveExtensions" as TabType, label: "Leave Exts.", icon: Clock },
     { id: "overdueReturns" as TabType, label: "Overdue Returns", icon: AlertTriangle, count: overdueAlerts.filter(a => a.status === 'pending').length },
+    { id: "studentsData" as TabType, label: "Students Data", icon: Users },
     { id: "recycleBin" as TabType, label: "Recycle Bin", icon: Trash2 },
   ];
 
@@ -2197,7 +2212,164 @@ const WardenDashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
 
+        {/* Students Data Tab */}
+        {activeTab === "studentsData" && (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+               <div>
+                 <h2 className="text-2xl font-black italic uppercase text-primary">Academic Data Bank</h2>
+                 <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Student Records Forever</p>
+               </div>
+               <Button 
+                 variant="destructive" 
+                 size="sm" 
+                 className="font-black italic shadow-lg shadow-destructive/10"
+                 onClick={async () => {
+                    const currentYear = new Date().getFullYear();
+                    const graduated = students.filter(s => s.room_allotted && (s as any).batch_end && (s as any).batch_end < currentYear);
+                    if (graduated.length === 0) {
+                      toast({ title: "Clean Record", description: "No graduated students found occupying rooms." });
+                      return;
+                    }
+                    if (!confirm(`Found ${graduated.length} students whose academic batch ended before ${currentYear}. Automatically empty their rooms? (Data is preserved)`)) return;
+                    setIsUploading(true);
+                    try {
+                      for (const s of graduated) {
+                        await supabase.from("students").update({ room_allotted: false, hostel_room_number: null, floor_number: null }).eq("id", s.id);
+                        if (s.hostel_room_number) {
+                          const { data: inRoom } = await supabase.from("students").select("id").eq("hostel_room_number", s.hostel_room_number);
+                          const { data: room } = await supabase.from("rooms").select("id").eq("room_number", s.hostel_room_number).maybeSingle();
+                          if (room) await supabase.from("rooms").update({ occupied_beds: inRoom?.length || 0 }).eq("id", room.id);
+                        }
+                      }
+                      toast({ title: "Success", description: "Rooms emptied for graduated batch." });
+                      fetchAllData();
+                    } finally { setIsUploading(false); }
+                 }}
+               >
+                 <Trash2 className="w-4 h-4 mr-2" /> Clean Graduated Rooms
+               </Button>
+            </div>
+
+            <Card className="p-6 border-2 border-primary/5 shadow-xl">
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1">
+                    <label className="text-[10px] font-black uppercase text-muted-foreground mb-1 block">Full Name / Roll Number</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-50" />
+                      <Input 
+                        placeholder="Search records..." 
+                        value={studentsSearchQuery}
+                        onChange={(e) => setStudentsSearchQuery(e.target.value)}
+                        className="pl-9 h-11 rounded-xl border-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted-foreground mb-1 block">Branch</label>
+                    <Select value={selectedBranchFilter} onValueChange={setSelectedBranchFilter}>
+                      <SelectTrigger className="h-11 rounded-xl border-2">
+                        <SelectValue placeholder="All Branches" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all_branches">All Branches</SelectItem>
+                        {BRANCHES.map(b => (
+                          <SelectItem key={b.value} value={b.value.toUpperCase()}>{b.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted-foreground mb-1 block">Joined Year (Batch Start)</label>
+                    <Select value={selectedBatchStartFilter} onValueChange={setSelectedBatchStartFilter}>
+                      <SelectTrigger className="h-11 rounded-xl border-2">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all_years">All Years</SelectItem>
+                        {Array.from({ length: 21 }, (_, i) => 2020 + i).map(y => (
+                          <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted-foreground mb-1 block">Graduated Year (Batch End)</label>
+                    <Select value={selectedBatchEndFilter} onValueChange={setSelectedBatchEndFilter}>
+                      <SelectTrigger className="h-11 rounded-xl border-2">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all_years">All Years</SelectItem>
+                        {Array.from({ length: 21 }, (_, i) => 2020 + i).map(y => (
+                          <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+               </div>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+               {(students || [])
+                 .filter(s => {
+                    const matchesSearch = !studentsSearchQuery || 
+                      s.student_name?.toLowerCase().includes(studentsSearchQuery.toLowerCase()) || 
+                      s.roll_number?.toLowerCase().includes(studentsSearchQuery.toLowerCase());
+                    const matchesBranch = selectedBranchFilter === "all_branches" || 
+                      s.branch?.toUpperCase() === selectedBranchFilter.toUpperCase();
+                    const matchesStart = selectedBatchStartFilter === "all_years" || 
+                      (s as any).batch_start === parseInt(selectedBatchStartFilter);
+                    const matchesEnd = selectedBatchEndFilter === "all_years" || 
+                      (s as any).batch_end === parseInt(selectedBatchEndFilter);
+                    return matchesSearch && matchesBranch && matchesStart && matchesEnd;
+                 })
+                 .map((student) => (
+                    <Card key={student.id} className="relative overflow-hidden group border-2 border-primary/5 hover:border-primary/20 transition-all duration-500">
+                       <div className="absolute top-0 right-0 p-2">
+                          <Badge variant={student.room_allotted ? "outline" : "secondary"} className={`text-[8px] font-black italic ${student.room_allotted ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : ""}`}>
+                             {student.room_allotted ? `ROOM ${student.hostel_room_number}` : "NOT IN HOSTEL"}
+                          </Badge>
+                       </div>
+                       <CardHeader className="text-center pb-2">
+                          <div className="w-16 h-16 rounded-2xl mx-auto bg-muted mb-3 flex items-center justify-center border-2 border-primary/10 overflow-hidden">
+                             {student.photo_url ? (
+                               <img src={student.photo_url} className="w-full h-full object-cover" />
+                             ) : (
+                               <User className="w-8 h-8 text-primary/30" />
+                             )}
+                          </div>
+                          <CardTitle className="text-sm font-black italic uppercase truncate">{student.student_name}</CardTitle>
+                          <p className="text-[10px] font-black text-primary/70 tracking-tighter uppercase">{student.roll_number}</p>
+                       </CardHeader>
+                       <CardContent className="pt-0 space-y-3">
+                          <div className="grid grid-cols-2 gap-2 bg-muted/30 p-2 rounded-xl border border-primary/5">
+                             <div className="text-center">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase">Joined</p>
+                                <p className="text-xs font-black">{(student as any).batch_start || "N/A"}</p>
+                             </div>
+                             <div className="text-center border-l border-primary/10">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase">Graduated</p>
+                                <p className="text-xs font-black">{(student as any).batch_end || "N/A"}</p>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-2 px-1">
+                             {getBranchImage(student.branch) && <img src={getBranchImage(student.branch)!} className="w-4 h-4 object-contain opacity-70" />}
+                             <span className="text-[10px] font-bold text-muted-foreground uppercase truncate">{student.branch}</span>
+                          </div>
+                       </CardContent>
+                    </Card>
+                 ))}
+               {students.length === 0 && (
+                 <div className="col-span-full py-20 text-center bg-muted/20 border-2 border-dashed rounded-3xl">
+                    <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <h3 className="text-lg font-bold text-muted-foreground">No students found matching filters</h3>
+                 </div>
+               )}
+            </div>
           </div>
         )}
       </div>
