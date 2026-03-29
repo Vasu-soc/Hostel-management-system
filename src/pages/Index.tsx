@@ -47,7 +47,7 @@ interface Medicine {
   warden_type: string;
 }
 
-const SHOW_ADMIN_FEATURES = false; // Set to false to hide administration features
+const SHOW_ADMIN_FEATURES = true; // Set to false to hide administration features
 
 const loginOptions = [
   { value: "boys", label: "Boys", enabled: true, icon: Users },
@@ -202,8 +202,7 @@ const Index = () => {
         {/* System Updates Display */}
         <UpdatesDisplay />
 
-        {/* Administration Profiles Section */}
-        {SHOW_ADMIN_FEATURES && <AdministrationProfiles onImageClick={setSelectedImage} />}
+        {/* Administration Profiles Section removed as per request */}
 
         {/* Three Main Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
