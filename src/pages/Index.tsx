@@ -47,7 +47,7 @@ interface Medicine {
   warden_type: string;
 }
 
-const SHOW_ADMIN_FEATURES = true; // Set to true to re-enable administration features
+const SHOW_ADMIN_FEATURES = false; // Set to false to hide administration features
 
 const loginOptions = [
   { value: "boys", label: "Boys", enabled: true, icon: Users },
