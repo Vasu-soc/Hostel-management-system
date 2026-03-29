@@ -1,0 +1,121 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Styles for labels and text -->
+  <style>
+    .header { font: bold 28px 'Inter', system-ui, sans-serif; fill: #2D3748; }
+    .subheader { font: 500 18px 'Inter', system-ui, sans-serif; fill: #4A5568; }
+    .label { font: 600 16px 'Inter', system-ui, sans-serif; fill: #FFFFFF; }
+    .flow-text { font: 400 14px 'Inter', system-ui, sans-serif; fill: #718096; }
+    .id-tag { font: bold 12px 'Inter', system-ui, sans-serif; fill: #A0AEC0; }
+  </style>
+
+  <!-- Background Gradients -->
+  <defs>
+    <linearGradient id="primary_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="secondary_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="accent_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="danger_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#DC2626" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15" />
+      <feOffset dx="0" dy="10" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Layer -->
+  <rect width="1200" height="800" fill="#F8FAFC" rx="40" />
+  
+  <!-- Header -->
+  <text x="60" y="60" class="header">HosteliHub Algorithm Architecture</text>
+  <text x="60" y="90" class="subheader">GIST - Intelligent Hostel Administration Ecosystem</text>
+  
+  <!-- Central Logic Core (Supabase Hub) -->
+  <rect x="450" y="300" width="300" height="200" rx="20" fill="url(#primary_gradient)" filter="url(#shadow)" />
+  <text x="600" y="390" text-anchor="middle" class="label">SUPABASE ENGINE</text>
+  <text x="600" y="415" text-anchor="middle" font-size="12" fill="#E2E8F0">(PostgreSQL &amp; Real-time logic)</text>
+
+  <!-- Student Portal Module -->
+  <rect x="100" y="150" width="220" height="120" rx="15" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" />
+  <rect x="100" y="150" width="220" height="40" rx="15 15 0 0" fill="url(#primary_gradient)" />
+  <text x="210" y="175" text-anchor="middle" class="label">STUDENT PORTAL</text>
+  <text x="120" y="210" class="flow-text" font-size="12">• Apply Gatepass (Alg 1)</text>
+  <text x="120" y="230" class="flow-text" font-size="12">• Trigger Medical SOS (Alg 2)</text>
+  <text x="120" y="250" class="flow-text" font-size="12">• Study Resource Access</text>
+
+  <!-- Warden Portal Module -->
+  <rect x="880" y="150" width="220" height="120" rx="15" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" />
+  <rect x="880" y="150" width="220" height="40" rx="15 15 0 0" fill="url(#secondary_gradient)" />
+  <text x="990" y="175" text-anchor="middle" class="label">WARDEN DASHBOARD</text>
+  <text x="900" y="210" class="flow-text" font-size="12">• Review &amp; Approve Gatepass</text>
+  <text x="900" y="230" class="flow-text" font-size="12">• Room Allotment Alg (Alg 3)</text>
+  <text x="900" y="250" class="flow-text" font-size="12">• Overdue Tracking Engine</text>
+
+  <!-- Security Portal Module -->
+  <rect x="880" y="530" width="220" height="120" rx="15" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" />
+  <rect x="880" y="530" width="220" height="40" rx="15 15 0 0" fill="url(#danger_gradient)" />
+  <text x="990" y="555" text-anchor="middle" class="label">GATEPASS SECURITY</text>
+  <text x="900" y="590" class="flow-text" font-size="12">• QR Token Verification (Alg 4)</text>
+  <text x="900" y="610" class="flow-text" font-size="12">• Live Status Sync (Alg 5)</text>
+  <text x="900" y="630" class="flow-text" font-size="12">• Manual Security Lock</text>
+
+  <!-- Parent Portal Module -->
+  <rect x="100" y="530" width="220" height="120" rx="15" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" />
+  <rect x="100" y="530" width="220" height="40" rx="15 15 0 0" fill="url(#accent_gradient)" />
+  <text x="210" y="555" text-anchor="middle" class="label">PARENT PORTAL</text>
+  <text x="120" y="590" class="flow-text" font-size="12">• Real-time Location Sync</text>
+  <text x="120" y="610" class="flow-text" font-size="12">• Extension Request Alg</text>
+  <text x="120" y="630" class="flow-text" font-size="12">• Performance Tracking</text>
+
+  <!-- Connector Lines & Arrows -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#CBD5E0" />
+    </marker>
+  </defs>
+
+  <!-- Algorithm Flow 1: Gatepass -->
+  <path d="M320,210 L450,350" stroke="#CBD5E0" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <text x="350" y="280" transform="rotate(35, 350, 280)" class="flow-text" font-size="12">1. Request Initiation</text>
+  
+  <path d="M750,350 L880,210" stroke="#CBD5E0" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <text x="780" y="280" transform="rotate(-35, 780, 280)" class="flow-text" font-size="12">2. Review &amp; Notify</text>
+
+  <path d="M990,270 L990,530" stroke="#CBD5E0" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <text x="1000" y="400" class="flow-text" font-size="12" writing-mode="vertical-rl" text-anchor="middle">3. QR Token Generation</text>
+
+  <path d="M880,590 L750,450" stroke="#CBD5E0" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <text x="780" y="520" transform="rotate(35, 780, 520)" class="flow-text" font-size="12">4. Scan &amp; Commit</text>
+
+  <path d="M450,450 L320,590" stroke="#CBD5E0" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <text x="350" y="520" transform="rotate(-35, 350, 520)" class="flow-text" font-size="12">5. Sync Live Location</text>
+
+  <!-- SOS Logic Flow -->
+  <path d="M210,270 L210,530" stroke="#F87171" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrow)" fill="none" />
+  <text x="150" y="400" class="flow-text" font-size="12" style="fill:#F87171">SOS Alert Protocol</text>
+
+  <!-- Legend -->
+  <rect x="60" y="700" width="1080" height="60" rx="10" fill="#EDF2F7" />
+  <text x="80" y="735" class="flow-text" font-weight="bold">Core Algorithms:</text>
+  <text x="210" y="735" class="flow-text">1. State Persistence</text>
+  <text x="350" y="735" class="flow-text">2. QR Verification</text>
+  <text x="500" y="735" class="flow-text">3. Real-time Broadcasting</text>
+  <text x="680" y="735" class="flow-text">4. Automated Occupancy Map</text>
+  <text x="880" y="735" class="flow-text">5. Role-based Access Control (RBAC)</text>
+</svg>

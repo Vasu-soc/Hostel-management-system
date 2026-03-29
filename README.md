@@ -14,6 +14,43 @@
 
 ---
 
+## 🏗️ System Architecture Algorithm
+HosteliHub operates on a **Single Unified Intelligence Algorithm**. Unlike traditional fragmented systems, every event (like a QR scan or a fee payment) triggers a reactionary chain across all five portals simultaneously.
+
+```mermaid
+graph TD
+    subgraph "Intelligent Core (The Brain)"
+        DB[(Supabase / PostgreSQL)] <--> |Real-time Sync| FE[React + Vite Engine]
+    end
+
+    subgraph "Operational Algorithms"
+        FE --> |Admission Logic| ON[Automated Onboarding]
+        FE --> |Space Logic| RM[Smart Bed Allocation]
+        FE --> |Security Logic| GS[QR Gatepass & Overdue Alerts]
+        FE --> |Flow Logic| LM[Leave & Outing Workflows]
+    end
+
+    subgraph "Integrated Resources"
+        ON --> |Auto-Gen| SC[Student & Parent Profiles]
+        RM --> |Live Status| MI[Inventory & Medicine HUB]
+        GS --> |Scan Verify| AM[AI-Driven Analytics]
+        LM --> |Feedback| CF[Modernized Cafeteria]
+    end
+
+    subgraph "Multi-Role Interface"
+        SC --- P1[Student Portal]
+        MI --- P2[Warden Portal]
+        AM --- P3[Admin Portal]
+        GS --- P4[Watchman Portal]
+        LM --- P5[Parent Portal]
+    end
+```
+
+> [!TIP]
+> **Data Consistency**: When a Watchman scans a student's QR code, the **Security Logic** instantly updates the student's status, notifies the Parent, and informs the Warden of the successful check-in/out in one single computational pass.
+
+---
+
 ## 🚀 Core Technology Stack
 
 ### 🔹 Frontend (The UI Engine)
@@ -41,6 +78,10 @@
 | **Academic Resource Hub** | Instant access to branch and year-specific study materials (PDFs/Links) and semester-wise marks tracking. |
 | **Financial Dashboard** | Secure view of the fee structure, total amount paid, and balance due. Includes a payment history and redirect to the payment portal. |
 | **Issue Reporting** | Multi-category problem reporting for Food, Electrical, or Room issues with live status tracking (Pending/Resolved). |
+| **Hostel Albums** | View multi-image event photos and gallery updates from the hostel life. |
+| **Course-Specific View** | Dynamic filtering for B.Tech and Diploma branches in the academic and profile sections. |
+| **Real-time Fee Sync** | Academic year-wise fee breakdown with instant feedback on transaction status. |
+| **SplashScreen & UX** | Premium animated entry and optimized keyboard navigation (Enter key focus). |
 | **Daily Attendance** | View current presence status and access monthly attendance reports. |
 | **Food Preference Voting** | Students vote for their daily meal preferences, helping the mess management reduce food waste. |
 
@@ -56,6 +97,7 @@
 | **Medical History** | A complete log of all medical alerts ever reported by the student, ensuring parents are informed about their child's health history. |
 | **Financial Transparency** | Detailed breakdown of annual dues and a verified history of all payments made throughout the academic stay. |
 | **Direct Contact Hub** | Easy-access deep-links to contact the Warden or Emergency Security via WhatsApp or Phone call. |
+| **Hostel Gallery** | View event albums and photos of hostel activities to stay connected with campus life. |
 | **Academic Progress** | View monthly attendance percentages and academic performance reports provided by the hostel. |
 
 ---
@@ -71,6 +113,8 @@
 | **Medical Management** | Unified alert center for incoming SOS signals. Enables wardens to manage the medicine inventory levels. |
 | **Material Distribution** | Portal to upload study materials and syllabus updates to specific student branches or years. |
 | **Overdue Tracking** | Automatically triggers alerts for students who have not returned to campus by their specified gate-pass time. |
+| **Album Management** | Upload and manage event photos with multi-image support for Student/Parent galleries. |
+| **Course-Based Uploads** | Categorize and distribute study materials specifically for B.Tech or Diploma students. |
 | **Recycle Bin** | Safety mechanism to recover accidentally deleted student or staff records. |
 
 ---
@@ -85,6 +129,8 @@
 | **Unified Directory** | Highly searchable database containing every student resident with advanced branch/year filtering. |
 | **Room Oversight** | High-level monitoring of room occupancy across AC and Standard blocks to plan for future admissions. |
 | **Announcements** | Sending system-wide notifications and updates displayed across all portals. |
+| **Advanced Filtering** | Seamlessly filter the entire student directory by Course (B.Tech/Diploma) and Branch. |
+| **Architecture Access** | Unified view of the system's technical architecture and data flow for governance. |
 | **System Maintenance** | Critical tools for master data reset (protected by manual override) and system health monitoring. |
 
 ---
@@ -98,6 +144,8 @@
 | **Manual Authorization** | Fallback search feature to authorize a student via Roll Number if their digital device is unavailable. |
 | **Movement Execution** | Digital logging of the exact second a student exits or enters the gate, synchronizing with the Warden and Parent dashboards. |
 | **"Out Students" Monitoring** | A live dashboard showing every student currently off-campus, helping security maintain accountability at all times. |
+| **Scanner Persistence** | Improved QR scanner architecture ensuring continuous functionality during long shifts. |
+
 | **Identity Verification** | Displays the student's photo and Father's name upon scan to ensure the correct individual is passing. |
 
 ---

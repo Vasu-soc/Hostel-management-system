@@ -47,13 +47,15 @@ interface Medicine {
   warden_type: string;
 }
 
+const SHOW_ADMIN_FEATURES = true; // Set to true to re-enable administration features
+
 const loginOptions = [
   { value: "boys", label: "Boys", enabled: true, icon: Users },
   { value: "girls", label: "Girls", enabled: true, icon: Users },
-  { value: "admin", label: "Admin", enabled: true, icon: ShieldCheck },
   { value: "warden", label: "Hostel Warden", enabled: true, icon: UserCircle },
   { value: "watchman", label: "Gatepass Security", enabled: true, icon: ShieldCheck },
   { value: "parent", label: "Parent", enabled: true, icon: Home },
+  ...(SHOW_ADMIN_FEATURES ? [{ value: "admin", label: "Admin", enabled: true, icon: ShieldCheck }] : []),
 ];
 
 const hostelRules = [
@@ -175,20 +177,20 @@ const Index = () => {
 
       {/* Fullscreen Lightbox - Triggered from Home Page level */}
       {selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300 pointer-events-auto"
           onClick={() => setSelectedImage(null)}
         >
-          <button 
+          <button
             className="absolute top-6 right-6 z-[1010] h-12 w-12 rounded-full bg-white/10 hover:bg-destructive text-white flex items-center justify-center transition-all duration-300 shadow-2xl"
             onClick={() => setSelectedImage(null)}
           >
             <X className="w-6 h-6" />
           </button>
-          
-          <img 
-            src={selectedImage} 
-            alt="Hostel view zoomed" 
+
+          <img
+            src={selectedImage}
+            alt="Hostel view zoomed"
             className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-[0_0_50px_rgba(255,165,0,0.3)] animate-in zoom-in-95 duration-500"
             onClick={(e) => e.stopPropagation()}
           />
@@ -201,7 +203,7 @@ const Index = () => {
         <UpdatesDisplay />
 
         {/* Administration Profiles Section */}
-        <AdministrationProfiles onImageClick={setSelectedImage} />
+        {SHOW_ADMIN_FEATURES && <AdministrationProfiles onImageClick={setSelectedImage} />}
 
         {/* Three Main Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">

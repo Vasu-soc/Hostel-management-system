@@ -104,6 +104,8 @@ const AdminDashboard = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "watchmen" | "updates" | "appFees">("dashboard");
+  const [selectedGender, setSelectedGender] = useState<string>("all_genders");
+  const [quickViewFilter, setQuickViewFilter] = useState<"all" | "male" | "female" | "fees" | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
@@ -365,6 +367,19 @@ const AdminDashboard = () => {
       list = list.filter(s => (s.year || "").trim() === selectedYear.trim());
     }
 
+    if (selectedGender && selectedGender !== "all_genders") {
+      const isMale = (g: string | null) => {
+        const val = (g || "").toLowerCase().trim();
+        return val === "male" || val === "m" || val === "boy" || val === "gentleman";
+      };
+      const isFemale = (g: string | null) => {
+        const val = (g || "").toLowerCase().trim();
+        return val === "female" || val === "f" || val === "girl" || val === "lady";
+      };
+      if (selectedGender === "male") list = list.filter(s => isMale(s.gender));
+      if (selectedGender === "female") list = list.filter(s => isFemale(s.gender));
+    }
+
     if (selectedBatchStart && selectedBatchStart !== "all_years") {
       list = list.filter(s => (s as any).batch_start === parseInt(selectedBatchStart));
     }
@@ -445,14 +460,18 @@ const AdminDashboard = () => {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 {[
-                  { label: "Total Students", value: stats.totalStudents, icon: Users, color: "text-blue-600", detail: "Registered Active" },
-                  { label: "Total Boys", value: stats.boysCount, icon: User, color: "text-indigo-600", detail: `${stats.totalStudents > 0 ? Math.round((stats.boysCount / stats.totalStudents) * 100) : 0}% of Total` },
-                  { label: "Total Girls", value: stats.girlsCount, icon: User, color: "text-pink-600", detail: `${stats.totalStudents > 0 ? Math.round((stats.girlsCount / stats.totalStudents) * 100) : 0}% of Total` },
-                  { label: "Total Collection", value: `₹${stats.totalCollection.toLocaleString()}`, icon: IndianRupee, color: "text-emerald-600", detail: "Paid Fees" },
-                  { label: "Mess Count", value: messCount, icon: Utensils, color: "text-orange-600", detail: "Meals for Today" },
-                  { label: "App Fee Paid", value: applications.filter(a => a.application_fee_status === "paid").length, icon: CheckCircle2, color: "text-purple-600", detail: "Verified Apps" }
+                  { label: "Total Students", value: stats.totalStudents, icon: Users, color: "text-blue-600", detail: "Registered Active", action: () => setQuickViewFilter("all") },
+                  { label: "Total Boys", value: stats.boysCount, icon: User, color: "text-indigo-600", detail: `${stats.totalStudents > 0 ? Math.round((stats.boysCount / stats.totalStudents) * 100) : 0}% of Total`, action: () => setQuickViewFilter("male") },
+                  { label: "Total Girls", value: stats.girlsCount, icon: User, color: "text-pink-600", detail: `${stats.totalStudents > 0 ? Math.round((stats.girlsCount / stats.totalStudents) * 100) : 0}% of Total`, action: () => setQuickViewFilter("female") },
+                  { label: "Total Collection", value: `₹${stats.totalCollection.toLocaleString()}`, icon: IndianRupee, color: "text-emerald-600", detail: "Paid Fees", action: () => setQuickViewFilter("fees") },
+                  { label: "Mess Count", value: messCount, icon: Utensils, color: "text-orange-600", detail: "Meals for Today", action: null },
+                  { label: "App Fee Paid", value: applications.filter(a => a.application_fee_status === "paid").length, icon: CheckCircle2, color: "text-purple-600", detail: "Verified Apps", action: () => setActiveView("appFees") }
                 ].map((item, idx) => (
-                  <Card key={idx} className="p-6">
+                  <Card 
+                    key={idx} 
+                    className={`p-6 ${item.action ? "cursor-pointer hover:bg-muted/50 transition-all hover:scale-[1.02] active:scale-95" : ""}`}
+                    onClick={item.action || undefined}
+                  >
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-xl bg-muted">
                         <item.icon className={`w-6 h-6 ${item.color}`} />
@@ -533,13 +552,6 @@ const AdminDashboard = () => {
                                     <span className="text-[10px] font-medium text-muted-foreground">STUDENTS</span>
                                   </div>
                                 </div>
-                                {branchImg && (
-                                  <img 
-                                    src={branchImg} 
-                                    className="w-10 h-10 object-contain opacity-40 group-hover:opacity-100 transition-opacity" 
-                                    alt={branchValue}
-                                  />
-                                )}
                               </div>
                               <div className="w-full h-1 bg-muted rounded-full mt-3 overflow-hidden flex">
                                 <div className="h-full bg-indigo-500" style={{ width: `${data.total > 0 ? (data.male / data.total) * 100 : 0}%` }} />
@@ -641,6 +653,88 @@ const AdminDashboard = () => {
                       </Card>
                    </div>
                 </div>
+
+                <Dialog open={!!quickViewFilter} onOpenChange={(open) => !open && setQuickViewFilter(null)}>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                        {quickViewFilter === "all" && "All Resident Students"}
+                        {quickViewFilter === "male" && "Boys Resident List"}
+                        {quickViewFilter === "female" && "Girls Resident List"}
+                        {quickViewFilter === "fees" && "Hostel Fee Collection Status"}
+                      </DialogTitle>
+                      <DialogDescription>
+                        Summary view of selected residency records.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="mt-4 border rounded-xl overflow-hidden">
+                      <Table>
+                        <TableHeader className="bg-muted/50">
+                          <TableRow>
+                            <TableHead className="font-bold">Student Name</TableHead>
+                            <TableHead className="font-bold">Roll Number</TableHead>
+                            <TableHead className="font-bold">Branch</TableHead>
+                            {quickViewFilter === "fees" ? (
+                              <>
+                                <TableHead className="font-bold text-green-600">Paid Fee</TableHead>
+                                <TableHead className="font-bold text-red-600">Pending</TableHead>
+                              </>
+                            ) : (
+                              <>
+                                <TableHead className="font-bold">Gender</TableHead>
+                                <TableHead className="font-bold text-primary">Room</TableHead>
+                              </>
+                            )}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allStudents
+                            .filter(s => {
+                              const isM = (g: string | null) => {
+                                const val = (g || "").toLowerCase().trim();
+                                return val === "male" || val === "m" || val === "boy" || val === "gentleman";
+                              };
+                              const isF = (g: string | null) => {
+                                const val = (g || "").toLowerCase().trim();
+                                return val === "female" || val === "f" || val === "girl" || val === "lady";
+                              };
+                              if (quickViewFilter === "male") return isM(s.gender);
+                              if (quickViewFilter === "female") return isF(s.gender);
+                              return true;
+                            })
+                            .map((student) => (
+                              <TableRow key={student.id}>
+                                <TableCell className="font-bold text-sm">{student.student_name}</TableCell>
+                                <TableCell className="font-mono text-xs opacity-60">{student.roll_number}</TableCell>
+                                <TableCell className="text-xs">{student.branch}</TableCell>
+                                {quickViewFilter === "fees" ? (
+                                  <>
+                                    <TableCell className="text-xs font-bold text-green-600">₹{student.paid_fee?.toLocaleString()}</TableCell>
+                                    <TableCell className="text-xs font-bold text-red-600">₹{student.pending_fee?.toLocaleString()}</TableCell>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TableCell className="uppercase text-[10px] font-bold opacity-60">{student.gender || "NA"}</TableCell>
+                                    <TableCell className="text-xs font-bold text-primary">{student.hostel_room_number || "NA"}</TableCell>
+                                  </>
+                                )}
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <Button variant="outline" onClick={() => setQuickViewFilter(null)}>Close View</Button>
+                      <Button onClick={() => {
+                          const tg = quickViewFilter === "male" || quickViewFilter === "female" ? quickViewFilter : "all_genders";
+                          setSelectedGender(tg);
+                          setActiveView("students");
+                          setQuickViewFilter(null);
+                      }}>Full Management</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </motion.div>
           )}
@@ -723,6 +817,19 @@ const AdminDashboard = () => {
                       </Select>
                     </div>
                     <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Gender</Label>
+                      <Select value={selectedGender} onValueChange={setSelectedGender}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="All Genders" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_genders">All Genders</SelectItem>
+                          <SelectItem value="male">Boys Only</SelectItem>
+                          <SelectItem value="female">Girls Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground">Batch Start</Label>
                       <Select value={selectedBatchStart} onValueChange={setSelectedBatchStart}>
                         <SelectTrigger className="h-10">
@@ -761,6 +868,7 @@ const AdminDashboard = () => {
                           setSelectedYear(""); 
                           setSelectedBatchStart("all_years");
                           setSelectedBatchEnd("all_years");
+                          setSelectedGender("all_genders");
                           setSearchQuery(""); 
                         }}
                       >

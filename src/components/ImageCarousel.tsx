@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Maximize2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import carousel1 from "@/assets/carousel-1.jpg";
 import carousel2 from "@/assets/carousel-2.jpg";
 import carousel3 from "@/assets/carousel-3.jpg";
@@ -51,17 +52,15 @@ interface ImageCarouselProps {
 
 const ImageCarousel = ({ onImageClick }: ImageCarouselProps) => {
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    // Check if all images are already cached/loaded
     let loadedCount = 0;
     const totalImages = images.length;
 
     const checkAllLoaded = () => {
       loadedCount++;
-      if (loadedCount >= totalImages) {
-        setImagesLoaded(true);
-      }
+      if (loadedCount >= totalImages) setImagesLoaded(true);
     };
 
     images.forEach((src) => {
@@ -69,84 +68,66 @@ const ImageCarousel = ({ onImageClick }: ImageCarouselProps) => {
       img.onload = checkAllLoaded;
       img.onerror = checkAllLoaded;
       img.src = src;
-      // If already cached, onload fires synchronously
-      if (img.complete) {
-        checkAllLoaded();
-      }
+      if (img.complete) checkAllLoaded();
     });
 
-    // Fallback: show images after 500ms even if not all loaded
-    const fallbackTimer = setTimeout(() => {
-      setImagesLoaded(true);
-    }, 500);
-
+    const fallbackTimer = setTimeout(() => setImagesLoaded(true), 1000);
     return () => clearTimeout(fallbackTimer);
   }, []);
 
+  useEffect(() => {
+    if (!imagesLoaded) return;
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 2) % images.length);
+    }, 2000); // 2 second interval as requested
+    return () => clearInterval(timer);
+  }, [imagesLoaded]);
+
   return (
     <section
-      aria-label="Hostel photos"
-      className="w-full py-8 relative z-10 overflow-hidden"
+      aria-label="Hostel photo gallery"
+      className="w-full py-2 relative z-10 overflow-hidden px-1 md:px-2"
     >
-      <div className={`carousel-track ${imagesLoaded ? 'opacity-100' : 'opacity-0'}`} style={{ transition: 'opacity 0.3s ease-in' }}>
-        {/* First set of images */}
-        {images.map((img, idx) => (
-          <div
-            key={`first-${idx}`}
-            className="carousel-item group cursor-zoom-in relative"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onImageClick?.(img);
-            }}
-          >
-            <img
-              src={img}
-              alt={`Hostel view ${idx + 1}`}
-              loading="eager"
-              decoding="async"
-              className="w-full h-full object-cover rounded-xl transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-              style={{
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-              }}
-            />
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl pointer-events-none">
-              <Maximize2 className="text-white w-10 h-10 drop-shadow-lg" />
-            </div>
+      <div 
+        className={`w-full aspect-[4/3] sm:aspect-[2/1] md:aspect-[30/9] max-w-7xl mx-auto relative flex gap-1 md:gap-[4px] ${imagesLoaded ? 'opacity-100' : 'opacity-0'}`} 
+        style={{ transition: 'opacity 0.6s ease-in' }}
+      >
+        {/* Left Image Node - Static Frame */}
+        <div 
+          className="flex-1 h-full relative border border-white/10 shadow-lg bg-card overflow-hidden cursor-zoom-in group select-none"
+          onClick={() => onImageClick?.(images[index])}
+        >
+          <img
+            src={images[index]}
+            className="w-full h-full object-cover transition-opacity duration-300"
+            alt="Gallery left"
+            key="left"
+          />
+          {/* Static Overlay for interaction */}
+          <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+            <Maximize2 className="text-white w-8 h-8 drop-shadow-lg" />
           </div>
-        ))}
-        {/* Duplicate set for seamless infinite loop */}
-        {images.map((img, idx) => (
-          <div
-            key={`second-${idx}`}
-            className="carousel-item group cursor-zoom-in relative"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onImageClick?.(img);
-            }}
-          >
-            <img
-              src={img}
-              alt={`Hostel view ${idx + 1}`}
-              loading="eager"
-              decoding="async"
-              className="w-full h-full object-cover rounded-xl transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-              style={{
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-              }}
-            />
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl pointer-events-none">
-              <Maximize2 className="text-white w-10 h-10 drop-shadow-lg" />
-            </div>
-          </div>
-        ))}
-      </div>
+        </div>
 
+        {/* Right Image Node - Static Frame */}
+        <div 
+          className="flex-1 h-full relative border border-white/10 shadow-lg bg-card overflow-hidden cursor-zoom-in group select-none"
+          onClick={() => onImageClick?.(images[(index + 1) % images.length])}
+        >
+          <img
+            src={images[(index + 1) % images.length]}
+            className="w-full h-full object-cover transition-opacity duration-300"
+            alt="Gallery right"
+            key="right"
+          />
+          {/* Static Overlay for interaction */}
+          <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+            <Maximize2 className="text-white w-8 h-8 drop-shadow-lg" />
+          </div>
+        </div>
+      </div>
     </section>
   );
 };
 
 export default ImageCarousel;
-
-
