@@ -185,7 +185,7 @@ const StudentDashboard = () => {
     });
     refreshStudentData(session.id);
     fetchFeeTransactions(session.id);
-    loadGatePasses(session.roll_number);
+    loadGatePasses(session.roll_number, session.status);
     loadAttendanceReports(session.id);
     fetchTodayAttendance(session.id);
     loadStudyMaterials(session.branch, session.year);
@@ -387,7 +387,7 @@ const StudentDashboard = () => {
         table: "gate_passes",
         filter: `roll_number=eq.${student.roll_number}`,
       }, () => {
-        loadGatePasses(student.roll_number);
+        loadGatePasses(student.roll_number, student.status);
       })
       .on("postgres_changes", {
         event: "*",
@@ -395,11 +395,11 @@ const StudentDashboard = () => {
         table: "leave_extensions",
         filter: `roll_number=eq.${student.roll_number}`,
       }, () => {
-        loadGatePasses(student.roll_number);
+        loadGatePasses(student.roll_number, student.status);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [student?.roll_number]);
+  }, [student?.roll_number, student?.status]);
 
   const fetchTodayAttendance = async (studentId: string) => {
     try {
@@ -515,7 +515,7 @@ const StudentDashboard = () => {
     }
   };
 
-  const loadGatePasses = async (rollNumber: string) => {
+  const loadGatePasses = async (rollNumber: string, currentStudentStatus?: string) => {
     try {
       const { data } = await supabase
         .from("gate_passes")
@@ -524,9 +524,23 @@ const StudentDashboard = () => {
         .order("created_at", { ascending: false });
 
       if (data) {
-        setGatePasses(data as Record<string, unknown>[]);
+        let passes = data as Record<string, unknown>[];
+        
+        // Auto-expire approved but unscanned passes after 24 hours
+        const latestPass = passes[0];
+        if (latestPass && latestPass.status === "approved" && currentStudentStatus !== "OUT") {
+          const createdAt = new Date(latestPass.created_at as string).getTime();
+          const twentyFourHours = 24 * 60 * 60 * 1000;
+          
+          if (Date.now() - createdAt > twentyFourHours) {
+            await supabase.from("gate_passes").update({ status: "expired" }).eq("id", latestPass.id as string);
+            passes[0] = { ...latestPass, status: "expired" };
+          }
+        }
+
+        setGatePasses(passes);
         // Load warden signature if latest gate pass is approved
-        if (data[0] && data[0].status === "approved") {
+        if (passes[0] && passes[0].status === "approved") {
           loadWardenSignature();
         }
       }
@@ -610,6 +624,16 @@ const StudentDashboard = () => {
       return;
     }
 
+    const hasActivePass = gatePasses.some(gp => gp.status === "pending" || gp.status === "approved");
+    if (hasActivePass) {
+      toast({
+        title: "Action Blocked",
+        description: "You already have an active pass. You cannot apply for a new one until it is completed, rejected, or expired.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validate gate pass form
     const validation = gatePassSchema.safeParse(gatePassForm);
     if (!validation.success) {
@@ -657,7 +681,7 @@ const StudentDashboard = () => {
     }).catch((err) => console.error("Failed to send notification:", err));
 
     toast({ title: "Gate Pass Submitted", description: "Your request has been sent to the warden" });
-    loadGatePasses(student.roll_number);
+    loadGatePasses(student.roll_number, student.status);
     setGatePassForm({ email: "", studentMobile: "", parentMobile: "", outDate: "", inDate: "", outTime: "", inTime: "", purpose: "" });
   };
 
@@ -813,9 +837,11 @@ const StudentDashboard = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved": return <span className="status-approved px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"><Check className="w-4 h-4" /> Approved</span>;
-      case "rejected": return <span className="status-rejected px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"><X className="w-4 h-4" /> Rejected</span>;
-      default: return <span className="status-pending px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"><Loader2 className="w-4 h-4 animate-spin" /> Pending</span>;
+      case "approved": return <span className="status-approved px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 bg-success/10 text-success border border-success/20"><Check className="w-4 h-4" /> Approved</span>;
+      case "rejected": return <span className="status-rejected px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 bg-destructive/10 text-destructive border border-destructive/20"><X className="w-4 h-4" /> Rejected</span>;
+      case "completed": return <span className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 bg-primary/10 text-primary border border-primary/20"><Check className="w-4 h-4" /> Completed</span>;
+      case "expired": return <span className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 bg-muted text-muted-foreground border border-border"><Clock className="w-4 h-4" /> Expired</span>;
+      default: return <span className="status-pending px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 bg-warning/10 text-warning border border-warning/20"><Loader2 className="w-4 h-4 animate-spin" /> Pending</span>;
     }
   };
 
@@ -946,7 +972,7 @@ const StudentDashboard = () => {
                 studentId={student.id}
                 rollNumber={student.roll_number}
                 gatePassId={latestGatePass?.id as string || ""}
-                onSuccess={() => loadGatePasses(student.roll_number)}
+                onSuccess={() => loadGatePasses(student.roll_number, student.status)}
                 trigger={
                   <Button
                     variant="outline"
@@ -1372,7 +1398,7 @@ const StudentDashboard = () => {
 
           {/* Middle Column - Gate Pass Form */}
           <div className="space-y-6">
-            {student.status === "OUT" ? (
+            {student.status === "OUT" || gatePasses.some(gp => gp.status === "pending" || gp.status === "approved") ? (
               <Card className="border-2 border-destructive bg-destructive/5 text-center shadow-lg mt-8">
                 <CardHeader>
                   <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1382,9 +1408,9 @@ const StudentDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm font-medium text-destructive mt-2 leading-relaxed">
-                    You are currently marked as OUT of the hostel.
-                    <br /><br />
-                    You cannot request a new Gate Pass or Leave form until you return and the watchman confirms your entry.
+                    {student.status === "OUT" 
+                      ? "You are currently marked as OUT of the hostel. You cannot request a new Gate Pass or Leave form until you return and the watchman confirms your entry."
+                      : "You already have an active pass (Pending or Approved). You cannot apply for a new one until the current one is completed, rejected, or expires."}
                   </p>
                 </CardContent>
               </Card>
@@ -1573,7 +1599,7 @@ const StudentDashboard = () => {
                           studentId={student.id}
                           rollNumber={student.roll_number}
                           gatePassId={latestGatePass.id as string}
-                          onSuccess={() => loadGatePasses(student.roll_number)}
+                          onSuccess={() => loadGatePasses(student.roll_number, student.status)}
                         />
 
                         {wardenSignature && (
