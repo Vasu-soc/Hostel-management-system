@@ -541,7 +541,6 @@ const AdminDashboard = () => {
                       {Object.entries(stats.branchStats)
                         .filter(([_, data]) => data.total > 0)
                         .map(([branchValue, data]) => {
-                          const branchImg = getBranchImage(branchValue);
                           return (
                             <div key={branchValue} className="p-4 rounded-xl bg-muted/30 border border-border group hover:bg-muted/50 transition-colors relative overflow-hidden">
                               <div className="flex items-start justify-between">
@@ -906,12 +905,20 @@ const AdminDashboard = () => {
 
                         <div className="w-full grid grid-cols-2 gap-2 mt-4">
                            <div className="p-2 rounded-lg bg-muted/50">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Batch</p>
+                              <p className="font-bold text-[10px] whitespace-nowrap">{(student as any).batch_start || (student as any).validity_from || '2024'}-{(student as any).batch_end || (student as any).validity_to || '2028'}</p>
+                           </div>
+                           <div className="p-2 rounded-lg bg-muted/50">
                               <p className="text-[10px] font-bold text-muted-foreground uppercase">Room</p>
                               <p className="font-bold text-sm">{student.hostel_room_number || "None"}</p>
                            </div>
                            <div className="p-2 rounded-lg bg-muted/50">
                               <p className="text-[10px] font-bold text-muted-foreground uppercase">Gender</p>
                               <p className="font-bold text-sm uppercase font-mono">{student.gender || "NA"}</p>
+                           </div>
+                           <div className="p-2 rounded-lg bg-muted/50">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Branch</p>
+                              <p className="font-bold text-[10px] truncate uppercase">{student.branch}</p>
                            </div>
                         </div>
 

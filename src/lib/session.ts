@@ -19,6 +19,8 @@ export interface StudentSession {
   total_fee: number;
   validity_from: string | null;
   validity_to: string | null;
+  batch_start?: number | null;
+  batch_end?: number | null;
   remarks: string | null;
   photo_url: string | null;
   status?: string | null;
@@ -86,6 +88,8 @@ export const setStudentSession = (student: Record<string, unknown>): void => {
     total_fee: Number(safeData.total_fee || 100000),
     validity_from: safeData.validity_from as string | null,
     validity_to: safeData.validity_to as string | null,
+    batch_start: safeData.batch_start as number | null,
+    batch_end: safeData.batch_end as number | null,
     remarks: safeData.remarks as string | null,
     photo_url: safeData.photo_url as string | null,
     status: safeData.status as string | null,

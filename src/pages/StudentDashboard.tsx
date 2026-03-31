@@ -866,13 +866,9 @@ const StudentDashboard = () => {
             <div className="flex flex-col gap-1">
               <span className="font-bold">{student.roll_number}</span>
               <div className="flex items-center gap-2">
-                {getBranchImage(student.branch) && (
-                  <img 
-                    src={getBranchImage(student.branch)!} 
-                    alt="Branch" 
-                    className="w-5 h-5 object-contain"
-                  />
-                )}
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono font-bold border border-primary/20">
+                  {student.batch_start || student.validity_from || '2024'}-{student.batch_end || student.validity_to || '2028'}
+                </span>
                 <span className="text-[10px] md:text-xs opacity-80 font-bold uppercase tracking-wider">
                   {student.branch?.toUpperCase()} • {student.year} Year
                 </span>

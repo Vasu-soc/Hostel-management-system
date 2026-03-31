@@ -1786,10 +1786,10 @@ const WardenDashboard = () => {
                         )}
                         <CardTitle className="text-lg">{app.student_name}</CardTitle>
                         <div className="flex items-center gap-2">
-                          {getBranchImage(app.branch) && (
-                            <img src={getBranchImage(app.branch)!} className="w-4 h-4 object-contain" alt="Branch" />
-                          )}
-                          <p className="text-sm text-muted-foreground font-bold">{app.branch?.toUpperCase()}</p>
+                          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono font-bold border border-primary/20 whitespace-nowrap">
+                            {(app as any).batch_start || (app as any).validity_from || '2024'}-{(app as any).batch_end || (app as any).validity_to || '2028'}
+                          </span>
+                          <p className="text-sm text-muted-foreground font-bold truncate uppercase">{app.branch}</p>
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -2356,9 +2356,9 @@ const WardenDashboard = () => {
                                 <p className="text-xs font-black">{(student as any).batch_end || "N/A"}</p>
                              </div>
                           </div>
-                          <div className="flex items-center gap-2 px-1">
-                             {getBranchImage(student.branch) && <img src={getBranchImage(student.branch)!} className="w-4 h-4 object-contain opacity-70" />}
-                             <span className="text-[10px] font-bold text-muted-foreground uppercase truncate">{student.branch}</span>
+                          <div className="flex items-center gap-2 px-1 text-[10px] font-bold text-muted-foreground uppercase truncate">
+                             <Calendar className="w-3 h-3 opacity-50" />
+                             <span>{student.branch}</span>
                           </div>
                        </CardContent>
                     </Card>
@@ -2454,9 +2454,9 @@ const WardenDashboard = () => {
                           </TableCell>
                           <TableCell className="text-xs font-semibold uppercase whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              {getBranchImage(item.branch) && (
-                                <img src={getBranchImage(item.branch)!} className="w-4 h-4 object-contain opacity-60" alt="" />
-                              )}
+                              <span className="text-[9px] bg-muted px-1 py-0.5 rounded opacity-70 font-mono">
+                                {(item as any).batch_start || (item as any).validity_from || '2024'}-{(item as any).batch_end || (item as any).validity_to || '2028'}
+                              </span>
                               {item.branch || "-"}
                             </div>
                           </TableCell>
@@ -2648,11 +2648,11 @@ const WardenDashboard = () => {
                   <p className="detail-value font-medium">{selectedApplication.father_name || "-"}</p>
                 </div>
                 <div className="detail-item">
-                  <p className="detail-label text-sm text-muted-foreground">Branch</p>
+                  <p className="detail-label text-sm text-muted-foreground">Branch & Batch</p>
                    <p className="detail-value font-bold flex items-center gap-2">
-                     {getBranchImage(selectedApplication.branch) && (
-                       <img src={getBranchImage(selectedApplication.branch)!} className="w-5 h-5 object-contain" alt="" />
-                     )}
+                     <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+                       {(selectedApplication as any).batch_start || (selectedApplication as any).validity_from || '2024'}-{(selectedApplication as any).batch_end || (selectedApplication as any).validity_to || '2028'}
+                     </span>
                      {selectedApplication.branch?.toUpperCase()}
                    </p>
                 </div>

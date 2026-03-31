@@ -51,18 +51,64 @@ graph TD
 
 ---
 
-## 🚀 Core Technology Stack
+## 🚀 Technical Core Depth
 
-### 🔹 Frontend (The UI Engine)
-- **React 18 & TypeScript**: Ensures a robust, type-safe development environment.
-- **Tailwind CSS**: Custom HSL-based design tokens for high-performance light/dark mode.
-- **Framer Motion**: Premium micro-animations for the SplashScreen and dashboard transitions.
-- **TanStack Query (React Query)**: Advanced server-state synchronization and caching.
+### 🧩 1. Frontend (The Visual & Interactive Layer)
+The frontend is built to provide a "Zero-Latency" feel with premium aesthetics that wow users at first glance.
 
-### 🔹 Backend & Database (The Logic Engine)
-- **Supabase (PostgreSQL)**: Handles the relational database, Authentication, Real-time broadcasting, and Edge Functions (for Email service).
-- **Vite Middleware (Local API)**: A custom Node.js plugin for file-system-based logging and fallback JSON storage.
-- **Resend API**: Real-time email notification engine for alerts and approvals.
+- **Elements & Components:**
+  - **Framework:** React 18 & TypeScript for a type-safe, component-driven architecture.
+  - **Styling:** Custom Vanilla CSS & Tailwind CSS for high-performance HSL-based design (Light/Dark modes).
+  - **Premium UI:** Shadcn/UI for accessible components and Framer Motion for micro-animations (Transitions, SplashScreen).
+  - **Interactivity:** Innovative **Zoom-Fade Carousel** for landing page visuals and high-fidelity transitions.
+
+- **Functions & Logic:**
+  - **State Management:** TanStack Query (React Query) for real-time server-state synchronization and caching.
+  - **Dynamic Filtering:** Course-based filtering logic (B.Tech/Diploma) dynamically updates branch options across all portals.
+  - **Interactive Dashboards:** Statistical cards in the Admin/Warden panels act as filters (e.g., clicking "Total Boys" filters the student list instantly).
+  - **UX Optimizations:** Integrated keyboard navigation (Enter key focus for login) and auto-saving form drafts.
+
+- **Key Features:**
+  - **Five-Portal Ecosystem:** Context-aware routing for Admin, Warden, Student, Parent, and Security.
+  - **Mobile-First Design:** Fully responsive layouts ensuring usability on tablets and smartphones.
+  - **Premium Themes:** Sleek Dark Mode option with glassmorphism effects and backdrop-blur gradients.
+
+### ⚙️ 2. Backend (The Logic & Processing Layer)
+HosteliHub utilizes a serverless-focused backend architecture that ensures maximum uptime and security.
+
+- **Elements & Infrastructure:**
+  - **Authentication:** Supabase Auth with JWT tokens and role-based metadata.
+  - **Edge Runtime:** Supabase Edge Functions to handle heavy computations and email automation.
+  - **Notifications:** Resend API for transactional emails (SOS alerts, gate-pass approvals).
+  - **Local API:** Custom Vite middleware for system logging and local storage fallbacks.
+
+- **Functions & Process Management:**
+  - **Role-Based Access Control (RBAC):** Strict navigation guards that prevent unauthorized access to administrative routes.
+  - **Security Scanning:** Logic for QR code verification and real-time movement logging for perimeter security.
+  - **Email Engine:** Automatic notification triggers for medical SOS, fee receipts, and overdue alerts.
+
+- **Key Features:**
+  - **Real-Time Broadcasting:** Instant alerts across all connected portals when a student reports an SOS or a gate-pass is scanned.
+  - **Secure File Storage:** Management of study materials (PDFs) and student documentation with temporary signed URLs.
+  - **Architecture Transparency:** Integrated system architectural diagrams and data flow visualization within the Admin panel.
+
+### 💾 3. Database (The Persistence & Data Layer)
+A robust PostgreSQL core managed via Supabase provides relational integrity and enterprise-grade security.
+
+- **Elements & Storage:**
+  - **PostgreSQL Engine:** Relational database for structured data management.
+  - **Supabase Storage:** S3-compliant storage for hostel event albums and student profile photos.
+  - **Migration System:** Version-controlled SQL schema to track every change in tables, triggers, and views.
+
+- **Functions & Database Logic:**
+  - **Row-Level Security (RLS):** Database policies that ensure students can only see their own data while admins have global access.
+  - **Automated Triggers:** SQL functions that automatically update room vacancies when students are admitted or vacated.
+  - **Recycle Bin Logic:** Soft-delete implementation allowing Wardens to recover accidentally deleted student or staff records.
+
+- **Key Features:**
+  - **Relational Integrity:** Deeply linked tables (Fees, Attendance, Materials, Medical Alerts) ensuring consistent data.
+  - **Live Syncing:** Real-time channel subscriptions that push database changes to the frontend without page refreshes.
+  - **Financial Auditing:** Master collection tables with detailed debt tracking and academic year-wise fee reporting.
 
 ---
 
@@ -73,80 +119,46 @@ graph TD
 
 | Feature Name | Usage & Purpose |
 | :--- | :--- |
-| **Digital Gate Pass** | Allows students to apply for temporary exit (outing) or long leave. Generates a unique QR code for security verification upon approval. |
-| **Medical SOS Alert** | An emergency button to notify the Warden and Guardian if the student falls ill. Includes a view of available medicines in the hostel inventory. |
-| **Academic Resource Hub** | Instant access to branch and year-specific study materials (PDFs/Links) and semester-wise marks tracking. |
-| **Financial Dashboard** | Secure view of the fee structure, total amount paid, and balance due. Includes a payment history and redirect to the payment portal. |
-| **Issue Reporting** | Multi-category problem reporting for Food, Electrical, or Room issues with live status tracking (Pending/Resolved). |
-| **Hostel Albums** | View multi-image event photos and gallery updates from the hostel life. |
-| **Course-Specific View** | Dynamic filtering for B.Tech and Diploma branches in the academic and profile sections. |
-| **Real-time Fee Sync** | Academic year-wise fee breakdown with instant feedback on transaction status. |
-| **SplashScreen & UX** | Premium animated entry and optimized keyboard navigation (Enter key focus). |
-| **Daily Attendance** | View current presence status and access monthly attendance reports. |
-| **Food Preference Voting** | Students vote for their daily meal preferences, helping the mess management reduce food waste. |
-
----
+| **Digital Gate Pass** | Apply for outing/leave. Generates unique QR for scan. |
+| **Medical SOS Alert** | Emergency warden notification + Medicine inventory view. |
+| **Academic Hub** | Access PDFs/Materials & track marks by Branch/Year. |
+| **Financial Dashboard** | View dues, payments, and academic year-wise breakdown. |
+| **Issue Reporting**| Categorized reporting (Food/Electric) with live tracking. |
+| **Food Voting**| Students vote for daily meal preferences to reduce mess waste. |
+| **Course-Specific View**| Dynamic B.Tech/Diploma branch filtering across the portal. |
 
 ### 👨‍👩‍👧 2. Parent Portal
-*Provides transparency and peace of mind for guardians through roll-number-based tracking.*
-
 | Feature Name | Usage & Purpose |
 | :--- | :--- |
-| **Real-time Monitoring** | Parents can see if their child is currently "Inside" or "Outside" the campus based on security logs. |
-| **Leave Extension** | If a child is already on approved leave, parents can digitally request an extension of days for the Warden to review. |
-| **Medical History** | A complete log of all medical alerts ever reported by the student, ensuring parents are informed about their child's health history. |
-| **Financial Transparency** | Detailed breakdown of annual dues and a verified history of all payments made throughout the academic stay. |
-| **Direct Contact Hub** | Easy-access deep-links to contact the Warden or Emergency Security via WhatsApp or Phone call. |
-| **Hostel Gallery** | View event albums and photos of hostel activities to stay connected with campus life. |
-| **Academic Progress** | View monthly attendance percentages and academic performance reports provided by the hostel. |
-
----
+| **Real-time Tracking**| Visual status "Inside/Outside" based on security logs. |
+| **Leave Extension** | Request extra days for ongoing leave digitally. |
+| **Medical History** | Complete historical log of child's reported illnesses/SOS. |
+| **Financial Transparency**| Breakdown of all annual dues and verified payment history. |
+| **Direct Contact** | One-tap WhatsApp/Call links for Warden & Emergency Security. |
 
 ### 🏫 3. Warden Portal
-*The administrative heart of the hostel, managing approvals, rooms, and emergencies.*
-
 | Feature Name | Usage & Purpose |
 | :--- | :--- |
-| **Approval Engine** | One-stop queue for reviewing Incoming Student Applications and Gate Pass requests. Includes digital signature verification. |
-| **Intelligence Dashboard** | Real-time charts showing pending rooms, total occupancy, and active gate pass counts. |
-| **Room Map & Allotment** | A visual map of every floor and room. Automatically seeks and blocks rooms based on student floor/AC preferences. |
-| **Medical Management** | Unified alert center for incoming SOS signals. Enables wardens to manage the medicine inventory levels. |
-| **Material Distribution** | Portal to upload study materials and syllabus updates to specific student branches or years. |
-| **Overdue Tracking** | Automatically triggers alerts for students who have not returned to campus by their specified gate-pass time. |
-| **Album Management** | Upload and manage event photos with multi-image support for Student/Parent galleries. |
-| **Course-Based Uploads** | Categorize and distribute study materials specifically for B.Tech or Diploma students. |
-| **Recycle Bin** | Safety mechanism to recover accidentally deleted student or staff records. |
-
----
+| **Approval Engine** | Queue for Student Applications and Gate Pass requests. |
+| **Room Map** | Visual floor-wise map for automated bed allotment based on AC preference. |
+| **Emergency Center** | Centralized dashboard for incoming Medical SOS signals. |
+| **Recycle Bin** | Safety tool to recover deleted student or staff records instantly. |
+| **Material Upload** | Categorized study material distribution for B.Tech/Diploma. |
 
 ### 🛡️ 4. Admin Portal
-*Governance tools for senior management to oversee institution-wide operations.*
-
 | Feature Name | Usage & Purpose |
 | :--- | :--- |
-| **Staff & Security Control** | Onboarding and approval for new Warden and Watchman accounts via secure token generation. |
-| **Financial Audit** | Master view of total fee collection, institutional revenue from application fees, and individual debt tracking. |
-| **Unified Directory** | Highly searchable database containing every student resident with advanced branch/year filtering. |
-| **Room Oversight** | High-level monitoring of room occupancy across AC and Standard blocks to plan for future admissions. |
-| **Announcements** | Sending system-wide notifications and updates displayed across all portals. |
-| **Advanced Filtering** | Seamlessly filter the entire student directory by Course (B.Tech/Diploma) and Branch. |
-| **Architecture Access** | Unified view of the system's technical architecture and data flow for governance. |
-| **System Maintenance** | Critical tools for master data reset (protected by manual override) and system health monitoring. |
-
----
+| **Financial Audit** | Master view of total fee collection vs debt tracking. |
+| **Interactive Stats** | Clickable summary cards to filter student lists by category. |
+| **Staff Control** | Secure onboarding for Warden and Security staff via tokens. |
+| **System Maintenance** | Master data resets and health monitoring tools. |
 
 ### 🛂 5. Gatepass Security (Watchman Portal)
-*The front-line defense, ensuring perimeter security via digital logging.*
-
 | Feature Name | Usage & Purpose |
 | :--- | :--- |
-| **QR Scan Architecture** | Real-time camera-based scanner to verify student digital tokens instantly. Prevents fraudulent entry/exit. |
-| **Manual Authorization** | Fallback search feature to authorize a student via Roll Number if their digital device is unavailable. |
-| **Movement Execution** | Digital logging of the exact second a student exits or enters the gate, synchronizing with the Warden and Parent dashboards. |
-| **"Out Students" Monitoring** | A live dashboard showing every student currently off-campus, helping security maintain accountability at all times. |
-| **Scanner Persistence** | Improved QR scanner architecture ensuring continuous functionality during long shifts. |
-
-| **Identity Verification** | Displays the student's photo and Father's name upon scan to ensure the correct individual is passing. |
+| **QR Scan Auth** | Real-time scanner to verify tokens with student photo display. |
+| **Movement Log** | Millisecond-accurate logging of every entry and exit event. |
+| **Security Dashboard**| Live monitoring of all students currently "Out of Campus". |
 
 ---
 
