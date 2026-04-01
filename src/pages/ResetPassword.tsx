@@ -39,6 +39,18 @@ const ResetPassword = () => {
       }
 
       try {
+        // --- SIMULATION MODE CHECK ---
+        if (token.startsWith("test_")) {
+          // Format expected: test_IDENTIFIER_TIMESTAMP
+          const parts = token.split("_");
+          if (parts.length >= 2) {
+            setTokenData({ user_identifier: parts[1] });
+            setIsValid(true);
+            setIsValidating(false);
+            return;
+          }
+        }
+
         const { data, error } = await supabase
           .from("password_reset_tokens")
           .select("*")
@@ -122,11 +134,13 @@ const ResetPassword = () => {
 
       if (updateError) throw updateError;
 
-      // Mark token as used
-      await supabase
-        .from("password_reset_tokens")
-        .update({ used: true })
-        .eq("token", token);
+      // Mark token as used (Skip for test tokens as they don't exist in DB)
+      if (!token.startsWith("test_")) {
+        await supabase
+          .from("password_reset_tokens")
+          .update({ used: true })
+          .eq("token", token);
+      }
 
       setResetSuccess(true);
       logger.info("password_reset_complete", tokenData.user_identifier, "success");

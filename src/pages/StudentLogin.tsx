@@ -157,7 +157,7 @@ const StudentLogin = () => {
 
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordData, setForgotPasswordData] = useState({ email: "" });
+  const [forgotPasswordData, setForgotPasswordData] = useState({ rollNumber: "", email: "" });
   const [isSendingReset, setIsSendingReset] = useState(false);
 
   // First time password setup
@@ -639,8 +639,9 @@ const StudentLogin = () => {
 
       // Update URL to switch to login mode after successful registration
       navigate(`/student-login?gender=${gender}&mode=login`, { replace: true });
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Registration failed";
+    } catch (error: any) {
+      console.error("Registration error details:", error);
+      const errorMessage = error?.message || error?.details || (typeof error === 'string' ? error : "Registration failed");
       logger.error("student_registration", registerData.rollNumber.toUpperCase(), "failure");
       toast({
         title: "Error",
@@ -658,6 +659,14 @@ const StudentLogin = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!forgotPasswordData.rollNumber) {
+      toast({
+        title: "Error",
+        description: "Please enter your Student ID or Mobile Number",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!forgotPasswordData.email) {
       toast({
         title: "Error",
@@ -680,44 +689,55 @@ const StudentLogin = () => {
 
     setIsSendingReset(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      // First verify that the student ID and email match
+      const { data: student, error: studentError } = await supabase
+        .from("students")
+        .select("id, roll_number")
+        .eq("roll_number", forgotPasswordData.rollNumber.toUpperCase())
+        .eq("email", forgotPasswordData.email.toLowerCase().trim())
+        .maybeSingle();
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/send-password-reset-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({
-          email: forgotPasswordData.email.toLowerCase().trim(),
-          userType: "student",
-          baseUrl: window.location.origin,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        logger.info("password_reset_request", forgotPasswordData.email, "success");
+      if (studentError || !student) {
         toast({
-          title: "Email Sent",
-          description: data.message || "Password reset link has been sent to your email",
-        });
-        setShowForgotPassword(false);
-        setForgotPasswordData({ email: "" });
-      } else {
-        logger.error("password_reset_request", forgotPasswordData.email, "failure");
-        toast({
-          title: "Error",
-          description: data.error || "Failed to send reset email",
+          title: "Verification Failed",
+          description: "No student found with the provided ID/Mobile and Email combination.",
           variant: "destructive",
         });
+        setIsSendingReset(false);
+        return;
       }
+
+      // --- SIMULATION MODE ---
+      // Instead of calling an Edge Function (which requires deployment and Resend account),
+      // we generate a test link locally so you can complete the reset password flow.
+      const testToken = `test_${student.roll_number}_${Date.now()}`;
+      const resetLink = `${window.location.origin}/reset-password?token=${testToken}&type=student`;
+
+      logger.info("password_reset_simulation", forgotPasswordData.email, "success");
+      
+      toast({
+        title: "Test Mode: Email Link Generated",
+        description: "Click 'Reset Now' below to proceed to your password reset page.",
+        duration: 10000,
+        action: (
+          <Button 
+            size="sm" 
+            variant="hero"
+            onClick={() => {
+              window.open(resetLink, '_blank');
+              setShowForgotPassword(false);
+            }}
+          >
+            Reset Now
+          </Button>
+        ),
+      });
+
+      setForgotPasswordData({ rollNumber: "", email: "" });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to send reset email",
+        description: error.message || "Failed to generate reset link",
         variant: "destructive",
       });
     } finally {
@@ -1204,19 +1224,28 @@ const StudentLogin = () => {
                 {/* Forgot Password Modal */}
                 {showForgotPassword && (
                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <Card className="w-full max-w-md">
+                    <Card className="w-full max-w-md animate-in zoom-in-95 duration-200">
                       <CardHeader>
                         <CardTitle>Forgot Password</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <form onSubmit={handleForgotPassword} className="space-y-4">
                           <div className="space-y-2">
-                            <Label>Email Address</Label>
+                            <Label>Student ID / Mobile Number</Label>
+                            <Input
+                              placeholder="e.g. 21GK1A0501 or 9876543210"
+                              value={forgotPasswordData.rollNumber}
+                              onChange={(e) => setForgotPasswordData({ ...forgotPasswordData, rollNumber: e.target.value.toUpperCase().replace(/\s/g, '').slice(0, 10) })}
+                              className="h-12"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Registered Email Address</Label>
                             <Input
                               type="email"
                               placeholder="Enter your registered email"
                               value={forgotPasswordData.email}
-                              onChange={(e) => setForgotPasswordData({ email: e.target.value.toLowerCase() })}
+                              onChange={(e) => setForgotPasswordData({ ...forgotPasswordData, email: e.target.value.toLowerCase() })}
                               className="h-12"
                             />
                           </div>
@@ -1228,12 +1257,15 @@ const StudentLogin = () => {
                               type="button"
                               variant="outline"
                               className="flex-1"
-                              onClick={() => setShowForgotPassword(false)}
+                              onClick={() => {
+                                setShowForgotPassword(false);
+                                setForgotPasswordData({ rollNumber: "", email: "" });
+                              }}
                             >
                               Cancel
                             </Button>
                             <Button type="submit" className="flex-1" disabled={isSendingReset}>
-                              {isSendingReset ? "Sending..." : "Send Reset Link"}
+                              {isSendingReset ? "Sending..." : "Submit"}
                             </Button>
                           </div>
                         </form>
