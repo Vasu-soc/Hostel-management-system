@@ -15,7 +15,7 @@ const WatchmanLogin = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
-    const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("watchman_login");
+    const { isLockedOut, remainingTime, recordAttempt, resetAttempts, attemptsCount } = useRateLimit("watchman_login");
     const [formData, setFormData] = useState({
         username: "",
         password: "",
@@ -29,8 +29,8 @@ const WatchmanLogin = () => {
         if (isLockedOut) {
             setLoading(false);
             toast({
-                title: "Account Locked",
-                description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+                title: "Account Temporarily Blocked",
+                description: `Too many failed attempts. Access is restricted for ${remainingTime}.`,
                 variant: "destructive",
             });
             return;
@@ -45,12 +45,20 @@ const WatchmanLogin = () => {
                 .single();
 
             if (error || !data) {
-                recordAttempt();
-                toast({
-                    title: "Login Failed",
-                    description: "Invalid username or password",
-                    variant: "destructive",
-                });
+                const justLocked = recordAttempt();
+                if (justLocked) {
+                    toast({
+                        title: "Security Block Activated",
+                        description: "You have exceeded 5 wrong attempts. Your console is blocked for 24 hours.",
+                        variant: "destructive",
+                    });
+                } else {
+                    toast({
+                        title: "Login Failed",
+                        description: `Invalid username or password (${attemptsCount + 1}/5 attempts used)`,
+                        variant: "destructive",
+                    });
+                }
             } else {
                 resetAttempts();
                 setWatchmanSession(data);

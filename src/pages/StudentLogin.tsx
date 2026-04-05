@@ -55,7 +55,7 @@ const StudentLogin = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("student_login");
+  const { isLockedOut, remainingTime, recordAttempt, resetAttempts, attemptsCount } = useRateLimit("student_login");
 
   // Available rooms from database
   const [allRooms, setAllRooms] = useState<Room[]>([]);
@@ -294,8 +294,8 @@ const StudentLogin = () => {
     if (isLockedOut) {
       setIsLoading(false);
       toast({
-        title: "Account Locked",
-        description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        title: "Account Temporarily Blocked",
+        description: `Too many failed attempts. Access is restricted for ${remainingTime}.`,
         variant: "destructive",
       });
       return;
@@ -339,13 +339,22 @@ const StudentLogin = () => {
       if (error) throw error;
 
       if (!student) {
-        recordAttempt();
+        const justLocked = recordAttempt();
         logger.error("login", loginData.rollNumber, "failure");
-        toast({
-          title: "Student Not Found",
-          description: "Please register first before logging in",
-          variant: "destructive",
-        });
+        
+        if (justLocked) {
+          toast({
+            title: "Security Block Activated",
+            description: "You have exceeded 5 wrong attempts. Your account is blocked for 24 hours.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Student Not Found",
+            description: `Please register first before logging in (${attemptsCount + 1}/5 attempts used)`,
+            variant: "destructive",
+          });
+        }
         setIsLoading(false);
         return;
       }
@@ -375,13 +384,22 @@ const StudentLogin = () => {
       }
 
       if (student.password !== loginData.password) {
-        recordAttempt();
+        const justLocked = recordAttempt();
         logger.error("login", loginData.rollNumber, "failure");
-        toast({
-          title: "Invalid Password",
-          description: "Please check your password and try again",
-          variant: "destructive",
-        });
+        
+        if (justLocked) {
+          toast({
+            title: "Security Block Activated",
+            description: "You have exceeded 5 wrong attempts. Your account is blocked for 24 hours.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Invalid Password",
+            description: `Invalid credentials. (${attemptsCount + 1}/5 attempts used)`,
+            variant: "destructive",
+          });
+        }
         setIsLoading(false);
         return;
       }

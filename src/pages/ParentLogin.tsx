@@ -28,7 +28,7 @@ const ParentLogin = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const { isLockedOut, remainingMinutes, recordAttempt, resetAttempts } = useRateLimit("parent_login");
+  const { isLockedOut, remainingTime, recordAttempt, resetAttempts, attemptsCount } = useRateLimit("parent_login");
 
   // Login form
   const [loginData, setLoginData] = useState({
@@ -154,8 +154,8 @@ const ParentLogin = () => {
     if (isLockedOut) {
       setIsLoading(false);
       toast({
-        title: "Account Locked",
-        description: `Too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        title: "Account Temporarily Blocked",
+        description: `Too many failed attempts. Access is restricted for ${remainingTime}.`,
         variant: "destructive",
       });
       return;
@@ -171,25 +171,41 @@ const ParentLogin = () => {
       if (error) throw error;
 
       if (!parent) {
-        recordAttempt();
+        const justLocked = recordAttempt();
         logger.error("parent_login", loginData.mobileNumber, "failure");
-        toast({
-          title: "Parent Not Found",
-          description: "Please register first before logging in",
-          variant: "destructive",
-        });
+        if (justLocked) {
+          toast({
+            title: "Security Block Activated",
+            description: "You have exceeded 5 wrong attempts. Your account is blocked for 24 hours.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Parent Not Found",
+            description: `Please register first before logging in (${attemptsCount + 1}/5 attempts used)`,
+            variant: "destructive",
+          });
+        }
         setIsLoading(false);
         return;
       }
 
       if (parent.password !== loginData.password) {
-        recordAttempt();
+        const justLocked = recordAttempt();
         logger.error("parent_login", loginData.mobileNumber, "failure");
-        toast({
-          title: "Invalid Password",
-          description: "Please check your password and try again",
-          variant: "destructive",
-        });
+        if (justLocked) {
+          toast({
+            title: "Security Block Activated",
+            description: "You have exceeded 5 wrong attempts. Your account is blocked for 24 hours.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Invalid Password",
+            description: `Invalid credentials. (${attemptsCount + 1}/5 attempts used)`,
+            variant: "destructive",
+          });
+        }
         setIsLoading(false);
         return;
       }
