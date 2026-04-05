@@ -442,7 +442,7 @@ const WatchmanDashboard = () => {
 
         setIsReporting(true);
         try {
-            const { error } = await supabase.from("security_incidents").insert({
+            const { error } = await (supabase as any).from("security_incidents").insert({
                 watchman_id: watchman.id,
                 watchman_name: watchman.name,
                 incident_type: incidentType,

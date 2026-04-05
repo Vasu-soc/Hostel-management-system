@@ -35,7 +35,7 @@ import {
   Users, DoorOpen, ShieldCheck, Megaphone, Wallet, 
   TrendingUp, CheckCircle2, ChevronRight, Search, 
   Trash2, BarChart3, XCircle, Info, Activity,
-  ExternalLink, Utensils
+  ExternalLink, Utensils, AlertTriangle
 } from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -87,6 +87,16 @@ interface Room {
   pending_beds: number;
 }
 
+interface SecurityIncident {
+  id: string;
+  watchman_id: string;
+  watchman_name: string;
+  incident_type: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
 import { BRANCHES, COURSES, getBranchesByCourse, getBranchImage } from "@/lib/constants";
 const branches = BRANCHES.map(b => b.value.toUpperCase());
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -103,13 +113,11 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "watchmen" | "updates" | "appFees">("dashboard");
-  const [selectedGender, setSelectedGender] = useState<string>("all_genders");
-  const [quickViewFilter, setQuickViewFilter] = useState<"all" | "male" | "female" | "fees" | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<SecurityIncident[]>([]);
   const [messCount, setMessCount] = useState<number>(0);
+  const [activeView, setActiveView] = useState<"dashboard" | "students" | "rooms" | "wardens" | "watchmen" | "updates" | "appFees" | "incidents">("dashboard");
   const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -141,6 +149,7 @@ const AdminDashboard = () => {
       .channel("admin-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, fetchRooms)
       .on("postgres_changes", { event: "*", schema: "public", table: "watchmen" }, fetchWatchmen)
+      .on("postgres_changes", { event: "*", schema: "public", table: "security_incidents" }, fetchIncidents)
       .on("postgres_changes", { event: "*", schema: "public", table: "wardens" }, () => {
         // No fetchWardens here as it's in a sub-component, but we might want to trigger it if possible
         // Actually WardenApproval handles its own state. Let's add it there or force refresh.
@@ -159,6 +168,8 @@ const AdminDashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "hostel_applications" }, fetchApplications)
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_attendance" }, fetchMessCount)
       .subscribe();
+
+    fetchIncidents();
 
     return () => {
       supabase.removeChannel(channel);
@@ -181,6 +192,11 @@ const AdminDashboard = () => {
       .eq("attendance_date", today)
       .eq("status", "present");
     if (!error) setMessCount(count || 0);
+  };
+
+  const fetchIncidents = async () => {
+    const { data } = await (supabase as any).from("security_incidents").select("*").order("created_at", { ascending: false });
+    if (data) setIncidents(data as SecurityIncident[]);
   };
 
   const fetchAllStudents = async () => {
@@ -430,6 +446,7 @@ const AdminDashboard = () => {
               { id: "rooms", label: "Rooms", icon: DoorOpen },
               { id: "wardens", label: "Wardens", icon: ShieldCheck },
               { id: "watchmen", label: "Watchmen", icon: ShieldCheck },
+              { id: "incidents", label: "Security", icon: AlertTriangle },
               { id: "appFees", label: "Fee Summary", icon: IndianRupee },
               { id: "updates", label: "Updates", icon: Megaphone }
             ].map((tab) => (
@@ -1174,6 +1191,98 @@ const AdminDashboard = () => {
               </Card>
             </motion.div>
            )}
+          {activeView === "incidents" && (
+            <motion.div key="incidents" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <div className="flex justify-between items-center bg-red-500/10 p-6 rounded-[2rem] border border-red-500/20">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-500 rounded-2xl shadow-lg shadow-red-200">
+                    <AlertTriangle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black italic tracking-tighter uppercase">Security Incident Logs</h2>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-red-600/70">{incidents.length} Unresolved Alerts Reported</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-xl border-red-200 text-red-600 font-bold hover:bg-red-50" onClick={fetchIncidents}>
+                  <RefreshCw className="w-4 h-4 mr-2" /> REFRESH
+                </Button>
+              </div>
+
+              <Card className="overflow-hidden border-none shadow-2xl rounded-[2rem] ring-1 ring-black/5 bg-white">
+                <Table>
+                  <TableHeader className="bg-neutral-50 border-b border-neutral-100">
+                    <TableRow>
+                      <TableHead className="py-6 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Timestamp</TableHead>
+                      <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Watchman</TableHead>
+                      <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Category</TableHead>
+                      <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Narrative</TableHead>
+                      <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Status</TableHead>
+                      <TableHead className="py-6 text-right px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Protocol</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {incidents.map((incident) => (
+                      <TableRow key={incident.id} className="hover:bg-neutral-50/50 transition-colors group">
+                        <TableCell className="px-6 py-5 font-mono text-[10px] text-neutral-400 font-bold">
+                          {new Date(incident.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="font-black italic text-sm tracking-tight text-neutral-900 uppercase">{incident.watchman_name}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-red-600 text-white border-none py-1 px-3 text-[9px] font-black tracking-widest rounded-lg">
+                            {incident.incident_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[400px] text-sm text-neutral-700 font-bold leading-relaxed italic pr-8">
+                          "{incident.description}"
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                             <div className={`w-2 h-2 rounded-full ${incident.status === 'resolved' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500 animate-pulse'}`} />
+                             <span className={`uppercase text-[10px] font-black tracking-widest ${
+                                incident.status === 'resolved' ? 'text-emerald-600' : 'text-red-600'
+                             }`}>
+                               {incident.status}
+                             </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right px-6">
+                          {incident.status === 'pending' ? (
+                            <Button 
+                              size="sm" 
+                              className="bg-neutral-900 hover:bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest px-4 border-b-2 border-neutral-700 shadow-lg active:border-b-0 transition-all" 
+                              onClick={async () => {
+                                const { error } = await (supabase as any).from("security_incidents").update({ status: "resolved" }).eq("id", incident.id);
+                                if (!error) {
+                                  toast({ title: "Incident Resolved", description: "The incident has been marked as resolved." });
+                                  fetchIncidents();
+                                }
+                              }}
+                            >
+                              Resolve Case
+                            </Button>
+                          ) : (
+                            <div className="flex items-center justify-end text-emerald-500 gap-1.5 font-black uppercase text-[10px] tracking-widest italic">
+                               <CheckCircle2 className="w-4 h-4" /> RECOVERED
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {incidents.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-32">
+                           <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-neutral-300">
+                             <ShieldCheck className="w-8 h-8" />
+                           </div>
+                           <p className="text-[10px] text-neutral-400 font-black uppercase tracking-[0.2em]">Perimeter Secure • No Incidents Logged</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
