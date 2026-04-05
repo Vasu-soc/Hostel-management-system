@@ -33,7 +33,8 @@ import {
   DoorOpen,
   House,
   RefreshCw,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 
 interface Watchman {
@@ -61,6 +62,10 @@ const WatchmanDashboard = () => {
     const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
     const [activeView, setActiveView] = useState<"scanner" | "outList" | "history">("scanner");
     const [isPassDetailOpen, setIsPassDetailOpen] = useState(false);
+    const [isIncidentDialogOpen, setIsIncidentDialogOpen] = useState(false);
+    const [incidentType, setIncidentType] = useState("");
+    const [incidentDescription, setIncidentDescription] = useState("");
+    const [isReporting, setIsReporting] = useState(false);
     const [showLoader, setShowLoader] = useState(() => sessionStorage.getItem("show_terminal_loader") === "true");
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -427,6 +432,35 @@ const WatchmanDashboard = () => {
         setStudentDetails(null);
         setManualId("");
         setIsScanning(true);
+    };
+
+    const handleReportIncident = async () => {
+        if (!watchman || !incidentType || !incidentDescription) {
+            toast({ title: "Error", description: "Please provide incident type and description", variant: "destructive" });
+            return;
+        }
+
+        setIsReporting(true);
+        try {
+            const { error } = await supabase.from("security_incidents").insert({
+                watchman_id: watchman.id,
+                watchman_name: watchman.name,
+                incident_type: incidentType,
+                description: incidentDescription,
+                status: "pending"
+            });
+
+            if (error) throw error;
+
+            toast({ title: "Incident Reported", description: "The incident has been logged and notified to administration." });
+            setIsIncidentDialogOpen(false);
+            setIncidentType("");
+            setIncidentDescription("");
+        } catch (e: any) {
+            toast({ title: "Failure", description: e.message, variant: "destructive" });
+        } finally {
+            setIsReporting(false);
+        }
     };
 
     const handleLogout = () => {
@@ -1011,7 +1045,72 @@ const WatchmanDashboard = () => {
                   <RefreshCw className={`w-5 h-5 ${activeView === "history" ? "rotate-180" : ""}`} />
                   <span className="text-[8px] font-black uppercase tracking-widest">Logs</span>
                 </button>
+                <button 
+                  onClick={() => setIsIncidentDialogOpen(true)}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 h-full rounded-[2rem] text-red-400 hover:text-red-500 hover:bg-white/5 transition-all"
+                >
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="text-[8px] font-black uppercase tracking-widest">Alert</span>
+                </button>
             </div>
+
+            {/* Security Incident Dialog */}
+            <Dialog open={isIncidentDialogOpen} onOpenChange={setIsIncidentDialogOpen}>
+                <DialogContent className="max-w-sm rounded-[2rem] border-none bg-white p-0 overflow-hidden shadow-2xl">
+                    <div className="bg-red-600 p-8 text-white text-center">
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
+                            <AlertTriangle className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-xl font-black italic tracking-tight">REPORT INCIDENT</h3>
+                        <p className="text-red-100/70 text-[10px] font-bold uppercase tracking-widest mt-1">Official Security Alert Log</p>
+                    </div>
+                    
+                    <div className="p-6 space-y-4 bg-white">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Incident Category</Label>
+                            <select 
+                                value={incidentType} 
+                                onChange={(e) => setIncidentType(e.target.value)}
+                                className="w-full h-12 rounded-2xl bg-neutral-50 px-4 text-sm font-bold border-none shadow-inner outline-none focus:ring-2 ring-red-500/20"
+                            >
+                                <option value="">Select Category...</option>
+                                <option value="Unauthorized Entry">Unauthorized Entry</option>
+                                <option value="Property Damage">Property Damage</option>
+                                <option value="Suspicious Activity">Suspicious Activity</option>
+                                <option value="Student Disciplinary">Student Disciplinary</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Incident Description</Label>
+                            <textarea 
+                                value={incidentDescription}
+                                onChange={(e) => setIncidentDescription(e.target.value)}
+                                placeholder="Describe the situation in detail..."
+                                className="w-full h-24 rounded-2xl bg-neutral-50 p-4 text-sm font-bold border-none shadow-inner outline-none focus:ring-2 ring-red-500/20 resize-none"
+                            ></textarea>
+                        </div>
+                        
+                        <div className="pt-2 flex gap-3">
+                            <Button 
+                                variant="ghost" 
+                                className="flex-1 h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:bg-neutral-50"
+                                onClick={() => setIsIncidentDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                className="flex-1 h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-red-600 hover:bg-red-700 shadow-xl shadow-red-200"
+                                onClick={handleReportIncident}
+                                disabled={isReporting}
+                            >
+                                {isReporting ? <Loader2 className="w-4 h-4 animate-spin" /> : "File Report"}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
         </>
     );

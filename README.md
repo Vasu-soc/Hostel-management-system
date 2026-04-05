@@ -124,6 +124,7 @@ graph TD
 - **Subject Tracking:** Live list of all students currently "Outside Campus".
 - **Activity Log:** Comprehensive history of movement with millisecond-accurate timestamps.
 - **Flash Access:** Ability to search students by Roll Number for manual entry overrides.
+- **Incident Reporting:** Direct channel to report security breaches or disciplinary issues to Admin.
 
 ### 👨‍👩‍👧 4. Parent Portal
 *Transparency and peace of mind for guardians.*
