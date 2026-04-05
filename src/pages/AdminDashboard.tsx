@@ -35,7 +35,7 @@ import {
   Users, DoorOpen, ShieldCheck, Megaphone, Wallet, 
   TrendingUp, CheckCircle2, ChevronRight, Search, 
   Trash2, BarChart3, XCircle, Info, Activity,
-  ExternalLink, Utensils, AlertTriangle
+  ExternalLink, Utensils, AlertTriangle, RefreshCw
 } from "lucide-react";
 import { getAdminSession, clearAdminSession } from "@/lib/session";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -113,6 +113,9 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [selectedGender, setSelectedGender] = useState<string>("all_genders");
+  const [quickViewFilter, setQuickViewFilter] = useState<"all" | "male" | "female" | "fees" | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<SecurityIncident[]>([]);
