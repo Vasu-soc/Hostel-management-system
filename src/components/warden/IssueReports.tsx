@@ -272,51 +272,51 @@ const IssueReports = ({ electricalIssues, foodIssues, roomIssues, medicalAlerts,
   return (
     <Tabs defaultValue="electrical" className="space-y-6">
       <div className="flex justify-center">
-        <TabsList className="h-14 bg-muted/50 p-1.5 rounded-full border-2 border-border/50 w-full max-w-2xl shadow-inner">
+        <TabsList className="h-14 bg-muted/50 p-1.5 rounded-full border-2 border-border/50 w-full max-w-3xl shadow-inner gap-2">
           <TabsTrigger 
             value="electrical" 
-            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+            className="relative px-8 rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
           >
             <Zap className="w-4 h-4 mr-2" />
             <span className="font-bold tracking-tight">Electrical</span>
             {pendingElectrical.length > 0 && (
-              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
+              <span className="absolute -top-1.5 right-2 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
                 {pendingElectrical.length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger 
             value="food" 
-            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+            className="relative px-8 rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
           >
             <UtensilsCrossed className="w-4 h-4 mr-2" />
             <span className="font-bold tracking-tight">Food</span>
             {pendingFood.length > 0 && (
-              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
+              <span className="absolute -top-1.5 right-2 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
                 {pendingFood.length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger 
             value="room" 
-            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+            className="relative px-8 rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
           >
             <Home className="w-4 h-4 mr-2" />
             <span className="font-bold tracking-tight">Room</span>
             {localRoom.filter(i => (i.status || "pending") === "pending").length > 0 && (
-              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
+              <span className="absolute -top-1.5 right-2 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
                 {localRoom.filter(i => (i.status || "pending") === "pending").length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger 
             value="medical" 
-            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+            className="relative px-8 rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
           >
             <Pill className="w-4 h-4 mr-2" />
             <span className="font-bold tracking-tight">Medical</span>
             {pendingMedical.length > 0 && (
-              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-pulse">
+              <span className="absolute -top-1.5 right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-pulse">
                 {pendingMedical.length}
               </span>
             )}
