@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
@@ -135,6 +135,64 @@ const AdminDashboard = () => {
   const [watchmanDialogOpen, setWatchmanDialogOpen] = useState(false);
   const [newWatchman, setNewWatchman] = useState({ name: "", mobile_number: "", username: "", password: "" });
 
+  const fetchApplications = useCallback(async () => {
+    const { data } = await supabase
+      .from("hostel_applications")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setApplications(data);
+  }, []);
+
+  const fetchMessCount = useCallback(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { count, error } = await supabase
+      .from("daily_attendance")
+      .select("*", { count: 'exact', head: true })
+      .eq("attendance_date", today)
+      .eq("status", "present");
+    if (!error) setMessCount(count || 0);
+  }, []);
+
+  const fetchIncidents = useCallback(async () => {
+    const { data } = await (supabase as any).from("security_incidents").select("*").order("created_at", { ascending: false });
+    if (data) setIncidents(data as SecurityIncident[]);
+  }, []);
+
+  const fetchAllStudents = useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase.from("students").select("*");
+    if (!error && data) setAllStudents(data as Student[]);
+    setIsLoading(false);
+  }, []);
+
+  const getActualOccupied = useCallback((roomNumber: string) => {
+    return allStudents.filter(s => s.hostel_room_number === roomNumber).length;
+  }, [allStudents]);
+
+  const fetchWatchmen = useCallback(async () => {
+    const { data } = await (supabase as any).from("watchmen").select("*");
+    if (data) setWatchmen(data as Watchman[]);
+  }, []);
+
+  const fetchRooms = useCallback(async () => {
+    const { data, error } = await supabase.from("rooms").select("*").order("room_number");
+    if (!error) setRooms((data || []) as Room[]);
+  }, []);
+
+  const fetchStudentsData = useCallback(async (branch?: string, year?: string) => {
+    let query = supabase.from("students").select("*");
+    
+    if (branch) {
+      query = query.ilike("branch", branch);
+    }
+    if (year) {
+      query = query.eq("year", year);
+    }
+    
+    const { data, error } = await query;
+    if (!error) setStudents((data as Student[]) || []);
+  }, []);
+
   useEffect(() => {
     const session = getAdminSession();
     if (!session) {
@@ -177,65 +235,7 @@ const AdminDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [navigate]);
-
-  const fetchApplications = async () => {
-    const { data } = await supabase
-      .from("hostel_applications")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setApplications(data);
-  };
-
-  const fetchMessCount = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const { count, error } = await supabase
-      .from("daily_attendance")
-      .select("*", { count: 'exact', head: true })
-      .eq("attendance_date", today)
-      .eq("status", "present");
-    if (!error) setMessCount(count || 0);
-  };
-
-  const fetchIncidents = async () => {
-    const { data } = await (supabase as any).from("security_incidents").select("*").order("created_at", { ascending: false });
-    if (data) setIncidents(data as SecurityIncident[]);
-  };
-
-  const fetchAllStudents = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase.from("students").select("*");
-    if (!error && data) setAllStudents(data as Student[]);
-    setIsLoading(false);
-  };
-
-  const getActualOccupied = (roomNumber: string) => {
-    return allStudents.filter(s => s.hostel_room_number === roomNumber).length;
-  };
-
-  const fetchWatchmen = async () => {
-    const { data } = await (supabase as any).from("watchmen").select("*");
-    if (data) setWatchmen(data as Watchman[]);
-  };
-
-  const fetchRooms = async () => {
-    const { data, error } = await supabase.from("rooms").select("*").order("room_number");
-    if (!error) setRooms((data || []) as Room[]);
-  };
-
-  const fetchStudentsData = async (branch?: string, year?: string) => {
-    let query = supabase.from("students").select("*");
-    
-    if (branch) {
-      query = query.ilike("branch", branch);
-    }
-    if (year) {
-      query = query.eq("year", year);
-    }
-    
-    const { data, error } = await query;
-    if (!error) setStudents((data as Student[]) || []);
-  };
+  }, [navigate, fetchRooms, fetchWatchmen, fetchIncidents, fetchAllStudents, fetchApplications, fetchMessCount, selectedBranch, selectedYear, fetchStudentsData]);
 
   const fetchStudents = async () => {
     setIsLoading(true);

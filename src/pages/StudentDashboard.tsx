@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -132,7 +132,29 @@ const StudentDashboard = () => {
     purpose: "",
   });
 
-  const refreshStudentData = async (studentId: string) => {
+  const fetchMedicines = useCallback(async () => {
+    const { data } = await supabase.from("medicines").select("*");
+    if (data) setMedicines(data);
+  }, []);
+
+  const fetchFeeTransactions = useCallback(async (studentId: string) => {
+    console.log(`Attempting to fetch fee transactions for student ID: ${studentId}`);
+    const { data, error } = await supabase
+      .from("fee_transactions")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("payment_date", { ascending: false });
+    if (error) {
+      console.error("Fee Transactions Fetch Error:", error.message);
+      setFeeTransactions([]);
+      return;
+    }
+
+    console.log(`Fetched ${data?.length || 0} transactions for student ${studentId}`);
+    if (data) setFeeTransactions(data);
+  }, []);
+
+  const refreshStudentData = useCallback(async (studentId: string) => {
     console.log("Refreshing student data for ID:", studentId);
     setIsLoading(true);
     const { data, error } = await supabase
@@ -167,7 +189,143 @@ const StudentDashboard = () => {
       fetchFeeTransactions(data.id);
     }
     setIsLoading(false);
-  };
+  }, [fetchFeeTransactions]);
+
+  const loadWardenSignature = useCallback(async () => {
+    const { data } = await supabase
+      .from("wardens")
+      .select("signature_url")
+      .not("signature_url", "is", null)
+      .limit(1)
+      .maybeSingle();
+    if (data?.signature_url) {
+      setWardenSignature(data.signature_url);
+    }
+  }, []);
+
+  const loadGatePasses = useCallback(async (rollNumber: string, currentStudentStatus?: string) => {
+    try {
+      const { data } = await supabase
+        .from("gate_passes")
+        .select("*")
+        .eq("roll_number", rollNumber)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        const passes = data as Record<string, unknown>[];
+        
+        // Auto-expire approved but unscanned passes after 24 hours
+        const latestPass = passes[0];
+        if (latestPass && latestPass.status === "approved" && currentStudentStatus !== "OUT") {
+          const createdAt = new Date(latestPass.created_at as string).getTime();
+          const twentyFourHours = 24 * 60 * 60 * 1000;
+          
+          if (Date.now() - createdAt > twentyFourHours) {
+            await supabase.from("gate_passes").update({ status: "expired" }).eq("id", latestPass.id as string);
+            passes[0] = { ...latestPass, status: "expired" };
+          }
+        }
+
+        setGatePasses(passes);
+        // Load warden signature if latest gate pass is approved
+        if (passes[0] && passes[0].status === "approved") {
+          loadWardenSignature();
+        }
+      }
+
+      const { data: extData } = await supabase
+        .from("leave_extensions")
+        .select("*")
+        .eq("roll_number", rollNumber)
+        .order("created_at", { ascending: false });
+
+      if (extData) setLeaveExtensions(extData);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [loadWardenSignature]);
+
+  const loadAttendanceReports = useCallback(async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('attendance_reports')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error("Failed to fetch attendance reports:", error.message);
+        return;
+      }
+      setAttendanceReports(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const fetchTodayAttendance = useCallback(async (studentId: string) => {
+    try {
+      const today = new Date().toLocaleDateString('en-CA');
+      const { data, error } = await supabase
+        .from('daily_attendance')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('attendance_date', today)
+        .maybeSingle();
+
+      if (error) throw error;
+      setTodayAttendance(data);
+    } catch (e) {
+      console.error("Error fetching today's attendance:", e);
+    }
+  }, []);
+
+  const loadMedicalAlerts = useCallback(async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('medical_alerts')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setMedicalAlerts(data || []);
+    } catch (e) {
+      console.error("Failed to fetch medical alerts:", e);
+    }
+  }, []);
+
+  const loadStudyMaterials = useCallback(async (branch: string, year: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('study_materials')
+        .select('*')
+        .eq('branch', branch)
+        .eq('year', year)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setStudyMaterials(data || []);
+    } catch (e) {
+      console.error("Failed to load study materials", e);
+      setStudyMaterials([]);
+    }
+  }, []);
+
+  const loadBranchMarks = useCallback(async (branch: string, year: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('branch_marks')
+        .select('*')
+        .eq('branch', branch)
+        .eq('year', year)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBranchMarks(data || []);
+    } catch (e) {
+      console.error("Failed to load branch marks", e);
+      setBranchMarks([]);
+    }
+  }, []);
 
   useEffect(() => {
     const session = getStudentSession();
@@ -270,29 +428,9 @@ const StudentDashboard = () => {
       supabase.removeChannel(educationChannel);
       supabase.removeChannel(issuesChannel);
     };
-  }, [gender, navigate]);
+  }, [gender, navigate, refreshStudentData, fetchFeeTransactions, loadGatePasses, loadAttendanceReports, fetchTodayAttendance, loadStudyMaterials, loadBranchMarks, loadMedicalAlerts, fetchMedicines]);
 
-  const fetchMedicines = async () => {
-    const { data } = await supabase.from("medicines").select("*");
-    if (data) setMedicines(data);
-  };
 
-  const fetchFeeTransactions = async (studentId: string) => {
-    console.log(`Attempting to fetch fee transactions for student ID: ${studentId}`);
-    const { data, error } = await supabase
-      .from("fee_transactions")
-      .select("*")
-      .eq("student_id", studentId)
-      .order("payment_date", { ascending: false });
-    if (error) {
-      console.error("Fee Transactions Fetch Error:", error.message);
-      setFeeTransactions([]);
-      return;
-    }
-
-    console.log(`Fetched ${data?.length || 0} transactions for student ${studentId}`);
-    if (data) setFeeTransactions(data);
-  };
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,22 +539,7 @@ const StudentDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [student?.roll_number, student?.status]);
 
-  const fetchTodayAttendance = async (studentId: string) => {
-    try {
-      const today = new Date().toLocaleDateString('en-CA');
-      const { data, error } = await supabase
-        .from('daily_attendance')
-        .select('*')
-        .eq('student_id', studentId)
-        .eq('attendance_date', today)
-        .maybeSingle();
 
-      if (error) throw error;
-      setTodayAttendance(data);
-    } catch (e) {
-      console.error("Error fetching today's attendance:", e);
-    }
-  };
 
   // Real-time: daily attendance
   useEffect(() => {
@@ -484,124 +607,7 @@ const StudentDashboard = () => {
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
-  const loadMedicalAlerts = async (studentId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('medical_alerts')
-        .select('*')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setMedicalAlerts(data || []);
-    } catch (e) {
-      console.error("Failed to fetch medical alerts:", e);
-    }
-  };
 
-  const loadAttendanceReports = async (studentId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('attendance_reports')
-        .select('*')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false });
-      if (error) {
-        console.error("Failed to fetch attendance reports:", error.message);
-        return;
-      }
-      setAttendanceReports(data || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const loadGatePasses = async (rollNumber: string, currentStudentStatus?: string) => {
-    try {
-      const { data } = await supabase
-        .from("gate_passes")
-        .select("*")
-        .eq("roll_number", rollNumber)
-        .order("created_at", { ascending: false });
-
-      if (data) {
-        let passes = data as Record<string, unknown>[];
-        
-        // Auto-expire approved but unscanned passes after 24 hours
-        const latestPass = passes[0];
-        if (latestPass && latestPass.status === "approved" && currentStudentStatus !== "OUT") {
-          const createdAt = new Date(latestPass.created_at as string).getTime();
-          const twentyFourHours = 24 * 60 * 60 * 1000;
-          
-          if (Date.now() - createdAt > twentyFourHours) {
-            await supabase.from("gate_passes").update({ status: "expired" }).eq("id", latestPass.id as string);
-            passes[0] = { ...latestPass, status: "expired" };
-          }
-        }
-
-        setGatePasses(passes);
-        // Load warden signature if latest gate pass is approved
-        if (passes[0] && passes[0].status === "approved") {
-          loadWardenSignature();
-        }
-      }
-
-      const { data: extData } = await supabase
-        .from("leave_extensions")
-        .select("*")
-        .eq("roll_number", rollNumber)
-        .order("created_at", { ascending: false });
-
-      if (extData) setLeaveExtensions(extData);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const loadWardenSignature = async () => {
-    const { data } = await supabase
-      .from("wardens")
-      .select("signature_url")
-      .not("signature_url", "is", null)
-      .limit(1)
-      .maybeSingle();
-    if (data?.signature_url) {
-      setWardenSignature(data.signature_url);
-    }
-  };
-
-  const loadStudyMaterials = async (branch: string, year: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('study_materials')
-        .select('*')
-        .eq('branch', branch)
-        .eq('year', year)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setStudyMaterials(data || []);
-    } catch (e) {
-      console.error("Failed to load study materials", e);
-      setStudyMaterials([]);
-    }
-  };
-
-  const loadBranchMarks = async (branch: string, year: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('branch_marks')
-        .select('*')
-        .eq('branch', branch)
-        .eq('year', year)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setBranchMarks(data || []);
-    } catch (e) {
-      console.error("Failed to load branch marks", e);
-      setBranchMarks([]);
-    }
-  };
 
   const handleLogout = () => {
     if (student) {

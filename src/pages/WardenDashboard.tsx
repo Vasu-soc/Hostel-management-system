@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import emailjs from '@emailjs/browser';
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
@@ -330,15 +330,15 @@ const WardenDashboard = () => {
     handlePrint();
   };
 
-  const fetchApplications = async (gender: string | null) => {
+  const fetchApplications = useCallback(async (gender: string | null) => {
     // Omit large base64 string columns (photo_url, signature_url) for initial fast loading
     let query = supabase.from("hostel_applications").select("id, student_name, branch, room_type, status, phone_number, email, gender, ac_type, created_at, months, father_name, parent_phone_number, price, floor_preference, address, zip_code, application_fee_status, application_fee_amount, application_fee_transaction_id, application_fee_payment_method, application_fee_payment_date, application_fee_receipt_url").order("created_at", { ascending: false });
     if (gender) query = query.ilike("gender", gender);
     const { data } = await query;
     if (data) setApplications(data as any[]);
-  };
+  }, []);
 
-  const fetchStudents = async (gender: string | null) => {
+  const fetchStudents = useCallback(async (gender: string | null) => {
     let query = supabase.from("students").select("*").order("student_name");
     if (gender) {
       query = query.ilike("gender", gender);
@@ -353,9 +353,9 @@ const WardenDashboard = () => {
       const activeStudents = (dbResult.data as any[]).filter(student => !deletedIds.includes(student.id));
       setStudents(activeStudents);
     }
-  };
+  }, []);
 
-  const fetchRooms = async (isBoys: boolean, isGirls: boolean) => {
+  const fetchRooms = useCallback(async (isBoys: boolean, isGirls: boolean) => {
     let query = supabase.from("rooms").select("*").order("room_number");
     if (isGirls) {
       query = query.or("room_number.ilike.GA%,room_number.ilike.GN%");
@@ -370,16 +370,16 @@ const WardenDashboard = () => {
       }
       setRooms(filtered);
     }
-  };
+  }, []);
 
-  const fetchGatePasses = async (gender: string | null) => {
+  const fetchGatePasses = useCallback(async (gender: string | null) => {
     let query = supabase.from("gate_passes").select("*, students!inner(gender)").order("created_at", { ascending: false });
     if (gender) query = query.ilike("students.gender", gender);
     const { data } = await query;
     if (data) setGatePasses(data as any[]);
-  };
+  }, []);
 
-  const fetchIssues = async (gender: string | null) => {
+  const fetchIssues = useCallback(async (gender: string | null) => {
     const elecQuery = supabase.from("electrical_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
     const foodQuery = supabase.from("food_issues").select("*, students!inner(gender)").order("created_at", { ascending: false });
     const medicalQuery = supabase.from("medical_alerts").select("*, students!inner(gender)").order("created_at", { ascending: false });
@@ -421,9 +421,9 @@ const WardenDashboard = () => {
         setMedicalAlerts(medicalData || []);
       }
     }
-  };
+  }, []);
 
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('study_materials')
@@ -436,16 +436,16 @@ const WardenDashboard = () => {
       console.error("Local study materials fetch failed", e);
       setMaterials([]);
     }
-  };
+  }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     // Implement fetching notifications if needed
     // For now, it's just a placeholder
     // const { data, error } = await supabase.from("notifications").select("*").order("created_at", { ascending: false });
     // if (data) setNotifications(data);
-  };
+  }, []);
 
-  const fetchTodayAttendance = async () => {
+  const fetchTodayAttendance = useCallback(async () => {
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
       .from('daily_attendance')
@@ -455,46 +455,24 @@ const WardenDashboard = () => {
     if (!error && data) {
       setActiveAttendance(data);
     }
-  };
+  }, []);
 
-  const fetchAllData = async () => {
-    if (!warden) return;
-
-    const studentGender = warden.warden_type === "boys" ? "male" : warden.warden_type === "girls" ? "female" : null;
-    const applicationGender = warden.warden_type === "boys" ? "boy" : warden.warden_type === "girls" ? "girl" : null;
-    const isBoys = warden.warden_type === "boys";
-    const isGirls = warden.warden_type === "girls";
-
-    await Promise.all([
-      fetchApplications(applicationGender),
-      fetchStudents(studentGender),
-      fetchRooms(isBoys, isGirls),
-      fetchGatePasses(studentGender),
-      fetchIssues(studentGender),
-      fetchMaterials(),
-      fetchNotifications(),
-      fetchTodayAttendance(),
-      fetchOverdueAlerts(),
-      fetchLeaveExtensions()
-    ]);
-  };
-
-  const fetchOverdueAlerts = async () => {
+  const fetchOverdueAlerts = useCallback(async () => {
     const { data, error } = await (supabase as any)
       .from("overdue_alerts")
       .select("*")
       .order("created_at", { ascending: false });
     if (!error && data) setOverdueAlerts(data);
-  };
+  }, []);
 
-  const fetchLeaveExtensions = async () => {
+  const fetchLeaveExtensions = useCallback(async () => {
     const { data, error } = await supabase
       .from("leave_extensions")
       .select("*");
     if (!error && data) setLeaveExtensions(data);
-  };
+  }, []);
 
-  const checkAndCreateOverdueAlerts = async () => {
+  const checkAndCreateOverdueAlerts = useCallback(async () => {
     if (!warden || students.length === 0 || gatePasses.length === 0) return;
 
     const now = new Date();
@@ -592,7 +570,29 @@ const WardenDashboard = () => {
         }
       }
     }
-  };
+  }, [warden, students, gatePasses, overdueAlerts, leaveExtensions, fetchOverdueAlerts]);
+
+  const fetchAllData = useCallback(async () => {
+    if (!warden) return;
+
+    const studentGender = warden.warden_type === "boys" ? "male" : warden.warden_type === "girls" ? "female" : null;
+    const applicationGender = warden.warden_type === "boys" ? "boy" : warden.warden_type === "girls" ? "girl" : null;
+    const isBoys = warden.warden_type === "boys";
+    const isGirls = warden.warden_type === "girls";
+
+    await Promise.all([
+      fetchApplications(applicationGender),
+      fetchStudents(studentGender),
+      fetchRooms(isBoys, isGirls),
+      fetchGatePasses(studentGender),
+      fetchIssues(studentGender),
+      fetchMaterials(),
+      fetchNotifications(),
+      fetchTodayAttendance(),
+      fetchOverdueAlerts(),
+      fetchLeaveExtensions()
+    ]);
+  }, [warden, fetchApplications, fetchStudents, fetchRooms, fetchGatePasses, fetchIssues, fetchMaterials, fetchTodayAttendance, fetchOverdueAlerts, fetchLeaveExtensions, fetchNotifications]);
 
   useEffect(() => {
     const session = getWardenSession();
@@ -614,7 +614,7 @@ const WardenDashboard = () => {
     }
     
     return () => clearInterval(timer);
-  }, [warden, students, gatePasses, overdueAlerts, leaveExtensions]);
+  }, [warden, students, checkAndCreateOverdueAlerts]);
 
   // Fetch data when warden is set
   useEffect(() => {
@@ -694,7 +694,7 @@ const WardenDashboard = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [warden]);
+  }, [warden, fetchApplications, fetchGatePasses, fetchStudents, fetchRooms, fetchIssues, fetchMaterials, fetchTodayAttendance, fetchAllData, fetchOverdueAlerts]);
 
   const handleLogout = () => {
     if (warden) {

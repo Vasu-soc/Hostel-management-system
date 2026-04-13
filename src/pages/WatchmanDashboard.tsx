@@ -131,7 +131,9 @@ const WatchmanDashboard = () => {
                             await scannerRef.current.stop();
                         }
                         scannerRef.current.clear();
-                     } catch (e) {}
+                     } catch (e) {
+                         console.warn("Cleanup error:", e);
+                     }
                  }
 
                  const html5QrCode = new Html5Qrcode("reader");
@@ -255,7 +257,7 @@ const WatchmanDashboard = () => {
                 setIsCameraActive(false);
             }
         };
-    }, [isScanning, facingMode, activeView, navigate]);
+    }, [isScanning, facingMode, activeView, navigate, initScanner, fetchOutStudents, fetchHistory]);
 
     const toggleCamera = () => {
         setFacingMode(prev => prev === "environment" ? "user" : "environment");
@@ -329,7 +331,9 @@ const WatchmanDashboard = () => {
                 .eq("status", "OUT")
                 .order("student_name", { ascending: true });
             if (data) setOutStudents(data);
-        } catch (e) {}
+        } catch (e) {
+            console.error("Fetch error:", e);
+        }
     };
 
     const fetchHistory = async () => {
@@ -340,7 +344,9 @@ const WatchmanDashboard = () => {
                 .order("created_at", { ascending: false })
                 .limit(10);
             if (data) setRecentHistory(data);
-        } catch (e) {}
+        } catch (e) {
+            console.error("History fetch error:", e);
+        }
     };
 
     const deleteLog = async (id: string) => {
