@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Zap, UtensilsCrossed, Check, X, Pill } from "lucide-react";
+import { Zap, UtensilsCrossed, Check, X, Pill, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -270,45 +270,59 @@ const IssueReports = ({ electricalIssues, foodIssues, roomIssues, medicalAlerts,
   const pendingMedical = localMedical.filter((i) => (i.status || "pending") === "pending");
 
   return (
-    <Tabs defaultValue="electrical" className="space-y-4">
-      <TabsList className="grid w-full max-w-2xl grid-cols-4">
-        <TabsTrigger value="electrical" className="relative">
-          <Zap className="w-4 h-4 mr-2" />
-          Electrical
-          {pendingElectrical.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning text-warning-foreground text-xs flex items-center justify-center">
-              {pendingElectrical.length}
-            </span>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="food" className="relative">
-          <UtensilsCrossed className="w-4 h-4 mr-2" />
-          Food
-          {pendingFood.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning text-warning-foreground text-xs flex items-center justify-center">
-              {pendingFood.length}
-            </span>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="room" className="relative">
-          <Pill className="w-4 h-4 mr-2" />
-          Room
-          {localRoom.filter(i => (i.status || "pending") === "pending").length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning text-warning-foreground text-xs flex items-center justify-center">
-              {localRoom.filter(i => (i.status || "pending") === "pending").length}
-            </span>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="medical" className="relative">
-          <Pill className="w-4 h-4 mr-2" />
-          Medical
-          {pendingMedical.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center animate-pulse">
-              {pendingMedical.length}
-            </span>
-          )}
-        </TabsTrigger>
-      </TabsList>
+    <Tabs defaultValue="electrical" className="space-y-6">
+      <div className="flex justify-center">
+        <TabsList className="h-14 bg-muted/50 p-1.5 rounded-full border-2 border-border/50 w-full max-w-2xl shadow-inner">
+          <TabsTrigger 
+            value="electrical" 
+            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            <span className="font-bold tracking-tight">Electrical</span>
+            {pendingElectrical.length > 0 && (
+              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
+                {pendingElectrical.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="food" 
+            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+          >
+            <UtensilsCrossed className="w-4 h-4 mr-2" />
+            <span className="font-bold tracking-tight">Food</span>
+            {pendingFood.length > 0 && (
+              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
+                {pendingFood.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="room" 
+            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            <span className="font-bold tracking-tight">Room</span>
+            {localRoom.filter(i => (i.status || "pending") === "pending").length > 0 && (
+              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-warning text-warning-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-bounce-slow">
+                {localRoom.filter(i => (i.status || "pending") === "pending").length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="medical" 
+            className="relative rounded-full data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-primary/20 data-[state=active]:border-2 data-[state=active]:border-primary transition-all duration-300"
+          >
+            <Pill className="w-4 h-4 mr-2" />
+            <span className="font-bold tracking-tight">Medical</span>
+            {pendingMedical.length > 0 && (
+              <span className="absolute -top-1.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-background animate-pulse">
+                {pendingMedical.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="electrical" className="space-y-4">
         <h3 className="text-lg font-semibold">Electrical Issue Reports</h3>
