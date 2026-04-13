@@ -23,10 +23,31 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
   const [selectedRoom, setSelectedRoom] = useState<string>("");
   const [attendance, setAttendance] = useState<Record<string, string>>({}); // studentId -> status
   const [loading, setLoading] = useState(false);
+  const [globalStats, setGlobalStats] = useState({ present: 0, absent: 0 });
   const { toast } = useToast();
   
   // Use local date (YYYY-MM-DD)
   const today = new Date().toLocaleDateString('en-CA');
+
+  // Fetch global stats for today
+  const fetchGlobalStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('daily_attendance')
+        .select('status')
+        .eq('attendance_date', today);
+
+      if (error) throw error;
+
+      const stats = {
+        present: data.filter(d => d.status === 'present').length,
+        absent: data.filter(d => d.status === 'absent').length
+      };
+      setGlobalStats(stats);
+    } catch (e) {
+      console.error("Failed to fetch global stats:", e);
+    }
+  };
 
   // Fetch today's attendance for the selected room
   const fetchAttendance = async (roomNo: string) => {
@@ -54,6 +75,7 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
   };
 
   useEffect(() => {
+    fetchGlobalStats();
     if (selectedRoom) {
       fetchAttendance(selectedRoom);
     }
@@ -63,6 +85,8 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
 
   const updateAttendance = async (studentId: string, rollNumber: string, status: string) => {
     try {
+      const oldStatus = attendance[studentId];
+      
       const { error } = await supabase
         .from('daily_attendance')
         .upsert({
@@ -75,6 +99,21 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
         }, { onConflict: 'student_id,attendance_date' });
 
       if (error) throw error;
+
+      // Update global stats locally
+      setGlobalStats(prev => {
+        const newStats = { ...prev };
+        
+        // Remove old status from count if exists
+        if (oldStatus === 'present') newStats.present--;
+        if (oldStatus === 'absent') newStats.absent--;
+        
+        // Add new status to count
+        if (status === 'present') newStats.present++;
+        if (status === 'absent') newStats.absent++;
+        
+        return newStats;
+      });
 
       setAttendance(prev => ({ ...prev, [studentId]: status }));
       
@@ -108,6 +147,8 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
 
       if (error) throw error;
 
+      fetchGlobalStats(); // Refresh global stats from DB after batch update
+      
       const newMap = { ...attendance };
       studentsInRoom.forEach(s => { newMap[s.id] = 'present'; });
       setAttendance(newMap);
@@ -129,36 +170,74 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
     <div className="space-y-6">
       <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
         <CardHeader className="bg-primary/5 border-b border-primary/10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                Daily Room Attendance
-              </CardTitle>
-              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest text-primary border-primary/20">
-                DATE: {today}
-              </Badge>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Daily Room Attendance
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest text-primary border-primary/20">
+                  DATE: {today}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3">
+                <Select value={selectedRoom} onValueChange={setSelectedRoom}>
+                  <SelectTrigger className="w-40 bg-white border-primary/20 focus:ring-primary shadow-sm hover:border-primary/40 transition-colors">
+                    <SelectValue placeholder="Select Room" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rooms.sort((a,b) => a.room_number.localeCompare(b.room_number)).map(r => (
+                      <SelectItem key={r.id} value={r.room_number}>Room {r.room_number}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  disabled={!selectedRoom || loading}
+                  onClick={markAllAvailable}
+                  className="shadow-md hover:shadow-lg transition-all"
+                >
+                  Mark All Available
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Select value={selectedRoom} onValueChange={setSelectedRoom}>
-                <SelectTrigger className="w-40 bg-white border-primary/20 focus:ring-primary shadow-sm hover:border-primary/40 transition-colors">
-                  <SelectValue placeholder="Select Room" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rooms.sort((a,b) => a.room_number.localeCompare(b.room_number)).map(r => (
-                    <SelectItem key={r.id} value={r.room_number}>Room {r.room_number}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="hero" 
-                size="sm" 
-                disabled={!selectedRoom || loading}
-                onClick={markAllAvailable}
-                className="shadow-md hover:shadow-lg transition-all"
-              >
-                Mark All Available
-              </Button>
+
+            {/* Global Mess Stats - ALWAYS VISIBLE */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="relative overflow-hidden p-4 bg-white border-2 border-primary/20 rounded-2xl shadow-sm flex items-center justify-between group hover:border-primary/40 transition-all">
+                <div className="z-10">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Hostel Mess Count</p>
+                  <p className="text-3xl font-black text-foreground">{globalStats.present}</p>
+                </div>
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <Utensils className="w-6 h-6" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-primary/5 rounded-full blur-xl" />
+              </div>
+
+              <div className="relative overflow-hidden p-4 bg-white border-2 border-destructive/20 rounded-2xl shadow-sm flex items-center justify-between group hover:border-destructive/40 transition-all">
+                <div className="z-10">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-destructive mb-1">Absent student count</p>
+                  <p className="text-3xl font-black text-foreground">{globalStats.absent}</p>
+                </div>
+                <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center text-destructive group-hover:scale-110 transition-transform">
+                  <X className="w-6 h-6" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-destructive/5 rounded-full blur-xl" />
+              </div>
+
+              <div className="relative overflow-hidden p-4 bg-white border-2 border-muted-foreground/20 rounded-2xl shadow-sm flex items-center justify-between group hover:border-muted-foreground/40 transition-all">
+                <div className="z-10">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Total Hostel Capacity</p>
+                  <p className="text-3xl font-black text-foreground">{students.filter(s => s.room_allotted).length}</p>
+                </div>
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center text-muted-foreground group-hover:scale-110 transition-transform">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-muted/5 rounded-full blur-xl" />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -175,26 +254,6 @@ export default function RoomAttendance({ rooms, students, wardenId }: Props) {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Room Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="p-4 bg-muted/50 rounded-xl border-2 border-border text-center shadow-sm">
-                  <p className="text-2xl font-black">{studentsInRoom.length}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Students</p>
-                </div>
-                <div className="p-4 bg-success/10 rounded-xl border-2 border-success/20 text-center shadow-sm">
-                  <p className="text-2xl font-black text-success">{presentCount}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-success">Present</p>
-                </div>
-                <div className="p-4 bg-destructive/10 rounded-xl border-2 border-destructive/20 text-center shadow-sm">
-                  <p className="text-2xl font-black text-destructive">{absentCount}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Absent</p>
-                </div>
-                <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20 text-center shadow-sm relative overflow-hidden">
-                  <Utensils className="absolute -bottom-1 -right-1 w-8 h-8 opacity-10 rotate-12" />
-                  <p className="text-2xl font-black text-primary">{presentCount}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Mess Count</p>
-                </div>
-              </div>
 
               {/* Selection Status */}
               <div className="flex items-center justify-between px-2">
