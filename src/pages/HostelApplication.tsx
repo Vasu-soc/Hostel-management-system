@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, Check, Upload, Camera, PenLine, CreditCard, Wallet, QrCode, ShieldCheck, IndianRupee, Loader2, Download, ImagePlus, X, Maximize2 } from "lucide-react";
+import { ArrowLeft, Building2, Check, Upload, Camera, PenLine, QrCode, ShieldCheck, IndianRupee, Loader2, Download, ImagePlus, X, Maximize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -834,11 +834,9 @@ const HostelApplication = () => {
 
                       <div className="space-y-4">
                         <Label>2. Select Method & Enter ID *</Label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                           {[
                             { id: "upi", icon: QrCode, label: "UPI" },
-                            { id: "card", icon: CreditCard, label: "Card" },
-                            { id: "wallet", icon: Wallet, label: "Wallet" },
                           ].map((method) => (
                             <button
                               key={method.id}
